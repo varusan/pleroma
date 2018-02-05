@@ -64,8 +64,12 @@ defmodule Pleroma.Web.WebFinger do
   end
 
   defp webfinger_from_xml(doc) do
-    magic_key = XML.string_from_xpath(~s{//Link[@rel="magic-public-key"]/@href}, doc)
-    "data:application/magic-public-key," <> magic_key = magic_key
+    magic_key = with key <- XML.string_from_xpath(~s{//Link[@rel="magic-public-key"]/@href}, doc),
+                     "data:application/magic-public-key," <> magic_key <- key do
+                  magic_key
+                else
+                  _e -> nil
+                end
     topic = XML.string_from_xpath(~s{//Link[@rel="http://schemas.google.com/g/2010#updates-from"]/@href}, doc)
     subject = XML.string_from_xpath("//Subject", doc)
     salmon = XML.string_from_xpath(~s{//Link[@rel="salmon"]/@href}, doc)
