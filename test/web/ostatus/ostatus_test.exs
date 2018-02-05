@@ -41,6 +41,16 @@ defmodule Pleroma.Web.OStatusTest do
     assert "https://www.w3.org/ns/activitystreams#Public" in activity.data["to"]
   end
 
+  test "handle incoming group join - GS, atom feed" do
+    incoming = File.read!("test/fixtures/group-join-gs.xml")
+    a = OStatus.handle_incoming(incoming)
+    IO.inspect(a)
+    {:ok, [activity]} = a
+
+    assert activity.data["type"] == "Follow"
+    assert activity.data["object"] == "https://social.heldscal.la/group/475/id"
+  end
+
   test "handle incoming notes with attachments - GS, subscription" do
     incoming = File.read!("test/fixtures/incoming_websub_gnusocial_attachments.xml")
     {:ok, [activity]} = OStatus.handle_incoming(incoming)

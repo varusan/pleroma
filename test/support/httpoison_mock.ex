@@ -38,6 +38,13 @@ defmodule HTTPoisonMock do
     }}
   end
 
+  def get("https://social.heldscal.la/.well-known/webfinger?resource=https://social.heldscal.la/user/53448", [Accept: "application/xrd+xml"], _params) do
+    {:ok, %Response{
+        status_code: 200,
+        body: File.read!("test/fixtures/httpoison_mock/https__social.heldscal.la_user_53448.xml")
+     }}
+  end
+
   def get("https://social.heldscal.la/.well-known/webfinger", [Accept: "application/xrd+xml"], [params: [resource: "https://social.heldscal.la/user/29191"]]) do
     {:ok, %Response{
       status_code: 200,
@@ -119,6 +126,13 @@ defmodule HTTPoisonMock do
     {:ok, %Response{
       status_code: 200,
       body: File.read!("test/fixtures/httpoison_mock/https___social.heldscal.la_api_statuses_user_timeline_29191.atom.xml")
+    }}
+  end
+
+  def get("https://social.heldscal.la/api/statuses/user_timeline/53448.atom", _body, _headers) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/https___social.heldscal.la_api_statuses_user_timeline_53448.atom.xml")
     }}
   end
 

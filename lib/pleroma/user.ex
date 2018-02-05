@@ -73,7 +73,7 @@ defmodule Pleroma.User do
   @email_regex ~r/^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/
   def remote_user_creation(params) do
     changes = %User{}
-    |> cast(params, [:bio, :name, :ap_id, :nickname, :info, :avatar])
+    |> cast(params, [:bio, :name, :ap_id, :nickname, :info, :avatar, :group])
     |> validate_required([:name, :ap_id, :nickname])
     |> unique_constraint(:nickname)
     |> validate_format(:nickname, @email_regex)

@@ -8,7 +8,7 @@ defmodule Pleroma.Web.OStatus do
   alias Pleroma.{Repo, User, Web, Object, Activity}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.{WebFinger, Websub}
-  alias Pleroma.Web.OStatus.{FollowHandler, NoteHandler, DeleteHandler}
+  alias Pleroma.Web.OStatus.{FollowHandler, JoinHandler, NoteHandler, DeleteHandler}
 
   def feed_path(user) do
     "#{user.ap_id}/feed.atom"
@@ -41,6 +41,8 @@ defmodule Pleroma.Web.OStatus do
               with {:ok, activity} <- DeleteHandler.handle_delete(entry, doc), do: activity
             'http://activitystrea.ms/schema/1.0/follow' ->
               with {:ok, activity} <- FollowHandler.handle(entry, doc), do: activity
+            'http://activitystrea.ms/schema/1.0/join' ->
+              with {:ok, activity} <- JoinHandler.handle(entry, doc), do: activity
             'http://activitystrea.ms/schema/1.0/share' ->
               with {:ok, activity, retweeted_activity} <- handle_share(entry, doc), do: [activity, retweeted_activity]
             'http://activitystrea.ms/schema/1.0/favorite' ->
@@ -60,8 +62,8 @@ defmodule Pleroma.Web.OStatus do
           e ->
             Logger.error("Error occured while handling activity")
             Logger.error(xml_string)
-          Logger.error(inspect(e))
-          nil
+            Logger.error(inspect(e))
+            nil
         end
       end)
       |> Enum.filter(&(&1))
@@ -231,7 +233,8 @@ defmodule Pleroma.Web.OStatus do
         ap_id: info["uri"],
         info: info,
         avatar: info["avatar"],
-        bio: info["bio"]
+        bio: info["bio"],
+        group: is_nil(info["magic_key"]) # subject is not guaranteed to be acct
       }
       with false <- update,
            %User{} = user <- User.get_by_ap_id(data.ap_id) do

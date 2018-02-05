@@ -1,0 +1,432 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xml:lang="en-US" xmlns="http://www.w3.org/2005/Atom" xmlns:thr="http://purl.org/syndication/thread/1.0" xmlns:georss="http://www.georss.org/georss" xmlns:activity="http://activitystrea.ms/spec/1.0/" xmlns:media="http://purl.org/syndication/atommedia" xmlns:poco="http://portablecontacts.net/spec/1.0" xmlns:ostatus="http://ostatus.org/schema/1.0" xmlns:statusnet="http://status.net/schema/api/1/">
+ <generator uri="https://gnu.io/social" version="1.0.2-dev">GNU social</generator>
+ <id>https://social.heldscal.la/api/statuses/user_timeline/53448.atom</id>
+ <title>eal timeline</title>
+ <subtitle>Updates from eal on social.heldscal.la!</subtitle>
+ <logo>https://social.heldscal.la/avatar/53448-96-20171119141217.jpeg</logo>
+ <updated>2018-02-05T21:14:23+00:00</updated>
+<author>
+ <activity:object-type>http://activitystrea.ms/schema/1.0/person</activity:object-type>
+ <uri>https://social.heldscal.la/user/53448</uri>
+ <name>eal</name>
+ <summary>im a cute anime grill I promise</summary>
+ <link rel="alternate" type="text/html" href="https://social.heldscal.la/eal"/>
+ <link rel="avatar" type="image/jpeg" media:width="719" media:height="719" href="https://social.heldscal.la/avatar/53448-original-20171119141217.jpeg"/>
+ <link rel="avatar" type="image/jpeg" media:width="96" media:height="96" href="https://social.heldscal.la/avatar/53448-96-20171119141217.jpeg"/>
+ <link rel="avatar" type="image/jpeg" media:width="48" media:height="48" href="https://social.heldscal.la/avatar/53448-48-20171119141217.jpeg"/>
+ <link rel="avatar" type="image/jpeg" media:width="24" media:height="24" href="https://social.heldscal.la/avatar/53448-24-20171119141217.jpeg"/>
+ <poco:preferredUsername>eal</poco:preferredUsername>
+ <poco:displayName>eal writing a software</poco:displayName>
+ <poco:note>im a cute anime grill I promise</poco:note>
+ <poco:address>
+  <poco:formatted>Gensokyo</poco:formatted>
+ </poco:address>
+ <poco:urls>
+  <poco:type>homepage</poco:type>
+  <poco:value>https://sakamoto.gq</poco:value>
+  <poco:primary>true</poco:primary>
+ </poco:urls>
+ <followers url="https://social.heldscal.la/eal/subscribers"></followers>
+ <statusnet:profile_info local_id="53448"></statusnet:profile_info>
+</author>
+ <link href="https://social.heldscal.la/eal" rel="alternate" type="text/html"/>
+ <link href="https://social.heldscal.la/main/sup" rel="http://api.friendfeed.com/2008/03#sup" type="application/json"/>
+ <link href="https://social.heldscal.la/api/statuses/user_timeline/53448.atom?max_id=4828943" rel="next" type="application/atom+xml"/>
+ <link href="https://social.heldscal.la/main/push/hub" rel="hub"/>
+ <link href="https://social.heldscal.la/main/salmon/user/53448" rel="salmon"/>
+ <link href="https://social.heldscal.la/main/salmon/user/53448" rel="http://salmon-protocol.org/ns/salmon-replies"/>
+ <link href="https://social.heldscal.la/main/salmon/user/53448" rel="http://salmon-protocol.org/ns/salmon-mention"/>
+ <link href="https://social.heldscal.la/api/statuses/user_timeline/53448.atom" rel="self" type="application/atom+xml"/>
+<entry>
+ <id>tag:social.heldscal.la,2018-02-05:group_member:53448:group:475:2018-02-05T15:29:11+00:00</id>
+ <title>eal writing a software (eal@social.heldscal.la)'s status on Monday, 05-Feb-2018 15:29:11 UTC</title>
+ <content type="html">&lt;a href=&quot;https://social.heldscal.la/eal&quot;&gt;eal writing a software&lt;/a&gt; joined the group &lt;a href=&quot;https://social.heldscal.la/group/aaaa&quot;&gt;aaaa&lt;/a&gt;.</content>
+ <link rel="alternate" type="text/html" href="https://social.heldscal.la/notice/6023194"/>
+ <activity:verb>http://activitystrea.ms/schema/1.0/join</activity:verb>
+ <published>2018-02-05T15:29:11+00:00</published>
+ <updated>2018-02-05T15:29:11+00:00</updated>
+ <activity:object>
+  <activity:object-type>http://activitystrea.ms/schema/1.0/group</activity:object-type>
+  <id>https://social.heldscal.la/group/475/id</id>
+  <title>aaaa</title>
+  <link rel="alternate" type="text/html" href="https://social.heldscal.la/group/475/id"/>
+  <link rel="avatar" type="image/png" media:width="96" media:height="96" href="https://social.heldscal.la/theme/neo-gnu/default-avatar-profile.png"/>
+  <link rel="avatar" type="image/png" media:width="48" media:height="48" href="https://social.heldscal.la/theme/neo-gnu/default-avatar-stream.png"/>
+  <link rel="avatar" type="image/png" media:width="24" media:height="24" href="https://social.heldscal.la/theme/neo-gnu/default-avatar-mini.png"/>
+  <poco:preferredUsername>aaaa</poco:preferredUsername>
+  <poco:displayName>aaaa</poco:displayName>
+ </activity:object>
+ <link rel="ostatus:conversation" href="https://social.heldscal.la/conversation/3654208"/>
+ <ostatus:conversation href="https://social.heldscal.la/conversation/3654208" local_id="3654208" ref="tag:social.heldscal.la,2018-02-05:objectType=thread:nonce=723ad3ab1d65b27c">tag:social.heldscal.la,2018-02-05:objectType=thread:nonce=723ad3ab1d65b27c</ostatus:conversation>
+ <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/collection" href="http://activityschema.org/collection/public"/>
+ <link rel="self" type="application/atom+xml" href="https://social.heldscal.la/api/statuses/show/6023194.atom"/>
+ <link rel="edit" type="application/atom+xml" href="https://social.heldscal.la/api/statuses/show/6023194.atom"/>
+ <statusnet:notice_info local_id="6023194" source="activity"></statusnet:notice_info>
+</entry>
+<entry>
+ <activity:object-type>http://activitystrea.ms/schema/1.0/note</activity:object-type>
+ <id>tag:social.heldscal.la,2018-02-05:noticeId=6022788:objectType=note</id>
+ <title>New note by eal</title>
+ <content type="html">asd</content>
+ <link rel="alternate" type="text/html" href="https://social.heldscal.la/notice/6022788"/>
+ <status_net notice_id="6022788"></status_net>
+ <activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+ <published>2018-02-05T14:45:46+00:00</published>
+ <updated>2018-02-05T14:45:46+00:00</updated>
+ <link rel="ostatus:conversation" href="https://social.heldscal.la/conversation/3653879"/>
+ <ostatus:conversation href="https://social.heldscal.la/conversation/3653879" local_id="3653879" ref="tag:social.heldscal.la,2018-02-05:objectType=thread:nonce=f5347545989f8416">tag:social.heldscal.la,2018-02-05:objectType=thread:nonce=f5347545989f8416</ostatus:conversation>
+ <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/group" href="https://social.heldscal.la/group/475/id"/>
+ <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/collection" href="http://activityschema.org/collection/public"/>
+ <link rel="self" type="application/atom+xml" href="https://social.heldscal.la/api/statuses/show/6022788.atom"/>
+ <link rel="edit" type="application/atom+xml" href="https://social.heldscal.la/api/statuses/show/6022788.atom"/>
+ <statusnet:notice_info local_id="6022788" source="web"></statusnet:notice_info>
+</entry>
+<entry>
+ <activity:object-type>http://activitystrea.ms/schema/1.0/note</activity:object-type>
+ <id>tag:social.heldscal.la,2018-02-05:noticeId=6022723:objectType=note</id>
+ <title>New note by eal</title>
+ <content type="html">one more</content>
+ <link rel="alternate" type="text/html" href="https://social.heldscal.la/notice/6022723"/>
+ <status_net notice_id="6022723"></status_net>
+ <activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+ <published>2018-02-05T14:38:56+00:00</published>
+ <updated>2018-02-05T14:38:56+00:00</updated>
+ <link rel="ostatus:conversation" href="https://social.heldscal.la/conversation/3653822"/>
+ <ostatus:conversation href="https://social.heldscal.la/conversation/3653822" local_id="3653822" ref="tag:social.heldscal.la,2018-02-05:objectType=thread:nonce=f91773b257979f12">tag:social.heldscal.la,2018-02-05:objectType=thread:nonce=f91773b257979f12</ostatus:conversation>
+ <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/group" href="https://social.heldscal.la/group/475/id"/>
+ <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/collection" href="http://activityschema.org/collection/public"/>
+ <link rel="self" type="application/atom+xml" href="https://social.heldscal.la/api/statuses/show/6022723.atom"/>
+ <link rel="edit" type="application/atom+xml" href="https://social.heldscal.la/api/statuses/show/6022723.atom"/>
+ <statusnet:notice_info local_id="6022723" source="web"></statusnet:notice_info>
+</entry>
+<entry>
+ <activity:object-type>http://activitystrea.ms/schema/1.0/note</activity:object-type>
+ <id>tag:social.heldscal.la,2018-02-05:noticeId=6022698:objectType=note</id>
+ <title>New note by eal</title>
+ <content type="html">again</content>
+ <link rel="alternate" type="text/html" href="https://social.heldscal.la/notice/6022698"/>
+ <status_net notice_id="6022698"></status_net>
+ <activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+ <published>2018-02-05T14:37:11+00:00</published>
+ <updated>2018-02-05T14:37:11+00:00</updated>
+ <link rel="ostatus:conversation" href="https://social.heldscal.la/conversation/3653801"/>
+ <ostatus:conversation href="https://social.heldscal.la/conversation/3653801" local_id="3653801" ref="tag:social.heldscal.la,2018-02-05:objectType=thread:nonce=00fbbd2c84154938">tag:social.heldscal.la,2018-02-05:objectType=thread:nonce=00fbbd2c84154938</ostatus:conversation>
+ <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/group" href="https://social.heldscal.la/group/475/id"/>
+ <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/collection" href="http://activityschema.org/collection/public"/>
+ <link rel="self" type="application/atom+xml" href="https://social.heldscal.la/api/statuses/show/6022698.atom"/>
+ <link rel="edit" type="application/atom+xml" href="https://social.heldscal.la/api/statuses/show/6022698.atom"/>
+ <statusnet:notice_info local_id="6022698" source="web"></statusnet:notice_info>
+</entry>
+<entry>
+ <activity:object-type>http://activitystrea.ms/schema/1.0/note</activity:object-type>
+ <id>tag:social.heldscal.la,2018-02-05:noticeId=6022605:objectType=note</id>
+ <title>New note by eal</title>
+ <content type="html">test</content>
+ <link rel="alternate" type="text/html" href="https://social.heldscal.la/notice/6022605"/>
+ <status_net notice_id="6022605"></status_net>
+ <activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+ <published>2018-02-05T14:27:58+00:00</published>
+ <updated>2018-02-05T14:27:58+00:00</updated>
+ <link rel="ostatus:conversation" href="https://social.heldscal.la/conversation/3653731"/>
+ <ostatus:conversation href="https://social.heldscal.la/conversation/3653731" local_id="3653731" ref="tag:social.heldscal.la,2018-02-05:objectType=thread:nonce=96c5fe3d6e18f1a2">tag:social.heldscal.la,2018-02-05:objectType=thread:nonce=96c5fe3d6e18f1a2</ostatus:conversation>
+ <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/group" href="https://social.heldscal.la/group/475/id"/>
+ <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/collection" href="http://activityschema.org/collection/public"/>
+ <link rel="self" type="application/atom+xml" href="https://social.heldscal.la/api/statuses/show/6022605.atom"/>
+ <link rel="edit" type="application/atom+xml" href="https://social.heldscal.la/api/statuses/show/6022605.atom"/>
+ <statusnet:notice_info local_id="6022605" source="web"></statusnet:notice_info>
+</entry>
+<entry>
+ <id>9649301e-fde4-4b90-acfe-6ab1c2c9cc4e</id>
+ <title></title>
+ <content type="html">&lt;span class=&quot;automatic event-rsvp&quot;&gt;&lt;a href=&quot;https://social.heldscal.la/eal&quot;&gt;eal writing a software&lt;/a&gt; is attending &lt;a href=&quot;https://social.heldscal.la/notice/5815812&quot;&gt;Juhannus&lt;/a&gt;.&lt;/span&gt;</content>
+ <link rel="alternate" type="text/html" href="https://social.heldscal.la/notice/6021995"/>
+ <activity:verb>http://activitystrea.ms/schema/1.0/rsvp-yes</activity:verb>
+ <published>2018-02-05T12:55:48+00:00</published>
+ <updated>2018-02-05T12:55:48+00:00</updated>
+ <activity:object>
+  <activity:object-type>http://activitystrea.ms/schema/1.0/activity</activity:object-type>
+  <id>9649301e-fde4-4b90-acfe-6ab1c2c9cc4e</id>
+  <title>eal writing a software is attending Juhannus.</title>
+  <content type="html">eal writing a software is attending Juhannus.</content>
+ </activity:object>
+ <thr:in-reply-to ref="ef3e3548-d598-414f-9489-eb9bad9a3741" href="https://social.heldscal.la/notice/5815812"></thr:in-reply-to>
+ <link rel="related" href="https://social.heldscal.la/notice/5815812"/>
+ <link rel="ostatus:conversation" href="https://social.heldscal.la/conversation/3523040"/>
+ <ostatus:conversation href="https://social.heldscal.la/conversation/3523040" local_id="3523040" ref="tag:social.heldscal.la,2018-01-22:objectType=thread:nonce=dc0519c6f2087466">tag:social.heldscal.la,2018-01-22:objectType=thread:nonce=dc0519c6f2087466</ostatus:conversation>
+ <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/collection" href="http://activityschema.org/collection/public"/>
+ <link rel="self" type="application/atom+xml" href="https://social.heldscal.la/api/statuses/show/6021995.atom"/>
+ <link rel="edit" type="application/atom+xml" href="https://social.heldscal.la/api/statuses/show/6021995.atom"/>
+ <statusnet:notice_info local_id="6021995" source="web"></statusnet:notice_info>
+</entry>
+<entry>
+ <id>tag:social.heldscal.la,2018-02-05:fave:53448:comment:4809836:2018-02-05T12:24:20+00:00</id>
+ <title>Favorite</title>
+ <content type="html">eal favorited something by eal: ;_;</content>
+ <link rel="alternate" type="text/html" href="https://social.heldscal.la/notice/6021821"/>
+ <activity:verb>http://activitystrea.ms/schema/1.0/favorite</activity:verb>
+ <published>2018-02-05T12:24:20+00:00</published>
+ <updated>2018-02-05T12:24:20+00:00</updated>
+ <activity:object>
+  <activity:object-type>http://activitystrea.ms/schema/1.0/comment</activity:object-type>
+  <id>tag:social.heldscal.la,2017-11-19:noticeId=4809836:objectType=comment</id>
+  <title>New comment by eal</title>
+  <content type="html">;_;</content>
+  <link rel="alternate" type="text/html" href="https://social.heldscal.la/notice/4809836"/>
+  <status_net notice_id="4809836"></status_net>
+ </activity:object>
+ <thr:in-reply-to ref="tag:social.heldscal.la,2017-11-19:noticeId=4809836:objectType=comment" href="https://social.heldscal.la/notice/4809836"></thr:in-reply-to>
+ <link rel="related" href="https://social.heldscal.la/notice/4809836"/>
+ <link rel="ostatus:conversation" href="https://social.heldscal.la/conversation/2880261"/>
+ <ostatus:conversation href="https://social.heldscal.la/conversation/2880261" local_id="2880261" ref="tag:social.heldscal.la,2017-11-19:objectType=thread:nonce=a66e92a439bfa9ff">tag:social.heldscal.la,2017-11-19:objectType=thread:nonce=a66e92a439bfa9ff</ostatus:conversation>
+ <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/collection" href="http://activityschema.org/collection/public"/>
+ <link rel="self" type="application/atom+xml" href="https://social.heldscal.la/api/statuses/show/6021821.atom"/>
+ <link rel="edit" type="application/atom+xml" href="https://social.heldscal.la/api/statuses/show/6021821.atom"/>
+ <statusnet:notice_info local_id="6021821" source="unknown"></statusnet:notice_info>
+</entry>
+<entry>
+ <id>tag:social.heldscal.la,2018-01-27:fave:53448:note:4688073:2018-01-27T15:40:26+00:00</id>
+ <title>Favorite</title>
+ <content type="html">eal favorited something by shp: &quot;Tenshi Eating a Corndog&quot; is a much discussed concept on /jp/. The significance of it is disputed, so I will focus on one core concept: the symbolism behind it. But first we must identify and explore the key components of it.&lt;br /&gt; &lt;br /&gt; Hinanawi Tenshi is a human child that has ascended to become a celestial being. In Hinduism, she would be called a Siddha or a Deva. In Chinese, it would be refered to as a Tian Xian, or heavenly immortal. In Japanese, it would be using the same kanji characters as in Chinese, being called a Tennin. She is also refered to as an angel, although the role of a heavenly messenger is better suited to her companion Nagae Iku. Regardless of which Oriental cosmology she claims the greatest influence from, Hinanawi Tenshi in Touhou: Scarlet Weather Rhapsody is presented as a roving celestial being that decides to cause mayhem out of childish boredom.&lt;br /&gt; &lt;br /&gt; A corndog on the other hand is simply a sausage coated in a thick layer of cornmeal batter on a stick. It is considered a quintessential part of the American diet, being a cheap combination between convenience and an arguably delicious meal of protein and carbohydrates. It is not a new concept by any means, but it is something that is also unmistakably modern and mundane.&lt;br /&gt; &lt;br /&gt; Thus this is why &quot;Tenshi Eating a Corndog&quot; is so intriguing. Why exactly is a celestial being consuming a corndog, despite having access to the Jade Wine Waterfalls and Immortal Peach Orchards of Heaven? The earthly and celestial is contrasted in an oustanding way.&lt;br /&gt; Take a look at the blue sky in the background and the color of her hair. In the Swami Vivekananda, the concept of infinity is considered blue. Take the air and water, for within the space of our hands, it is colorless, but in a vast quantity it is blue. Tenshi is shown to represent infinity, as she to is of the sky. As to the corndog to her, the Route 66 sign is to the sky. What of the tiny stretch of road to the vastness of the heavens? But without that land, the heavens would not be.&lt;br /&gt; &lt;br /&gt; So as it is, you see the Heavenly consume the Earthly. Not out of pleasure, as we can see from her expression, but of necessity to understand the realm she observes from up high. But we see it as something of joy, for we too know that the divine are as of us. This is perhaps a commentary of the immaturity of Tenshi Hinanwi, who still has a physical body unlike truly enlightened beings. But it could also be a commentary of the unwilligness of humans to see gods (at least the important ones) as anything but in their image and why the gods so often take human form. This is represented even in the game afterwards, Hisoutensoku (Unpercieving of Natural Law). Unlike its predecessor, Gakutensoku (Learning of Natural Law), Hisoutensoku is considered blind to it, as it from a land without logic. In the utter contrast of &quot;Tenshi Eating a Corndog&quot;, we see through the eyes of Hisoutensoku.&lt;br /&gt; &lt;br /&gt; This is the true symbolism behind &quot;Tenshi Eating a Corndog&quot;: That our perception is constrained by the laws that invisibly govern over us. Pierce the veil of illusion, and see why the mustard intertwines with the ketchup.</content>
+ <link rel="alternate" type="text/html" href="https://social.heldscal.la/notice/5889117"/>
+ <activity:verb>http://activitystrea.ms/schema/1.0/favorite</activity:verb>
+ <published>2018-01-27T15:40:26+00:00</published>
+ <updated>2018-01-27T15:40:26+00:00</updated>
+ <activity:object>
+  <activity:object-type>http://activitystrea.ms/schema/1.0/note</activity:object-type>
+  <id>tag:social.heldscal.la,2017-11-13:noticeId=4688073:objectType=note</id>
+  <title>New note by shp</title>
+  <content type="html">&amp;quot;Tenshi Eating a Corndog&amp;quot; is a much discussed concept on /jp/. The significance of it is disputed, so I will focus on one core concept: the symbolism behind it. But first we must identify and explore the key components of it.&lt;br /&gt; &lt;br /&gt; Hinanawi Tenshi is a human child that has ascended to become a celestial being. In Hinduism, she would be called a Siddha or a Deva. In Chinese, it would be refered to as a Tian Xian, or heavenly immortal. In Japanese, it would be using the same kanji characters as in Chinese, being called a Tennin. She is also refered to as an angel, although the role of a heavenly messenger is better suited to her companion Nagae Iku. Regardless of which Oriental cosmology she claims the greatest influence from, Hinanawi Tenshi in Touhou: Scarlet Weather Rhapsody is presented as a roving celestial being that decides to cause mayhem out of childish boredom.&lt;br /&gt; &lt;br /&gt; A corndog on the other hand is simply a sausage coated in a thick layer of cornmeal batter on a stick. It is considered a quintessential part of the American diet, being a cheap combination between convenience and an arguably delicious meal of protein and carbohydrates. It is not a new concept by any means, but it is something that is also unmistakably modern and mundane.&lt;br /&gt; &lt;br /&gt; Thus this is why &amp;quot;Tenshi Eating a Corndog&amp;quot; is so intriguing. Why exactly is a celestial being consuming a corndog, despite having access to the Jade Wine Waterfalls and Immortal Peach Orchards of Heaven? The earthly and celestial is contrasted in an oustanding way.&lt;br /&gt; Take a look at the blue sky in the background and the color of her hair. In the Swami Vivekananda, the concept of infinity is considered blue. Take the air and water, for within the space of our hands, it is colorless, but in a vast quantity it is blue. Tenshi is shown to represent infinity, as she to is of the sky. As to the corndog to her, the Route 66 sign is to the sky. What of the tiny stretch of road to the vastness of the heavens? But without that land, the heavens would not be.&lt;br /&gt; &lt;br /&gt; So as it is, you see the Heavenly consume the Earthly. Not out of pleasure, as we can see from her expression, but of necessity to understand the realm she observes from up high. But we see it as something of joy, for we too know that the divine are as of us. This is perhaps a commentary of the immaturity of Tenshi Hinanwi, who still has a physical body unlike truly enlightened beings. But it could also be a commentary of the unwilligness of humans to see gods (at least the important ones) as anything but in their image and why the gods so often take human form. This is represented even in the game afterwards, Hisoutensoku (Unpercieving of Natural Law). Unlike its predecessor, Gakutensoku (Learning of Natural Law), Hisoutensoku is considered blind to it, as it from a land without logic. In the utter contrast of &amp;quot;Tenshi Eating a Corndog&amp;quot;, we see through the eyes of Hisoutensoku.&lt;br /&gt; &lt;br /&gt; This is the true symbolism behind &amp;quot;Tenshi Eating a Corndog&amp;quot;: That our perception is constrained by the laws that invisibly govern over us. Pierce the veil of illusion, and see why the mustard intertwines with the ketchup.</content>
+  <link rel="alternate" type="text/html" href="https://social.heldscal.la/notice/4688073"/>
+  <status_net notice_id="4688073"></status_net>
+ </activity:object>
+ <thr:in-reply-to ref="tag:social.heldscal.la,2017-11-13:noticeId=4688073:objectType=note" href="https://social.heldscal.la/notice/4688073"></thr:in-reply-to>
+ <link rel="related" href="https://social.heldscal.la/notice/4688073"/>
+ <link rel="ostatus:conversation" href="https://social.heldscal.la/conversation/2800839"/>
+ <ostatus:conversation href="https://social.heldscal.la/conversation/2800839" local_id="2800839" ref="tag:social.heldscal.la,2017-11-13:objectType=thread:nonce=39106a516739afe8">tag:social.heldscal.la,2017-11-13:objectType=thread:nonce=39106a516739afe8</ostatus:conversation>
+ <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/collection" href="http://activityschema.org/collection/public"/>
+ <link rel="self" type="application/atom+xml" href="https://social.heldscal.la/api/statuses/show/5889117.atom"/>
+ <link rel="edit" type="application/atom+xml" href="https://social.heldscal.la/api/statuses/show/5889117.atom"/>
+ <statusnet:notice_info local_id="5889117" source="unknown"></statusnet:notice_info>
+</entry>
+<entry>
+ <activity:object-type>http://activitystrea.ms/schema/1.0/note</activity:object-type>
+ <id>tag:social.heldscal.la,2018-01-27:noticeId=5888998:objectType=note</id>
+ <title>New note by eal</title>
+ <content type="html">ナナチ</content>
+ <link rel="alternate" type="text/html" href="https://social.heldscal.la/notice/5888998"/>
+ <status_net notice_id="5888998"></status_net>
+ <activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+ <published>2018-01-27T15:29:06+00:00</published>
+ <updated>2018-01-27T15:29:06+00:00</updated>
+ <link rel="ostatus:conversation" href="https://social.heldscal.la/conversation/3569092"/>
+ <ostatus:conversation href="https://social.heldscal.la/conversation/3569092" local_id="3569092" ref="tag:social.heldscal.la,2018-01-27:objectType=thread:nonce=84d4093d0238e78c">tag:social.heldscal.la,2018-01-27:objectType=thread:nonce=84d4093d0238e78c</ostatus:conversation>
+ <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/collection" href="http://activityschema.org/collection/public"/>
+ <link rel="self" type="application/atom+xml" href="https://social.heldscal.la/api/statuses/show/5888998.atom"/>
+ <link rel="edit" type="application/atom+xml" href="https://social.heldscal.la/api/statuses/show/5888998.atom"/>
+ <statusnet:notice_info local_id="5888998" source="web"></statusnet:notice_info>
+</entry>
+<entry>
+ <activity:object-type>http://activitystrea.ms/schema/1.0/event</activity:object-type>
+ <id>ef3e3548-d598-414f-9489-eb9bad9a3741</id>
+ <title>Juhannus</title>
+ <summary>:kokko:</summary>
+ <dtstart xmlns="urn:ietf:params:xml:ns:xcal">2018-06-22T00:00:00+00:00</dtstart>
+ <dtend xmlns="urn:ietf:params:xml:ns:xcal">2018-06-22T23:00:00+00:00</dtend>
+ <location xmlns="urn:ietf:params:xml:ns:xcal">Kuusi</location>
+ <startdate xmlns="http://purl.org/rss/1.0/modules/event/">2018-06-22T00:00:00+00:00</startdate>
+ <enddate xmlns="http://purl.org/rss/1.0/modules/event/">2018-06-22T23:00:00+00:00</enddate>
+ <location xmlns="http://purl.org/rss/1.0/modules/event/">Kuusi</location>
+ <activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+ <published>2018-01-22T23:18:35+00:00</published>
+ <updated>2018-01-22T23:18:35+00:00</updated>
+ <link rel="ostatus:conversation" href="https://social.heldscal.la/conversation/3523040"/>
+ <ostatus:conversation href="https://social.heldscal.la/conversation/3523040" local_id="3523040" ref="tag:social.heldscal.la,2018-01-22:objectType=thread:nonce=dc0519c6f2087466">tag:social.heldscal.la,2018-01-22:objectType=thread:nonce=dc0519c6f2087466</ostatus:conversation>
+ <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/collection" href="http://activityschema.org/collection/public"/>
+ <link rel="self" type="application/atom+xml" href="https://social.heldscal.la/api/statuses/show/5815812.atom"/>
+ <link rel="edit" type="application/atom+xml" href="https://social.heldscal.la/api/statuses/show/5815812.atom"/>
+ <statusnet:notice_info local_id="5815812" source="web"></statusnet:notice_info>
+</entry>
+<entry>
+ <id>tag:social.heldscal.la,2018-01-17:subscription:53448:person:62398:2018-01-17T22:47:05+00:00</id>
+ <title></title>
+ <content type="html">&lt;a href=&quot;https://social.heldscal.la/eal&quot;&gt;eal writing a software&lt;/a&gt; started following &lt;a href=&quot;https://niu.moe/@ARealSnake&quot;&gt;Snake the Third&lt;/a&gt;.</content>
+ <link rel="alternate" type="text/html" href="https://social.heldscal.la/notice/5740378"/>
+ <activity:verb>http://activitystrea.ms/schema/1.0/follow</activity:verb>
+ <published>2018-01-17T22:47:05+00:00</published>
+ <updated>2018-01-17T22:47:05+00:00</updated>
+ <activity:object>
+  <activity:object-type>http://activitystrea.ms/schema/1.0/person</activity:object-type>
+  <id>tag:social.heldscal.la,2018-01-17:subscription:53448:person:62398:2018-01-17T22:47:05+00:00</id>
+  <title>New person by eal</title>
+  <content type="html">&lt;a href=&quot;https://social.heldscal.la/eal&quot;&gt;eal writing a software&lt;/a&gt; started following &lt;a href=&quot;https://niu.moe/@ARealSnake&quot;&gt;Snake the Third&lt;/a&gt;.</content>
+  <link rel="alternate" type="text/html" href="https://social.heldscal.la/notice/5740378"/>
+  <status_net notice_id="5740378"></status_net>
+ </activity:object>
+ <link rel="ostatus:conversation" href="https://social.heldscal.la/conversation/3475933"/>
+ <ostatus:conversation href="https://social.heldscal.la/conversation/3475933" local_id="3475933" ref="tag:social.heldscal.la,2018-01-17:objectType=thread:nonce=9dfd774082e84564">tag:social.heldscal.la,2018-01-17:objectType=thread:nonce=9dfd774082e84564</ostatus:conversation>
+ <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/collection" href="http://activityschema.org/collection/public"/>
+ <link rel="self" type="application/atom+xml" href="https://social.heldscal.la/api/statuses/show/5740378.atom"/>
+ <link rel="edit" type="application/atom+xml" href="https://social.heldscal.la/api/statuses/show/5740378.atom"/>
+ <statusnet:notice_info local_id="5740378" source="activity"></statusnet:notice_info>
+</entry>
+<entry>
+ <activity:object-type>http://activitystrea.ms/schema/1.0/comment</activity:object-type>
+ <id>tag:social.heldscal.la,2018-01-14:noticeId=5682119:objectType=comment</id>
+ <title>New comment by eal</title>
+ <content type="html">@&lt;a href=&quot;https://cofe.social/users/eal&quot; class=&quot;h-card u-url p-nickname mention&quot; title=&quot;eal&quot;&gt;eal&lt;/a&gt; @&lt;a href=&quot;https://social.sakamoto.gq/users/pleromafeed&quot; class=&quot;h-card u-url p-nickname mention&quot; title=&quot;Pleroma development feed&quot;&gt;pleromafeed&lt;/a&gt; correct order?</content>
+ <link rel="alternate" type="text/html" href="https://social.heldscal.la/notice/5682119"/>
+ <status_net notice_id="5682119"></status_net>
+ <activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+ <published>2018-01-14T09:27:23+00:00</published>
+ <updated>2018-01-14T09:27:23+00:00</updated>
+ <thr:in-reply-to ref="tag:social.heldscal.la,2018-01-14:noticeId=5682071:objectType=note" href="https://social.heldscal.la/notice/5682071"></thr:in-reply-to>
+ <link rel="related" href="https://social.heldscal.la/notice/5682071"/>
+ <link rel="ostatus:conversation" href="https://social.heldscal.la/conversation/3440142"/>
+ <ostatus:conversation href="https://social.heldscal.la/conversation/3440142" local_id="3440142" ref="tag:social.heldscal.la,2018-01-14:objectType=thread:nonce=506448d0b2d2e550">tag:social.heldscal.la,2018-01-14:objectType=thread:nonce=506448d0b2d2e550</ostatus:conversation>
+ <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/person" href="https://social.heldscal.la/user/53448"/>
+ <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/person" href="https://social.sakamoto.gq/users/pleromafeed"/>
+ <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/person" href="https://cofe.social/users/eal"/>
+ <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/collection" href="http://activityschema.org/collection/public"/>
+ <link rel="self" type="application/atom+xml" href="https://social.heldscal.la/api/statuses/show/5682119.atom"/>
+ <link rel="edit" type="application/atom+xml" href="https://social.heldscal.la/api/statuses/show/5682119.atom"/>
+ <statusnet:notice_info local_id="5682119" source="Pleroma FE"></statusnet:notice_info>
+</entry>
+<entry>
+ <activity:object-type>http://activitystrea.ms/schema/1.0/note</activity:object-type>
+ <id>tag:social.heldscal.la,2018-01-14:noticeId=5682071:objectType=note</id>
+ <title>New note by eal</title>
+ <content type="html">@&lt;a href=&quot;https://social.sakamoto.gq/users/pleromafeed&quot; class=&quot;h-card u-url p-nickname mention&quot;&gt;pleromafeed&lt;/a&gt; @&lt;a href=&quot;https://cofe.social/users/eal&quot; class=&quot;h-card u-url p-nickname mention&quot;&gt;eal&lt;/a&gt; 2hu</content>
+ <link rel="alternate" type="text/html" href="https://social.heldscal.la/notice/5682071"/>
+ <status_net notice_id="5682071"></status_net>
+ <activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+ <published>2018-01-14T09:22:27+00:00</published>
+ <updated>2018-01-14T09:22:27+00:00</updated>
+ <link rel="ostatus:conversation" href="https://social.heldscal.la/conversation/3440142"/>
+ <ostatus:conversation href="https://social.heldscal.la/conversation/3440142" local_id="3440142" ref="tag:social.heldscal.la,2018-01-14:objectType=thread:nonce=506448d0b2d2e550">tag:social.heldscal.la,2018-01-14:objectType=thread:nonce=506448d0b2d2e550</ostatus:conversation>
+ <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/person" href="https://social.sakamoto.gq/users/pleromafeed"/>
+ <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/person" href="https://cofe.social/users/eal"/>
+ <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/collection" href="http://activityschema.org/collection/public"/>
+ <link rel="self" type="application/atom+xml" href="https://social.heldscal.la/api/statuses/show/5682071.atom"/>
+ <link rel="edit" type="application/atom+xml" href="https://social.heldscal.la/api/statuses/show/5682071.atom"/>
+ <statusnet:notice_info local_id="5682071" source="Pleroma FE"></statusnet:notice_info>
+</entry>
+<entry>
+ <activity:object-type>http://activitystrea.ms/schema/1.0/note</activity:object-type>
+ <id>tag:social.heldscal.la,2017-12-04:noticeId=5081554:objectType=note</id>
+ <title>New note by eal</title>
+ <content type="html">login still works on normal passwords too!</content>
+ <link rel="alternate" type="text/html" href="https://social.heldscal.la/notice/5081554"/>
+ <status_net notice_id="5081554"></status_net>
+ <activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+ <published>2017-12-04T21:12:54+00:00</published>
+ <updated>2017-12-04T21:12:54+00:00</updated>
+ <link rel="ostatus:conversation" href="https://social.heldscal.la/conversation/3052088"/>
+ <ostatus:conversation href="https://social.heldscal.la/conversation/3052088" local_id="3052088" ref="tag:social.heldscal.la,2017-12-04:objectType=thread:nonce=8dab04ad9fab888b">tag:social.heldscal.la,2017-12-04:objectType=thread:nonce=8dab04ad9fab888b</ostatus:conversation>
+ <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/collection" href="http://activityschema.org/collection/public"/>
+ <link rel="self" type="application/atom+xml" href="https://social.heldscal.la/api/statuses/show/5081554.atom"/>
+ <link rel="edit" type="application/atom+xml" href="https://social.heldscal.la/api/statuses/show/5081554.atom"/>
+ <statusnet:notice_info local_id="5081554" source="Pleroma FE"></statusnet:notice_info>
+</entry>
+<entry>
+ <activity:object-type>http://activitystrea.ms/schema/1.0/note</activity:object-type>
+ <id>tag:social.heldscal.la,2017-11-28:noticeId=4984624:objectType=note</id>
+ <title>New note by eal</title>
+ <content type="html">test &lt;a href=&quot;https://social.heldscal.la/file/a19c1538db0ffa1824ff780ac7d5e2e22b564d86fbf785baa2ae793ecd949b4c.png&quot; title=&quot;https://social.heldscal.la/file/a19c1538db0ffa1824ff780ac7d5e2e22b564d86fbf785baa2ae793ecd949b4c.png&quot; rel=&quot;nofollow external noreferrer&quot; class=&quot;attachment&quot; id=&quot;attachment-1020761&quot;&gt;https://social.heldscal.la/attachment/1020761&lt;/a&gt;</content>
+ <link rel="alternate" type="text/html" href="https://social.heldscal.la/notice/4984624"/>
+ <status_net notice_id="4984624"></status_net>
+ <activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+ <published>2017-11-28T20:38:50+00:00</published>
+ <updated>2017-11-28T20:38:50+00:00</updated>
+ <link rel="ostatus:conversation" href="https://social.heldscal.la/conversation/2989809"/>
+ <ostatus:conversation href="https://social.heldscal.la/conversation/2989809" local_id="2989809" ref="tag:social.heldscal.la,2017-11-28:objectType=thread:nonce=4cc957da4881c95b">tag:social.heldscal.la,2017-11-28:objectType=thread:nonce=4cc957da4881c95b</ostatus:conversation>
+ <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/collection" href="http://activityschema.org/collection/public"/>
+ <link rel="enclosure" href="https://social.heldscal.la/file/a19c1538db0ffa1824ff780ac7d5e2e22b564d86fbf785baa2ae793ecd949b4c.png" type="image/png" length="202138"/>
+ <link rel="self" type="application/atom+xml" href="https://social.heldscal.la/api/statuses/show/4984624.atom"/>
+ <link rel="edit" type="application/atom+xml" href="https://social.heldscal.la/api/statuses/show/4984624.atom"/>
+ <statusnet:notice_info local_id="4984624" source="Pleroma FE"></statusnet:notice_info>
+</entry>
+<entry>
+ <activity:object-type>http://activitystrea.ms/schema/1.0/note</activity:object-type>
+ <id>tag:social.heldscal.la,2017-11-20:noticeId=4833993:objectType=note</id>
+ <title>New note by eal</title>
+ <content type="html">&lt;span class='greentext'&gt;&amp;gt;gren&lt;/span&gt;&lt;br /&gt; &amp;lt;cyan</content>
+ <link rel="alternate" type="text/html" href="https://social.heldscal.la/notice/4833993"/>
+ <status_net notice_id="4833993"></status_net>
+ <activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+ <published>2017-11-20T21:58:49+00:00</published>
+ <updated>2017-11-20T21:58:49+00:00</updated>
+ <link rel="ostatus:conversation" href="https://social.heldscal.la/conversation/2895664"/>
+ <ostatus:conversation href="https://social.heldscal.la/conversation/2895664" local_id="2895664" ref="tag:social.heldscal.la,2017-11-20:objectType=thread:nonce=341001a82d5a0e2c">tag:social.heldscal.la,2017-11-20:objectType=thread:nonce=341001a82d5a0e2c</ostatus:conversation>
+ <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/collection" href="http://activityschema.org/collection/public"/>
+ <link rel="self" type="application/atom+xml" href="https://social.heldscal.la/api/statuses/show/4833993.atom"/>
+ <link rel="edit" type="application/atom+xml" href="https://social.heldscal.la/api/statuses/show/4833993.atom"/>
+ <statusnet:notice_info local_id="4833993" source="Pleroma FE"></statusnet:notice_info>
+</entry>
+<entry>
+ <activity:object-type>http://activitystrea.ms/schema/1.0/comment</activity:object-type>
+ <id>tag:social.heldscal.la,2017-11-20:noticeId=4832788:objectType=comment</id>
+ <title>New comment by eal</title>
+ <content type="html">@&lt;a href=&quot;https://shitposter.club/user/5381&quot; class=&quot;h-card u-url p-nickname mention&quot; title=&quot;&amp;#xFF53;&amp;#xFF48;&amp;#xFF50;&quot;&gt;shpuld&lt;/a&gt; if they worked like the users api there would be no problems.&lt;br /&gt; &lt;br /&gt; now the &amp;quot;Join&amp;quot; button spazzed on me even though I thought it's working...</content>
+ <link rel="alternate" type="text/html" href="https://social.heldscal.la/notice/4832788"/>
+ <status_net notice_id="4832788"></status_net>
+ <activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+ <published>2017-11-20T21:07:42+00:00</published>
+ <updated>2017-11-20T21:07:42+00:00</updated>
+ <thr:in-reply-to ref="tag:shitposter.club,2017-11-20:noticeId=5772234:objectType=comment" href="https://shitposter.club/notice/5772234"></thr:in-reply-to>
+ <link rel="related" href="https://shitposter.club/notice/5772234"/>
+ <link rel="ostatus:conversation" href="https://social.heldscal.la/conversation/2894673"/>
+ <ostatus:conversation href="https://social.heldscal.la/conversation/2894673" local_id="2894673" ref="https://shitposter.club/conversation/3342349">https://shitposter.club/conversation/3342349</ostatus:conversation>
+ <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/person" href="https://shitposter.club/user/5381"/>
+ <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/collection" href="http://activityschema.org/collection/public"/>
+ <link rel="self" type="application/atom+xml" href="https://social.heldscal.la/api/statuses/show/4832788.atom"/>
+ <link rel="edit" type="application/atom+xml" href="https://social.heldscal.la/api/statuses/show/4832788.atom"/>
+ <statusnet:notice_info local_id="4832788" source="Pleroma FE"></statusnet:notice_info>
+</entry>
+<entry>
+ <id>tag:social.heldscal.la,2017-11-20:group_member:53448:group:715:2017-11-20T21:06:01+00:00</id>
+ <title>eal writing a software (eal@social.heldscal.la)'s status on Monday, 20-Nov-2017 21:06:01 UTC</title>
+ <content type="html">&lt;a href=&quot;https://social.heldscal.la/eal&quot;&gt;eal writing a software&lt;/a&gt; joined the group &lt;a href=&quot;https://social.heldscal.la/group/dogposters&quot;&gt;Dog Posters&lt;/a&gt;.</content>
+ <link rel="alternate" type="text/html" href="https://social.heldscal.la/notice/4832742"/>
+ <activity:verb>http://activitystrea.ms/schema/1.0/join</activity:verb>
+ <published>2017-11-20T21:06:01+00:00</published>
+ <updated>2017-11-20T21:06:01+00:00</updated>
+ <activity:object>
+  <activity:object-type>http://activitystrea.ms/schema/1.0/group</activity:object-type>
+  <id>https://social.heldscal.la/group/715/id</id>
+  <title>Dog Posters</title>
+  <link rel="alternate" type="text/html" href="https://social.heldscal.la/group/715/id"/>
+  <link rel="avatar" type="image/png" media:width="96" media:height="96" href="https://social.heldscal.la/theme/neo-gnu/default-avatar-profile.png"/>
+  <link rel="avatar" type="image/png" media:width="48" media:height="48" href="https://social.heldscal.la/theme/neo-gnu/default-avatar-stream.png"/>
+  <link rel="avatar" type="image/png" media:width="24" media:height="24" href="https://social.heldscal.la/theme/neo-gnu/default-avatar-mini.png"/>
+  <poco:preferredUsername>dogposters</poco:preferredUsername>
+  <poco:displayName>Dog Posters</poco:displayName>
+ </activity:object>
+ <link rel="ostatus:conversation" href="https://social.heldscal.la/conversation/2894878"/>
+ <ostatus:conversation href="https://social.heldscal.la/conversation/2894878" local_id="2894878" ref="tag:social.heldscal.la,2017-11-20:objectType=thread:nonce=b18636fbc22c5620">tag:social.heldscal.la,2017-11-20:objectType=thread:nonce=b18636fbc22c5620</ostatus:conversation>
+ <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/collection" href="http://activityschema.org/collection/public"/>
+ <link rel="self" type="application/atom+xml" href="https://social.heldscal.la/api/statuses/show/4832742.atom"/>
+ <link rel="edit" type="application/atom+xml" href="https://social.heldscal.la/api/statuses/show/4832742.atom"/>
+ <statusnet:notice_info local_id="4832742" source="activity"></statusnet:notice_info>
+</entry>
+<entry>
+ <activity:object-type>http://activitystrea.ms/schema/1.0/comment</activity:object-type>
+ <id>tag:social.heldscal.la,2017-11-20:noticeId=4832730:objectType=comment</id>
+ <title>New comment by eal</title>
+ <content type="html">@&lt;a href=&quot;https://shitposter.club/user/5381&quot; class=&quot;h-card u-url p-nickname mention&quot; title=&quot;&amp;#xFF53;&amp;#xFF48;&amp;#xFF50;&quot;&gt;shpuld&lt;/a&gt; yeah 404. fugg</content>
+ <link rel="alternate" type="text/html" href="https://social.heldscal.la/notice/4832730"/>
+ <status_net notice_id="4832730"></status_net>
+ <activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
+ <published>2017-11-20T21:05:29+00:00</published>
+ <updated>2017-11-20T21:05:29+00:00</updated>
+ <thr:in-reply-to ref="tag:shitposter.club,2017-11-20:noticeId=5772205:objectType=comment" href="https://shitposter.club/notice/5772205"></thr:in-reply-to>
+ <link rel="related" href="https://shitposter.club/notice/5772205"/>
+ <link rel="ostatus:conversation" href="https://social.heldscal.la/conversation/2894673"/>
+ <ostatus:conversation href="https://social.heldscal.la/conversation/2894673" local_id="2894673" ref="https://shitposter.club/conversation/3342349">https://shitposter.club/conversation/3342349</ostatus:conversation>
+ <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/person" href="https://shitposter.club/user/5381"/>
+ <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/collection" href="http://activityschema.org/collection/public"/>
+ <link rel="self" type="application/atom+xml" href="https://social.heldscal.la/api/statuses/show/4832730.atom"/>
+ <link rel="edit" type="application/atom+xml" href="https://social.heldscal.la/api/statuses/show/4832730.atom"/>
+ <statusnet:notice_info local_id="4832730" source="Pleroma FE"></statusnet:notice_info>
+</entry>
+</feed>
