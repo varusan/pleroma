@@ -216,4 +216,17 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     }
     |> Map.merge(additional)
   end
+
+  #### Join
+
+  def make_join_data(%User{ap_id: user_id}, %User{group: true, ap_id: group_id}, activity_id) do
+    data = %{
+      "type" => "Join",
+      "actor" => user_id,
+      "to" => [group_id],
+      "object" => group_id
+    }
+
+    if activity_id, do: Map.put(data, "id", activity_id), else: data
+  end
 end

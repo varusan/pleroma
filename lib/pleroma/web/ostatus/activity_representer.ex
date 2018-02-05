@@ -28,7 +28,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
         Regex.match?(~r/^#{Pleroma.Web.base_url}.+followers$/, id) ->
           []
         true ->
-          {:link, [rel: "mentioned", "ostatus:object-type": "http://activitystrea.ms/schema/1.0/person", href: id], []}
+          {:link, [rel: "mentioned", "ostatus:object-type": User.actor_type_by_ap_id(id), href: id], []}
       end
     end)
   end
@@ -179,6 +179,32 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
       {:updated, h.(updated_at)},
       {:"activity:object", [
         {:"activity:object-type", ['http://activitystrea.ms/schema/1.0/person']},
+        {:id, h.(activity.data["object"])},
+        {:uri, h.(activity.data["object"])},
+      ]},
+      {:link, [rel: 'self', type: ['application/atom+xml'], href: h.(activity.data["id"])], []},
+    ] ++ mentions ++ author
+  end
+
+  def to_simple_form(%{data: %{"type" => "Join"}} = activity, user, with_author) do
+    h = fn(str) -> [to_charlist(str)] end
+
+    updated_at = activity.data["published"]
+    inserted_at = activity.data["published"]
+
+    author = if with_author, do: [{:author, UserRepresenter.to_simple_form(user)}], else: []
+
+    mentions = (activity.data["to"] || []) |> get_mentions
+    [
+      {:"activity:object-type", ['http://activitystrea.ms/schema/1.0/activity']},
+      {:"activity:verb", ['http://activitystrea.ms/schema/1.0/join']},
+      {:id, h.(activity.data["id"])},
+      {:title, ['#{user.nickname} joined group #{activity.data["object"]}']},
+      {:content, [type: 'html'], ['#{user.nickname} joined group #{activity.data["object"]}']},
+      {:published, h.(inserted_at)},
+      {:updated, h.(updated_at)},
+      {:"activity:object", [
+        {:"activity:object-type", ['http://activitystrea.ms/schema/1.0/group']},
         {:id, h.(activity.data["object"])},
         {:uri, h.(activity.data["object"])},
       ]},

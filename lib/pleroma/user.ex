@@ -192,6 +192,18 @@ defmodule Pleroma.User do
     Repo.get_by(User, ap_id: ap_id)
   end
 
+  def actor_type_by_ap_id(ap_id) do
+    get_cached_by_ap_id(ap_id) |> actor_type
+  end
+
+  def actor_type(%User{group: is_group}) do
+    if is_group do
+      "http://activitystrea.ms/schema/1.0/group"
+    else
+      "http://activitystrea.ms/schema/1.0/person"
+    end
+  end
+
   def update_and_set_cache(changeset) do
     with {:ok, user} <- Repo.update(changeset) do
       Cachex.set(:user_cache, "ap_id:#{user.ap_id}", user)

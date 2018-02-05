@@ -80,6 +80,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  def join(user, group, activity_id \\ nil, local \\ true) do
+    with data <- make_join_data(user, group, activity_id),
+         {:ok, activity} <- insert(data, local),
+         :ok <- maybe_federate(activity) do
+      {:ok, activity}
+    end
+  end
+
   def unfollow(follower, followed, local \\ true) do
     with %Activity{} = follow_activity <- fetch_latest_follow(follower, followed),
          unfollow_data <- make_unfollow_data(follower, followed, follow_activity),
