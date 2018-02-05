@@ -22,6 +22,7 @@ defmodule Pleroma.User do
     field :info, :map, default: %{}
     field :follower_address, :string
     has_many :notifications, Notification
+    field :group, :boolean, default: false
 
     timestamps()
   end
