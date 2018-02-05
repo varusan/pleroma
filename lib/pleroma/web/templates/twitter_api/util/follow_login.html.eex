@@ -1,7 +1,7 @@
 <%= if @error do %>
     <h2><%= @error %></h2>
 <% end %>
-<h2>Log in to follow</h2>
+<h2>Log in to subscribe</h2>
 <p><%= @name %></p>
 <img height="128" width="128" src="<%= @avatar %>">
 <%= form_for @conn, util_path(@conn, :do_remote_follow), [as: "authorization"], fn f -> %>

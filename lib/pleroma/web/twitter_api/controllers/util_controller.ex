@@ -69,16 +69,24 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   end
 
   def do_remote_follow(conn, %{"authorization" => %{"name" => username, "password" => password, "id" => id}}) do
-    followee = Repo.get(User, id)
-    avatar = User.avatar_url(followee)
-    name = followee.nickname
+    subscribed = Repo.get(User, id)
+    avatar = User.avatar_url(subscribed)
+    name = subscribed.nickname
     with %User{} = user <- User.get_cached_by_nickname(username),
-         true <- Pbkdf2.checkpw(password, user.password_hash),
-           %User{} = followed <- Repo.get(User, id),
-         {:ok, follower} <- User.follow(user, followee),
-         {:ok, _activity} <- ActivityPub.follow(follower, followee) do
-      conn
-      |> render("followed.html", %{error: false})
+         true <- Pbkdf2.checkpw(password, user.password_hash) do
+      with {:ok, user} <- User.follow(user, subscribed) do
+        if subscribed.group do
+          ActivityPub.join(user, subscribed)
+        else
+          ActivityPub.follow(user, subscribed)
+        end
+        conn
+        |> render("followed.html", %{error: false})
+      else
+        _e ->
+          conn
+          |> render("follow_login.html", %{error: "Something went wrong", id: id, name: name, avatar: avatar})
+      end
     else
       _e ->
         conn
@@ -86,16 +94,20 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     end
   end
   def do_remote_follow(%{assigns: %{user: user}} = conn, %{"user" => %{"id" => id}}) do
-    with %User{} = followee <- Repo.get(User, id),
-         {:ok, follower} <- User.follow(user, followee),
-         {:ok, _activity} <- ActivityPub.follow(follower, followee) do
+    with %User{} = subscribed <- Repo.get(User, id),
+         {:ok, user} <- User.follow(user, subscribed) do
+      if subscribed.group do
+        ActivityPub.join(user, subscribed)
+      else
+        ActivityPub.follow(user, subscribed)
+      end
       conn
       |> render("followed.html", %{error: false})
     else
       e ->
         Logger.debug("Remote follow failed with error #{inspect e}")
-      conn
-      |> render("followed.html", %{error: inspect(e)})
+        conn
+        |> render("followed.html", %{error: inspect(e)})
     end
   end
 
