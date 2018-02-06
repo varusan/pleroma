@@ -76,6 +76,26 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
     }
   end
 
+  def to_map(%Activity{data: %{"type" => "Join", "published" => created_at, "object" => joined_id}} = activity, %{user: user} = opts) do
+    created_at = created_at |> Utils.date_to_asctime
+
+    joined = User.get_cached_by_ap_id(joined_id)
+    text = "#{user.nickname} joined group #{joined.nickname}"
+    %{
+      "id" => activity.id,
+      "user" => UserView.render("show.json", %{user: user, for: opts[:for]}),
+      "attentions" => [],
+      "statusnet_html" => text,
+      "text" => text,
+      "is_local" => activity.local,
+      "is_post_verb" => false,
+      "created_at" => created_at,
+      "in_reply_to_status_id" => nil,
+      "external_url" => activity.data["id"],
+      "activity_type" => "join"
+    }
+  end
+
   # TODO:
   # Make this more proper. Just a placeholder to not break the frontend.
   def to_map(%Activity{data: %{"type" => "Undo", "published" => created_at, "object" => undid_activity }} = activity, %{user: user} = opts) do
