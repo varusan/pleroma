@@ -34,6 +34,11 @@ defmodule Pleroma.Web.OStatus.NoteHandler do
     |> Enum.map(fn(person) -> XML.string_from_xpath("@href", person) end)
   end
 
+  def get_group_mentions(entry) do
+    :xmerl_xpath.string('//link[@rel="mentioned" and @ostatus:object-type="http://activitystrea.ms/schema/1.0/group"]', entry)
+    |> Enum.map(fn(group) -> XML.string_from_xpath("@href", group) end)
+  end
+
   def get_collection_mentions(entry) do
     transmogrify = fn
       ("http://activityschema.org/collection/public") ->
@@ -48,7 +53,8 @@ defmodule Pleroma.Web.OStatus.NoteHandler do
 
   def get_mentions(entry) do
     (get_people_mentions(entry)
-      ++ get_collection_mentions(entry))
+      ++ get_collection_mentions(entry)
+      ++ get_group_mentions(entry))
     |> Enum.filter(&(&1))
   end
 
@@ -63,10 +69,11 @@ defmodule Pleroma.Web.OStatus.NoteHandler do
     end
   end
 
-  def make_to_list(actor, mentions) do
+  def make_to_list(actor, mentions, author) do
     [
       actor.follower_address
     ] ++ mentions
+    ++ if author.group, do: [author.follower_address], else: []
   end
 
   def add_external_url(note, entry) do
@@ -100,8 +107,9 @@ defmodule Pleroma.Web.OStatus.NoteHandler do
     with id <- XML.string_from_xpath("//id", entry),
          activity when is_nil(activity) <- Activity.get_create_activity_by_object_ap_id(id),
          [author] <- :xmerl_xpath.string('//author[1]', doc),
-         author <- get_author_from_activity(entry) || author,
-         {:ok, actor} <- OStatus.find_make_or_update_user(author),
+         actor <- get_author_from_activity(entry) || author,
+         {:ok, actor} <- OStatus.find_make_or_update_user(actor),
+         {:ok, author} <- OStatus.find_make_or_update_user(author),
          content_html <- OStatus.get_content(entry),
          cw <- OStatus.get_cw(entry),
          inReplyTo <- XML.string_from_xpath("//thr:in-reply-to[1]/@ref", entry),
@@ -111,7 +119,7 @@ defmodule Pleroma.Web.OStatus.NoteHandler do
          context <- get_context(entry, inReplyTo),
          tags <- OStatus.get_tags(entry),
          mentions <- get_mentions(entry),
-         to <- make_to_list(actor, mentions),
+         to <- make_to_list(actor, mentions, author),
          date <- XML.string_from_xpath("//published", entry),
          note <- CommonAPI.Utils.make_note_data(actor.ap_id, to, context, content_html, attachments, inReplyToActivity, [], cw),
          note <- note |> Map.put("id", id) |> Map.put("tag", tags),
