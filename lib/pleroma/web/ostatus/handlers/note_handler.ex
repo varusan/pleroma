@@ -88,10 +88,19 @@ defmodule Pleroma.Web.OStatus.NoteHandler do
     end
   end
 
+  def get_author_from_activity(entry) do
+    with [author] <- :xmerl_xpath.string('//author[1]', entry) do
+      author
+    else
+      _e -> nil
+    end
+  end
+
   def handle_note(entry, doc \\ nil) do
     with id <- XML.string_from_xpath("//id", entry),
          activity when is_nil(activity) <- Activity.get_create_activity_by_object_ap_id(id),
          [author] <- :xmerl_xpath.string('//author[1]', doc),
+         author <- get_author_from_activity(entry) || author,
          {:ok, actor} <- OStatus.find_make_or_update_user(author),
          content_html <- OStatus.get_content(entry),
          cw <- OStatus.get_cw(entry),
