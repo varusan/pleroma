@@ -512,8 +512,11 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       conn = conn
       |> assign(:user, user)
       |> get("/api/statuses/followers")
+      
+      response = json_response(conn, 200)
 
-      assert json_response(conn, 200) == UserView.render("index.json", %{users: [follower_one, follower_two], for: user})
+      assert (response == UserView.render("index.json", %{users: [follower_one, follower_two], for: user})) ||
+        (response == UserView.render("index.json", %{users: [follower_two, follower_one], for: user}))
     end
   end
 
