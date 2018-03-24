@@ -117,6 +117,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
     }
   end
 
+  # Handles "Note" and "Video"
   def to_map(%Activity{data: %{"object" => %{"content" => content} = object}} = activity, %{user: user} = opts) do
     created_at = object["published"] |> Utils.date_to_asctime
     like_count = object["like_count"] || 0
@@ -147,6 +148,14 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
 
     html = HtmlSanitizeEx.basic_html(content) |> Formatter.emojify(object["emoji"])
 
+    video = if object["type"] == "Video" do
+      vid = [object]
+    else
+      []
+    end
+
+    attachments = (object["attachment"] || []) ++ video
+
     %{
       "id" => activity.id,
       "uri" => activity.data["object"]["id"],
@@ -158,7 +167,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
       "created_at" => created_at,
       "in_reply_to_status_id" => object["inReplyToStatusId"],
       "statusnet_conversation_id" => conversation_id,
-      "attachments" => (object["attachment"] || []) |> ObjectRepresenter.enum_to_list(opts),
+      "attachments" => attachments |> ObjectRepresenter.enum_to_list(opts),
       "attentions" => attentions,
       "fave_num" => like_count,
       "repeat_num" => announcement_count,

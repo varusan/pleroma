@@ -88,7 +88,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   @doc """
   Inserts a full object if it is contained in an activity.
   """
-  def insert_full_object(%{"object" => %{"type" => type} = object_data}) when is_map(object_data) and type in ["Note"] do
+  def insert_full_object(%{"object" => %{"type" => type} = object_data}) when is_map(object_data) and type in ["Note", "Video"] do
     with {:ok, _} <- Object.create(object_data) do
       :ok
     end
@@ -150,13 +150,15 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   end
 
   def add_like_to_object(%Activity{data: %{"actor" => actor}}, object) do
-    with likes <- [actor | (object.data["likes"] || [])] |> Enum.uniq do
+    likes = if is_list(object.data["likes"]), do: object.data["likes"], else: []
+    with likes <- [actor | likes] |> Enum.uniq do
       update_likes_in_object(likes, object)
     end
   end
 
   def remove_like_from_object(%Activity{data: %{"actor" => actor}}, object) do
-    with likes <- (object.data["likes"] || []) |> List.delete(actor) do
+    likes = if is_list(object.data["likes"]), do: object.data["likes"], else: []
+    with likes <- likes |> List.delete(actor) do
       update_likes_in_object(likes, object)
     end
   end
@@ -207,7 +209,8 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   end
 
   def add_announce_to_object(%Activity{data: %{"actor" => actor}}, object) do
-    with announcements <- [actor | (object.data["announcements"] || [])] |> Enum.uniq do
+    announcements = if is_list(object.data["announcements"]), do: object.data["announcements"], else: []
+    with announcements <- [actor | announcements] |> Enum.uniq do
       update_element_in_object("announcement", announcements, object)
     end
   end

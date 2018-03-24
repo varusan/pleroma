@@ -7,17 +7,25 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   alias Pleroma.Activity
   alias Pleroma.Repo
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Utils
 
   import Ecto.Query
 
   require Logger
 
+  def get_actor(%{"actor" => actor}) when is_binary(actor), do: actor
+  def get_actor(%{"actor" => actor_list}) do
+    Enum.find(actor_list, fn(%{"type" => type}) -> type == "Person" end)
+    |> Map.get("id")
+  end
+
   @doc """
   Modifies an incoming AP object (mastodon format) to our internal format.
   """
   def fix_object(object) do
+    attributedTo = object["attributedTo"]
     object
-    |> Map.put("actor", object["attributedTo"])
+    |> Map.put("actor", get_actor(%{"actor" => attributedTo}))
     |> fix_attachments
     |> fix_context
     |> fix_in_reply_to
@@ -42,8 +50,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def fix_in_reply_to(object), do: object
 
   def fix_context(object) do
+    context = object["context"] || object["conversation"] || Utils.generate_context_id
     object
-    |> Map.put("context", object["conversation"])
+    |> Map.put("context", context)
+    |> Map.put("conversation", context)
   end
 
   def fix_attachments(object) do
@@ -173,6 +183,33 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
+  def handle_incoming(%{"type" => "Create", "object" => %{"type" => "Video"} = object} = data) do
+    actor = get_actor(data)
+    data = Map.put(data, "actor", actor)
+    with nil <- Activity.get_create_activity_by_object_ap_id(object["id"]),
+         %User{} = user <- User.get_or_fetch_by_ap_id(data["actor"]) do
+
+      object = fix_object(data["object"])
+
+      params = %{
+        to: data["to"],
+        object: object,
+        actor: user,
+        context: object["conversation"],
+        local: false,
+        published: data["published"],
+        additional: Map.take(data, [
+              "cc",
+              "id"
+            ])
+      }
+
+      ActivityPub.create(params)
+    else
+      %Activity{} = activity -> {:ok, activity}
+      _e -> :error
+    end
+  end
   # TODO
   # Accept
   # Undo
