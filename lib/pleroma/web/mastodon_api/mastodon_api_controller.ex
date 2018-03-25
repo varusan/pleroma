@@ -448,8 +448,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     accounts = User.search(query, params["resolve"] == "true")
 
     fetched = if Regex.match?(~r/https?:/, query) do
-      with {:ok, activities} <- OStatus.fetch_activity_from_url(query) do
-        activities
+      with {:ok, object} <- ActivityPub.fetch_object_from_id(query) do
+        [Activity.get_create_activity_by_object_ap_id(object.data["id"])]
       else
         _e -> []
       end
