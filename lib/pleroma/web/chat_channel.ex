@@ -2,24 +2,65 @@ defmodule Pleroma.Web.ChatChannel do
   use Phoenix.Channel
   alias Pleroma.Web.ChatChannel.ChatChannelState
   alias Pleroma.User
+  alias Pleroma.Chat
 
-  def join("chat:public", _message, socket) do
-    send(self(), :after_join)
-    {:ok, socket}
+  def join("chat:" <> room_name, _message, socket) do
+    user = User.get_cached_by_nickname(socket.assigns.user_name)
+
+    with {:ok, room} <- Chat.join_room(user, room_name) do
+      send(self(), :after_room_join)
+
+      socket =
+        socket
+        |> assign(:room_name, room_name)
+
+      {:ok, socket}
+    else
+      _e ->
+        {:error, %{reason: "unknown"}}
+    end
   end
 
-  def handle_info(:after_join, socket) do
-    push(socket, "messages", %{messages: ChatChannelState.messages()})
+  def join("user:" <> id, _message, socket) do
+    user = User.get_cached_by_nickname(socket.assigns.user_name)
+
+    if id == to_string(user.id) do
+      send(self(), :after_user_join)
+      {:ok, socket}
+    else
+      {:error, %{reason: "Unauthorized"}}
+    end
+  end
+
+  def handle_info(:after_user_join, socket) do
+    user = User.get_cached_by_nickname(socket.assigns.user_name)
+
+    user_rooms =
+      Chat.rooms_for_user(user)
+      |> Enum.map(fn %{data: room} ->
+        room
+      end)
+
+    push(socket, "rooms", %{rooms: user_rooms})
     {:noreply, socket}
   end
 
-  def handle_in("new_msg", %{"text" => text}, %{assigns: %{user_name: user_name}} = socket) do
+  def handle_info(:after_room_join, socket) do
+    push(socket, "messages", %{messages: ChatChannelState.messages(socket.assigns.room_name)})
+    {:noreply, socket}
+  end
+
+  def handle_in(
+        "new_msg",
+        %{"text" => text},
+        %{assigns: %{user_name: user_name, room_name: room_name}} = socket
+      ) do
     text = String.trim(text)
 
     if String.length(text) > 0 do
       author = User.get_cached_by_nickname(user_name)
       author = Pleroma.Web.MastodonAPI.AccountView.render("account.json", user: author)
-      message = ChatChannelState.add_message(%{text: text, author: author})
+      message = ChatChannelState.add_message(%{text: text, author: author}, room_name)
 
       broadcast!(socket, "new_msg", message)
     end
@@ -32,19 +73,35 @@ defmodule Pleroma.Web.ChatChannel.ChatChannelState do
   @max_messages 20
 
   def start_link do
-    Agent.start_link(fn -> %{max_id: 1, messages: []} end, name: __MODULE__)
+    Agent.start_link(fn -> %{max_id: 1, rooms: %{}} end, name: __MODULE__)
   end
 
-  def add_message(message) do
+  def add_message(message, room_name) do
     Agent.get_and_update(__MODULE__, fn state ->
       id = state[:max_id] + 1
       message = Map.put(message, "id", id)
-      messages = [message | state[:messages]] |> Enum.take(@max_messages)
-      {message, %{max_id: id, messages: messages}}
+      room = room_state(state, room_name)
+      messages = [message | room[:messages]] |> Enum.take(@max_messages)
+
+      room =
+        room
+        |> Map.put(:messages, messages)
+
+      rooms =
+        state.rooms
+        |> Map.put(room_name, room)
+
+      {message, %{max_id: id, rooms: rooms}}
     end)
   end
 
-  def messages() do
-    Agent.get(__MODULE__, fn state -> state[:messages] |> Enum.reverse() end)
+  def messages(room_name) do
+    Agent.get(__MODULE__, fn state ->
+      room_state(state, room_name)[:messages] |> Enum.reverse()
+    end)
+  end
+
+  def room_state(state, room_name) do
+    state[:rooms][room_name] || %{messages: []}
   end
 end
