@@ -2,6 +2,7 @@ defmodule Pleroma.Chat do
   alias Pleroma.Chat.Room
   alias Pleroma.Repo
   alias Pleroma.Object
+  alias Pleroma.Web.ChatChannel.ChatChannelState
 
   import Ecto.Query
 
@@ -9,6 +10,19 @@ defmodule Pleroma.Chat do
     with {:find_room, {:ok, room}} <- {:find_room, Room.find_by_name(room_name)} do
       Room.add_member(room, user)
     end
+  end
+
+  def add_message(author, room_id, text) do
+    if String.length(text) > 0 do
+      author = Pleroma.Web.MastodonAPI.AccountView.render("account.json", user: author)
+      {:ok, ChatChannelState.add_message(%{text: text, author: author}, room_id)}
+    end
+  end
+
+  def add_remote_message(user, room, message) do
+    {:ok, message} = add_message(user, room.data["id"], message)
+    topic_name = Room.topic_name(room)
+    Pleroma.Web.Endpoint.broadcast("chat:" <> topic_name, "new_msg", message)
   end
 
   def rooms_for_user(user) do
@@ -26,6 +40,10 @@ end
 defmodule Pleroma.Chat.Room do
   alias Pleroma.Object
   alias Pleroma.Repo
+
+  def topic_name(room) do
+    room.data["name"]
+  end
 
   def room_id_for_name(room_name) do
     "#{Pleroma.Web.base_url()}/room/#{room_name}"

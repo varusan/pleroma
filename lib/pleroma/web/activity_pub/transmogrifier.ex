@@ -6,6 +6,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   alias Pleroma.Object
   alias Pleroma.Activity
   alias Pleroma.Repo
+  alias Pleroma.Chat
   alias Pleroma.Web.ActivityPub.ActivityPub
 
   import Ecto.Query
@@ -96,6 +97,31 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
     object
     |> Map.put("tag", combined)
+  end
+
+  # CHAT
+
+  def handle_incoming(%{"type" => "Join", "actor" => actor, "object" => room_id}) do
+    with %Object{} = room <- Object.get_cached_by_ap_id(room_id),
+         %User{} = user <- User.get_or_fetch_by_ap_id(actor),
+         {:ok, room} <- Chat.Room.add_member(room, user) do
+      {:ok, :nothing}
+    end
+  end
+
+  @chat_incoming_limit 1000
+  def handle_incoming(%{
+        "type" => "Create",
+        "actor" => actor,
+        "to" => [room_id],
+        "object" => %{"type" => "ChatMessage", "content" => content}
+      }) do
+    with %Object{} = room <- Object.get_cached_by_ap_id(room_id),
+         %User{} = user <- User.get_or_fetch_by_ap_id(actor),
+         true <- String.length(content) < @chat_incoming_limit do
+      Chat.add_remote_message(user, room, content)
+      {:ok, :nothing}
+    end
   end
 
   # TODO: validate those with a Ecto scheme

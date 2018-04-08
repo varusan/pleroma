@@ -53,17 +53,11 @@ defmodule Pleroma.Web.ChatChannel do
   def handle_in(
         "new_msg",
         %{"text" => text},
-        %{assigns: %{user_name: user_name, room_name: room_name}} = socket
+        %{assigns: %{user_name: user_name, room_name: room_id}} = socket
       ) do
-    text = String.trim(text)
-
-    if String.length(text) > 0 do
-      author = User.get_cached_by_nickname(user_name)
-      author = Pleroma.Web.MastodonAPI.AccountView.render("account.json", user: author)
-      message = ChatChannelState.add_message(%{text: text, author: author}, room_name)
-
-      broadcast!(socket, "new_msg", message)
-    end
+    user = User.get_cached_by_nickname(user_name)
+    {:ok, message} = Chat.add_message(user, room_id, text)
+    broadcast!(socket, "new_msg", message)
 
     {:noreply, socket}
   end

@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   alias Pleroma.Repo
   alias Pleroma.Web.Websub.WebsubClientSubscription
   alias Pleroma.Web.Websub.WebsubServerSubscription
+  alias Pleroma.Chat
   import Ecto.Query
 
   import Pleroma.Factory
@@ -384,6 +385,44 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       refute Repo.get(WebsubClientSubscription, ws.id)
       assert Repo.get(WebsubClientSubscription, ws2.id)
+    end
+  end
+
+  describe "chat" do
+    test "it handles join events" do
+      {:ok, room} = Chat.Room.create_room("2hu")
+
+      activity = %{
+        "type" => "Join",
+        "object" => room.data["id"],
+        "actor" => "http://mastodon.example.org/users/admin"
+      }
+
+      {:ok, :nothing} = Transmogrifier.handle_incoming(activity)
+
+      user = User.get_by_ap_id(activity["actor"])
+      assert [room] = Chat.rooms_for_user(user)
+    end
+
+    test "it handles incoming messages to chatrooms" do
+      {:ok, room} = Chat.Room.create_room("2hu")
+      user_id = "http://mastodon.example.org/users/admin"
+
+      activity = %{
+        "type" => "Create",
+        "object" => %{
+          "type" => "ChatMessage",
+          "attributedTo" => user_id,
+          "content" => "A message"
+        },
+        "actor" => user_id,
+        "to" => [room.data["id"]]
+      }
+
+      {:ok, :nothing} = Transmogrifier.handle_incoming(activity)
+      assert [message] = Pleroma.Web.ChatChannel.ChatChannelState.messages(room.data["id"])
+      assert message.text == "A message"
+      assert message.author.acct == "admin@mastodon.example.org"
     end
   end
 end
