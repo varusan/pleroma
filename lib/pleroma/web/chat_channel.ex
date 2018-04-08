@@ -12,7 +12,7 @@ defmodule Pleroma.Web.ChatChannel do
 
       socket =
         socket
-        |> assign(:room_name, room_name)
+        |> assign(:room_name, room.data["id"])
 
       {:ok, socket}
     else

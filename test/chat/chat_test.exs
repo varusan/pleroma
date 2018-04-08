@@ -7,6 +7,7 @@ defmodule Pleroma.ChatTest do
   test "makes a user join a room that doesn't exist yet" do
     user = insert(:user)
     {:ok, room} = Chat.join_room(user, "public")
+    assert room.data["id"]
     assert room.data["name"] == "public"
     assert room.data["members"] == [user.ap_id]
     assert room.data["type"] == "Room"
