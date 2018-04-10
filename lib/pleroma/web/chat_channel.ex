@@ -3,6 +3,7 @@ defmodule Pleroma.Web.ChatChannel do
   alias Pleroma.Web.ChatChannel.ChatChannelState
   alias Pleroma.User
   alias Pleroma.Chat
+  alias Pleroma.Web.ActivityPub.ActivityPub
 
   def join("chat:" <> room_name, _message, socket) do
     user = User.get_cached_by_nickname(socket.assigns.user_name)
@@ -57,6 +58,11 @@ defmodule Pleroma.Web.ChatChannel do
       ) do
     user = User.get_cached_by_nickname(user_name)
     {:ok, message} = Chat.add_message(user, room_id, text)
+
+    if !String.starts_with?(room_id, Pleroma.Web.base_url()) do
+      ActivityPub.chat_message(room_id, user, text)
+    end
+
     broadcast!(socket, "new_msg", message)
 
     {:noreply, socket}

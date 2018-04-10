@@ -4,6 +4,29 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   alias Pleroma.Web.ActivityPub.{UserView, ObjectView}
   alias Pleroma.{Repo, User}
   alias Pleroma.Activity
+  alias Pleroma.Chat
+
+  describe "/rooms/:id" do
+    test "it returns the json of a room", %{conn: conn} do
+      {:ok, room} = Chat.Room.create_room("public")
+
+      conn =
+        conn
+        |> put_req_header("accept", "application/activity+json")
+        |> get("/rooms/public")
+
+      assert json_response(conn, 200) == room.data
+    end
+
+    test "it returns 404 when none is found", %{conn: conn} do
+      conn =
+        conn
+        |> put_req_header("accept", "application/activity+json")
+        |> get("/rooms/public")
+
+      assert json_response(conn, 404)
+    end
+  end
 
   describe "/users/:nickname" do
     test "it returns a json representation of the user", %{conn: conn} do

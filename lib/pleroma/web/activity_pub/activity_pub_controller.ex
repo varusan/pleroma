@@ -4,6 +4,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   alias Pleroma.Web.ActivityPub.{ObjectView, UserView, Transmogrifier}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.Federator
+  alias Pleroma.Chat
 
   require Logger
 
@@ -99,6 +100,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     end
 
     json(conn, "ok")
+  end
+
+  def rooms(conn, %{"id" => id}) do
+    with {:ok, room} <- Chat.Room.find_by_name(id, false) do
+      json(conn, room.data)
+    else
+      _e ->
+        conn
+        |> put_status(404)
+        |> json(%{error: "not found"})
+    end
   end
 
   def errors(conn, _e) do

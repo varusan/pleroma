@@ -262,6 +262,7 @@ defmodule Pleroma.Web.Router do
     # XXX: not really ostatus
     pipe_through(:ostatus)
 
+    get("/rooms/:id", ActivityPubController, :rooms)
     get("/users/:nickname/followers", ActivityPubController, :followers)
     get("/users/:nickname/following", ActivityPubController, :following)
     get("/users/:nickname/outbox", ActivityPubController, :outbox)

@@ -425,6 +425,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       end)
       |> Enum.uniq()
 
+    # delivery to chat rooms
+    remote_inboxes =
+      with [room_id] <- activity.data["to"],
+           %Object{data: %{"type" => "Room"}} = room <- Object.get_cached_by_ap_id(room_id) do
+        # TODO: do proper inbox handling
+        inbox = "http://#{URI.parse(room_id).host}/inbox"
+        [inbox]
+      else
+        _ -> remote_inboxes
+      end
+
     {:ok, data} = Transmogrifier.prepare_outgoing(activity.data)
     json = Jason.encode!(data)
 
@@ -509,5 +520,31 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     x = [user.ap_id | user.following]
     y = activity.data["to"] ++ (activity.data["cc"] || [])
     visible_for_user?(activity, nil) || Enum.any?(x, &(&1 in y))
+  end
+
+  def join_room(room, user) do
+    data = %{
+      "actor" => user.ap_id,
+      "to" => [room.data["id"]],
+      "type" => "Join",
+      "object" => room.data["id"]
+    }
+
+    maybe_federate(%Activity{local: true, data: data, recipients: [room.data["id"]]})
+  end
+
+  def chat_message(room_id, user, message) do
+    data = %{
+      "type" => "Create",
+      "object" => %{
+        "type" => "ChatMessage",
+        "attributedTo" => user.ap_id,
+        "content" => message
+      },
+      "actor" => user.ap_id,
+      "to" => [room_id]
+    }
+
+    maybe_federate(%Activity{local: true, data: data, recipients: [room_id]})
   end
 end
