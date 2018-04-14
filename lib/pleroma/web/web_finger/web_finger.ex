@@ -4,6 +4,7 @@ defmodule Pleroma.Web.WebFinger do
   alias Pleroma.{Repo, User, XmlBuilder}
   alias Pleroma.Web
   alias Pleroma.Web.{XML, Salmon, OStatus}
+  alias Pleroma.Web.ActivityPub.Actor
   require Jason
   require Logger
 
@@ -128,7 +129,7 @@ defmodule Pleroma.Web.WebFinger do
     if info["keys"] do
       {:ok, user}
     else
-      {:ok, pem} = Salmon.generate_rsa_pem()
+      {:ok, pem} = Actor.generate_rsa_pem()
       info = Map.put(info, "keys", pem)
 
       Ecto.Changeset.change(user, info: info)
