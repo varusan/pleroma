@@ -29,6 +29,19 @@ defmodule Pleroma.Web.ActivityPub.Actor do
     end
   end
 
+  def add_actor_properties(%{data: data} = object) do
+    data =
+      data
+      |> Map.put("following", data["id"] <> "/following")
+      |> Map.put("followers", data["id"] <> "/followers")
+      |> Map.put("inbox", data["id"] <> "/inbox")
+      |> Map.put("outbox", data["id"] <> "/outbox")
+
+    object
+    |> Object.change(%{data: data})
+    |> Repo.update()
+  end
+
   # Native generation of RSA keys is only available since OTP 20+ and in default build conditions
   # We try at compile time to generate natively an RSA key otherwise we fallback on the old way.
   try do

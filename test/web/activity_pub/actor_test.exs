@@ -14,4 +14,14 @@ defmodule Pleroma.Web.ActivityPub.ActorTest do
     assert room.data["privateKey"]["privateKeyPem"] =~ "BEGIN RSA PRIVATE KEY"
     assert room.data["publicKey"]["publicKeyPem"] =~ "BEGIN RSA PUBLIC KEY"
   end
+
+  test "it adds collections and boxes" do
+    {:ok, room} = Room.create_room("public")
+    {:ok, room} = Actor.add_actor_properties(room)
+
+    assert room.data["following"]
+    assert room.data["followers"]
+    assert room.data["inbox"]
+    assert room.data["outbox"]
+  end
 end
