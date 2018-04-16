@@ -90,16 +90,16 @@ defmodule Pleroma.Web.Router do
     post("/accounts/:id/unfollow", MastodonAPIController, :unfollow)
     post("/accounts/:id/block", MastodonAPIController, :block)
     post("/accounts/:id/unblock", MastodonAPIController, :unblock)
-    post("/accounts/:id/mute", MastodonAPIController, :relationship_noop)
-    post("/accounts/:id/unmute", MastodonAPIController, :relationship_noop)
+    post("/accounts/:id/mute", MastodonAPIController, :block)
+    post("/accounts/:id/unmute", MastodonAPIController, :unblock)
 
     post("/follows", MastodonAPIController, :follow)
 
     get("/blocks", MastodonAPIController, :blocks)
+    get("/mutes", MastodonAPIController, :blocks)
 
     get("/domain_blocks", MastodonAPIController, :empty_array)
     get("/follow_requests", MastodonAPIController, :empty_array)
-    get("/mutes", MastodonAPIController, :empty_array)
     get("/lists", MastodonAPIController, :empty_array)
 
     get("/timelines/home", MastodonAPIController, :home_timeline)
