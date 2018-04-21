@@ -102,13 +102,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   @instance Application.get_env(:pleroma, :instance)
+  @mastodon_api_level "2.3.3"
 
   def masto_instance(conn, _params) do
     response = %{
       uri: Web.base_url(),
       title: Keyword.get(@instance, :name),
       description: "A Pleroma instance, an alternative fediverse server",
-      version: Keyword.get(@instance, :version),
+      version: "#{@mastodon_api_level} (compatible; #{Keyword.get(@instance, :version)})",
       email: Keyword.get(@instance, :email),
       urls: %{
         streaming_api: String.replace(Web.base_url(), ["http", "https"], "wss")
@@ -211,9 +212,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         |> Map.put("actor_id", ap_id)
         |> Map.put("whole_db", true)
 
-      activities =
-        ActivityPub.fetch_public_activities(params)
-        |> Enum.reverse()
+      if params["pinned"] == "true" do
+        # Since Pleroma has no "pinned" posts feature, we'll just set an empty list here
+        activities = []
+      else
+        activities =
+          ActivityPub.fetch_public_activities(params)
+          |> Enum.reverse()
+      end
 
       conn
       |> add_link_headers(:user_statuses, activities, params["id"])
@@ -514,7 +520,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
             a.data,
             ^query
           ),
-        limit: 20
+        limit: 20,
+        order_by: [desc: :id]
       )
 
     statuses = Repo.all(q) ++ fetched
@@ -604,35 +611,37 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
               "video\/mp4"
             ]
           },
-          settings: %{
-            onboarded: true,
-            home: %{
-              shows: %{
-                reblog: true,
-                reply: true
-              }
-            },
-            notifications: %{
-              alerts: %{
-                follow: true,
-                favourite: true,
-                reblog: true,
-                mention: true
+          settings:
+            Map.get(user.info, "settings") ||
+              %{
+                onboarded: true,
+                home: %{
+                  shows: %{
+                    reblog: true,
+                    reply: true
+                  }
+                },
+                notifications: %{
+                  alerts: %{
+                    follow: true,
+                    favourite: true,
+                    reblog: true,
+                    mention: true
+                  },
+                  shows: %{
+                    follow: true,
+                    favourite: true,
+                    reblog: true,
+                    mention: true
+                  },
+                  sounds: %{
+                    follow: true,
+                    favourite: true,
+                    reblog: true,
+                    mention: true
+                  }
+                }
               },
-              shows: %{
-                follow: true,
-                favourite: true,
-                reblog: true,
-                mention: true
-              },
-              sounds: %{
-                follow: true,
-                favourite: true,
-                reblog: true,
-                mention: true
-              }
-            }
-          },
           push_subscription: nil,
           accounts: accounts,
           custom_emojis: mastodon_emoji,
@@ -646,6 +655,19 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     else
       conn
       |> redirect(to: "/web/login")
+    end
+  end
+
+  def put_settings(%{assigns: %{user: user}} = conn, %{"data" => settings} = _params) do
+    with new_info <- Map.put(user.info, "settings", settings),
+         change <- User.info_changeset(user, %{info: new_info}),
+         {:ok, _user} <- User.update_and_set_cache(change) do
+      conn
+      |> json(%{})
+    else
+      e ->
+        conn
+        |> json(%{error: inspect(e)})
     end
   end
 
@@ -671,7 +693,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def login_post(conn, %{"authorization" => %{"name" => name, "password" => password}}) do
-    with %User{} = user <- User.get_cached_by_nickname(name),
+    with %User{} = user <- User.get_by_nickname_or_email(name),
          true <- Pbkdf2.checkpw(password, user.password_hash),
          {:ok, app} <- get_or_make_app(),
          {:ok, auth} <- Authorization.create_authorization(app, user),

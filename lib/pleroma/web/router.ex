@@ -100,6 +100,7 @@ defmodule Pleroma.Web.Router do
     get("/domain_blocks", MastodonAPIController, :empty_array)
     get("/follow_requests", MastodonAPIController, :empty_array)
     get("/mutes", MastodonAPIController, :empty_array)
+    get("/lists", MastodonAPIController, :empty_array)
 
     get("/timelines/home", MastodonAPIController, :home_timeline)
 
@@ -118,6 +119,12 @@ defmodule Pleroma.Web.Router do
     get("/notifications/:id", MastodonAPIController, :get_notification)
 
     post("/media", MastodonAPIController, :upload)
+  end
+
+  scope "/api/web", Pleroma.Web.MastodonAPI do
+    pipe_through(:authenticated_api)
+
+    put("/settings", MastodonAPIController, :put_settings)
   end
 
   scope "/api/v1", Pleroma.Web.MastodonAPI do
@@ -205,6 +212,7 @@ defmodule Pleroma.Web.Router do
     get("/statuses/friends_timeline", TwitterAPI.Controller, :friends_timeline)
     get("/statuses/mentions", TwitterAPI.Controller, :mentions_timeline)
     get("/statuses/mentions_timeline", TwitterAPI.Controller, :mentions_timeline)
+    get("/qvitter/statuses/notifications", TwitterAPI.Controller, :notifications)
 
     post("/statuses/update", TwitterAPI.Controller, :status_update)
     post("/statuses/retweet/:id", TwitterAPI.Controller, :retweet)

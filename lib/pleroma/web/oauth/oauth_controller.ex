@@ -29,7 +29,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
             "redirect_uri" => redirect_uri
           } = params
       }) do
-    with %User{} = user <- User.get_cached_by_nickname(name),
+    with %User{} = user <- User.get_by_nickname_or_email(name),
          true <- Pbkdf2.checkpw(password, user.password_hash),
          %App{} = app <- Repo.get_by(App, client_id: client_id),
          {:ok, auth} <- Authorization.create_authorization(app, user) do
@@ -63,7 +63,8 @@ defmodule Pleroma.Web.OAuth.OAuthController do
              client_secret: params["client_secret"]
            ),
          fixed_token = fix_padding(params["code"]),
-         %Authorization{} = auth <- Repo.get_by(Authorization, token: fixed_token, app_id: app.id),
+         %Authorization{} = auth <-
+           Repo.get_by(Authorization, token: fixed_token, app_id: app.id),
          {:ok, token} <- Token.exchange_token(app, auth) do
       response = %{
         token_type: "Bearer",
