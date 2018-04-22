@@ -124,6 +124,24 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
+  def handle_incoming(%{
+        "type" => "Announce",
+        "actor" => room_id,
+        "to" => [room_id],
+        "object" => %{
+          "type" => "ChatMessage",
+          "content" => content,
+          "attributedTo" => user_id
+        }
+      }) do
+    with %Object{} = room <- Object.get_cached_by_ap_id(room_id),
+         %User{} = user <- User.get_or_fetch_by_ap_id(user_id),
+         true <- String.length(content) < @chat_incoming_limit do
+      Chat.add_remote_message(user, room, content)
+      {:ok, :nothing}
+    end
+  end
+
   # TODO: validate those with a Ecto scheme
   # - tags
   # - emoji

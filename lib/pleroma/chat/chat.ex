@@ -58,7 +58,8 @@ defmodule Pleroma.Chat.Room do
 
   def find_remote_room(room_name) do
     with [name, domain] <- String.split(room_name, ":"),
-         url <- "http://#{domain}/rooms/#{name}",
+         # Assumes https
+         url <- "https://#{domain}/rooms/#{name}",
          nil <- Object.get_by_ap_id(url),
          {:ok, %{body: body, status_code: 200}} <- Pleroma.HTTP.get(url),
          {:ok, room_data} <- Jason.decode(body) do

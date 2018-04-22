@@ -76,6 +76,10 @@ defmodule Pleroma.Web.ChatChannel.ChatChannelState do
     Agent.start_link(fn -> %{max_id: 1, rooms: %{}} end, name: __MODULE__)
   end
 
+  def clear do
+    Agent.update(__MODULE__, fn _ -> %{max_id: 1, rooms: %{}} end)
+  end
+
   def add_message(message, room_name) do
     Agent.get_and_update(__MODULE__, fn state ->
       id = state[:max_id] + 1

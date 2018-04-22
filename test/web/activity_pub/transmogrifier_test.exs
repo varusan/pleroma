@@ -426,5 +426,26 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert message.text == "A message"
       assert message.author.acct == "admin@mastodon.example.org"
     end
+
+    test "it handles incoming messages to chatrooms announced by the room" do
+      {:ok, room} = Chat.Room.create_room("2hu")
+      user_id = "http://mastodon.example.org/users/admin"
+
+      activity = %{
+        "type" => "Announce",
+        "object" => %{
+          "type" => "ChatMessage",
+          "attributedTo" => user_id,
+          "content" => "A message"
+        },
+        "actor" => room.data["id"],
+        "to" => [room.data["id"]]
+      }
+
+      {:ok, :nothing} = Transmogrifier.handle_incoming(activity)
+      assert [message] = Pleroma.Web.ChatChannel.ChatChannelState.messages(room.data["id"])
+      assert message.text == "A message"
+      assert message.author.acct == "admin@mastodon.example.org"
+    end
   end
 end

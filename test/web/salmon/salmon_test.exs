@@ -22,7 +22,7 @@ defmodule Pleroma.Web.Salmon.SalmonTest do
   end
 
   test "generates an RSA private key pem" do
-    {:ok, key} = Salmon.generate_rsa_pem()
+    {:ok, key} = Pleroma.Web.ActivityPub.Actor.generate_rsa_pem()
     assert is_binary(key)
     assert Regex.match?(~r/RSA/, key)
   end

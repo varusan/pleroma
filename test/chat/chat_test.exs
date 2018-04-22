@@ -54,4 +54,14 @@ defmodule Pleroma.ChatTest do
 
     assert Chat.Room.topic_name(room) == "public:pleroma.soykaf.com"
   end
+
+  test "it adds a chat message to an existing room" do
+    {:ok, room} = Chat.Room.create_room("2hu")
+    user = insert(:user)
+
+    Chat.add_remote_message(user, room, "Why is Tenshi eating a corndog so cute?")
+    assert [message] = Pleroma.Web.ChatChannel.ChatChannelState.messages(room.data["id"])
+    assert message.text == "Why is Tenshi eating a corndog so cute?"
+    assert message.author.acct == user.nickname
+  end
 end

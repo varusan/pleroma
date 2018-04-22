@@ -29,6 +29,8 @@ defmodule Pleroma.DataCase do
     Cachex.clear(:user_cache)
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(Pleroma.Repo)
 
+    Pleroma.Web.ChatChannel.ChatChannelState.clear()
+
     unless tags[:async] do
       Ecto.Adapters.SQL.Sandbox.mode(Pleroma.Repo, {:shared, self()})
     end
