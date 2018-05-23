@@ -1,7 +1,7 @@
 defmodule Pleroma.List do
   use Ecto.Schema
   import Ecto.{Changeset, Query}
-  alias Pleroma.User
+  alias Pleroma.{User, Repo}
 
   schema "lists" do
     belongs_to(:user, Pleroma.User)

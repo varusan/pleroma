@@ -601,7 +601,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     accounts
     |> Enum.each(fn account_id ->
       with {:ok, %Pleroma.List{} = list} <- Pleroma.List.get(user, id),
-           %User{} = followed <- Repo.get(account_id) do
+           %User{} = followed <- Repo.get(Pleroma.User, account_id) do
         Pleroma.List.follow(list, followed)
       end
     end)
@@ -613,7 +613,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     accounts
     |> Enum.each(fn account_id ->
       with {:ok, %Pleroma.List{} = list} <- Pleroma.List.get(user, id),
-           %User{} = followed <- Repo.get(account_id) do
+           %User{} = followed <- Repo.get(Pleroma.User, account_id) do
         Pleroma.List.unfollow(list, followed)
       end
     end)
