@@ -568,6 +568,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def get_lists(%{assigns: %{user: user}} = conn, opts) do
     lists = Pleroma.List.for_user(user, opts)
     res = ListView.render("lists.json", lists: lists)
+    Logger.debug(inspect res)
+    Logger.debug(inspect res)
+    Logger.debug(inspect res)
+    Logger.debug(inspect res)
+    Logger.debug(inspect res)
+    Logger.debug(inspect res)
     json(conn, res)
   end
 
