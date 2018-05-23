@@ -565,8 +565,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     |> render(StatusView, "index.json", %{activities: activities, for: user, as: :activity})
   end
 
-  def get_lists(%{assigns: %{user: user}} = conn, _) do
-    lists = Pleroma.List.for_user(user)
+  def get_lists(%{assigns: %{user: user}} = conn, opts) do
+    lists = Pleroma.List.for_user(user, opts)
     res = ListView.render("lists.json", lists: lists)
     json(conn, res)
   end
