@@ -145,7 +145,7 @@ defmodule Pleroma.Web.Router do
 
     get("/timelines/public", MastodonAPIController, :public_timeline)
     get("/timelines/tag/:tag", MastodonAPIController, :hashtag_timeline)
-    get("/timelines/list/:list_id", MastodonAPIController, :list_timeline)
+    get("/timelines/lists/:list_id", MastodonAPIController, :list_timeline)
 
     get("/statuses/:id", MastodonAPIController, :get_status)
     get("/statuses/:id/context", MastodonAPIController, :get_context)
