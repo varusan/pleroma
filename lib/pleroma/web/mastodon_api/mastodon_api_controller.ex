@@ -639,7 +639,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def list_timeline(%{assigns: %{user: user}} = conn, %{"list_id" => id} = params) do
-    with {:ok, %Pleroma.List{following: following}} <- Pleroma.List.get(user, id) do
+    with %Pleroma.List{following: following} <- Pleroma.List.get(user, id) do
       params =
         params
         |> Map.put("type", "Create")
