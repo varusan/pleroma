@@ -125,7 +125,7 @@ defmodule Pleroma.Web.Router do
     get("/lists/:id", MastodonAPIController, :get_list)
     delete("/lists/:id", MastodonAPIController, :delete_list)
     post("/lists", MastodonAPIController, :create_list)
-    put("/lists", MastodonAPIController, :rename_list)
+    put("/lists/:id", MastodonAPIController, :rename_list)
     post("/lists/:id/accounts", MastodonAPIController, :add_to_list)
     delete("/lists/:id/accounts", MastodonAPIController, :remove_from_list)
   end
