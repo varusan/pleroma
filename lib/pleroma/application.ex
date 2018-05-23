@@ -1,6 +1,9 @@
 defmodule Pleroma.Application do
   use Application
 
+  @runtime_modules if Mix.env() == :test,
+                     do: [],
+                     else: [{Pleroma.Web.Streamer, []}]
   # See http://elixir-lang.org/docs/stable/elixir/Application.html
   # for more information on OTP Applications
   def start(_type, _args) do
@@ -39,15 +42,12 @@ defmodule Pleroma.Application do
         worker(Pleroma.Gopher.Server, []),
         worker(Pleroma.Stats, [])
       ] ++
-        if Mix.env() == :test,
+        Enum.map(@runtime_modules, fn {module, args} -> worker(module, args) end) ++
+        if(
+          !chat_enabled(),
           do: [],
-          else:
-            [worker(Pleroma.Web.Streamer, [])] ++
-              if(
-                !chat_enabled(),
-                do: [],
-                else: [worker(Pleroma.Web.ChatChannel.ChatChannelState, [])]
-              )
+          else: [worker(Pleroma.Web.ChatChannel.ChatChannelState, [])]
+        )
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
     # for other strategies and supported options

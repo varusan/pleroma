@@ -3,6 +3,8 @@ defmodule Pleroma.Object do
   alias Pleroma.{Repo, Object}
   import Ecto.{Query, Changeset}
 
+  @testing Mix.env() == :test
+
   schema "objects" do
     field(:data, :map)
 
@@ -28,7 +30,7 @@ defmodule Pleroma.Object do
   end
 
   def get_cached_by_ap_id(ap_id) do
-    if Mix.env() == :test do
+    if @testing do
       get_by_ap_id(ap_id)
     else
       key = "object:#{ap_id}"

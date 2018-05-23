@@ -18,7 +18,10 @@ defmodule Pleroma.Mixfile do
   #
   # Type `mix help compile.app` for more information.
   def application do
-    [mod: {Pleroma.Application, []}, extra_applications: [:logger, :runtime_tools, :comeonin]]
+    [
+      mod: {Pleroma.Application, []},
+      extra_applications: [:logger, :runtime_tools, :comeonin]
+    ]
   end
 
   # Specifies which paths to compile per environment.
@@ -44,6 +47,7 @@ defmodule Pleroma.Mixfile do
       {:cachex, "~> 2.1"},
       {:httpoison, "~> 1.1.0"},
       {:jason, "~> 1.0"},
+      {:exrm, "~> 1.0"},
       {:ex_machina, "~> 2.0", only: :test},
       {:credo, "~> 0.7", only: [:dev, :test]},
       {:mock, "~> 0.3.0", only: :test}
