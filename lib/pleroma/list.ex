@@ -11,11 +11,15 @@ defmodule Pleroma.List do
     timestamps()
   end
 
-  @doc false
-  def changeset(list, attrs) do
+  def title_changeset(list, attrs \\ %{}) do
     list
     |> cast(attrs, [:title])
     |> validate_required([:title])
+  end
+  def follow_changeset(list, attrs \\ %{}) do
+    list
+    |> cast(attrs, [:following])
+    |> validate_required([:following])
   end
 
   def for_user(user, opts) do
@@ -42,7 +46,9 @@ defmodule Pleroma.List do
   end
 
   def rename(%Pleroma.List{} = list, title) do
-    update_list(list, %{title: title})
+    list
+    |> title_changeset(%{title: title})
+    |> Repo.update()
   end
 
   def create(title, %User{} = creator) do
@@ -52,20 +58,20 @@ defmodule Pleroma.List do
 
   # TODO check that user is following followed
   def follow(%Pleroma.List{following: following} = list, %User{} = followed) do
-    update_list(list, %{following: Enum.uniq([followed.follower_address | following])})
+    update_follows(list, %{following: Enum.uniq([followed.follower_address | following])})
   end
 
   def unfollow(%Pleroma.List{following: following} = list, %User{} = unfollowed) do
-    update_list(list, %{following: List.delete(following, unfollowed.follower_address)})
+    update_follows(list, %{following: List.delete(following, unfollowed.follower_address)})
   end
 
   def delete(%Pleroma.List{} = list) do
     Repo.delete(list)
   end
 
-  def update_list(%Pleroma.List{} = list, attrs) do
+  def update_follows(%Pleroma.List{} = list, attrs) do
     list
-    |> changeset(attrs)
+    |> follow_changeset(attrs)
     |> Repo.update()
   end
 end
