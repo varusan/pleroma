@@ -601,8 +601,29 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     accounts
     |> Enum.each(fn account_id ->
       with {:ok, %Pleroma.List{} = list} <- Pleroma.List.get(user, id),
-           %User{} = followed <- Repo.get(Pleroma.User, account_id) do
-        Pleroma.List.follow(list, followed)
+           %User{} = followed <- Repo.get(User, account_id) do
+        ret = Pleroma.List.follow(list, followed)
+        Logger.debug(ret)
+        Logger.debug(ret)
+        Logger.debug(ret)
+        Logger.debug(ret)
+        Logger.debug(ret)
+        Logger.debug(ret)
+        Logger.debug(ret)
+      else
+        e ->
+          Logger.debug(inspect(e))
+          Logger.debug(inspect(e))
+          Logger.debug(inspect(e))
+          Logger.debug(inspect(e))
+          Logger.debug(inspect(e))
+          Logger.debug(inspect(e))
+          Logger.debug(inspect(e))
+          Logger.debug(inspect(e))
+          Logger.debug(inspect(e))
+          Logger.debug(inspect(e))
+          Logger.debug(inspect(e))
+          Logger.debug(inspect(e))
       end
     end)
 

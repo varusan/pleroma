@@ -16,6 +16,7 @@ defmodule Pleroma.List do
     |> cast(attrs, [:title])
     |> validate_required([:title])
   end
+
   def follow_changeset(list, attrs \\ %{}) do
     list
     |> cast(attrs, [:following])
