@@ -568,12 +568,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def get_lists(%{assigns: %{user: user}} = conn, opts) do
     lists = Pleroma.List.for_user(user, opts)
     res = ListView.render("lists.json", lists: lists)
-    Logger.debug(inspect res)
-    Logger.debug(inspect res)
-    Logger.debug(inspect res)
-    Logger.debug(inspect res)
-    Logger.debug(inspect res)
-    Logger.debug(inspect res)
     json(conn, res)
   end
 
@@ -639,14 +633,15 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def list_timeline(%{assigns: %{user: user}} = conn, %{"list_id" => id} = params) do
-    with %Pleroma.List{following: following} <- Pleroma.List.get(user, id) do
+    with %Pleroma.List{title: title, following: following} <- Pleroma.List.get(user, id) do
       params =
         params
         |> Map.put("type", "Create")
         |> Map.put("blocking_user", user)
 
+      # adding title is a hack to not make empty lists function like a public timeline
       activities =
-        ActivityPub.fetch_activities(following, params)
+        ActivityPub.fetch_activities([title | following], params)
         |> Enum.reverse()
 
       conn
