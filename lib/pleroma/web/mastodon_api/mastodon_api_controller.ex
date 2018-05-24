@@ -600,30 +600,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def add_to_list(%{assigns: %{user: user}} = conn, %{"id" => id, "account_ids" => accounts}) do
     accounts
     |> Enum.each(fn account_id ->
-      with {:ok, %Pleroma.List{} = list} <- Pleroma.List.get(user, id),
+      with %Pleroma.List{} = list <- Pleroma.List.get(user, id),
            %User{} = followed <- Repo.get(User, account_id) do
         ret = Pleroma.List.follow(list, followed)
-        Logger.debug(ret)
-        Logger.debug(ret)
-        Logger.debug(ret)
-        Logger.debug(ret)
-        Logger.debug(ret)
-        Logger.debug(ret)
-        Logger.debug(ret)
-      else
-        e ->
-          Logger.debug(inspect(e))
-          Logger.debug(inspect(e))
-          Logger.debug(inspect(e))
-          Logger.debug(inspect(e))
-          Logger.debug(inspect(e))
-          Logger.debug(inspect(e))
-          Logger.debug(inspect(e))
-          Logger.debug(inspect(e))
-          Logger.debug(inspect(e))
-          Logger.debug(inspect(e))
-          Logger.debug(inspect(e))
-          Logger.debug(inspect(e))
       end
     end)
 
@@ -633,7 +612,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def remove_from_list(%{assigns: %{user: user}} = conn, %{"id" => id, "account_ids" => accounts}) do
     accounts
     |> Enum.each(fn account_id ->
-      with {:ok, %Pleroma.List{} = list} <- Pleroma.List.get(user, id),
+      with %Pleroma.List{} = list <- Pleroma.List.get(user, id),
            %User{} = followed <- Repo.get(Pleroma.User, account_id) do
         Pleroma.List.unfollow(list, followed)
       end
