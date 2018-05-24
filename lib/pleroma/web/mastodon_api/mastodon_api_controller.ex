@@ -623,7 +623,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   def rename_list(%{assigns: %{user: user}} = conn, %{"id" => id, "title" => title}) do
     with %Pleroma.List{} = list <- Pleroma.List.get(user, id),
-         {:ok, _list} <- Pleroma.List.rename(list, title) do
+         {:ok, list} <- Pleroma.List.rename(list, title) do
       res = ListView.render("list.json", list: list)
       json(conn, res)
     else
