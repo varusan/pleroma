@@ -1,4 +1,5 @@
 # Pleroma
+![pleroma logo](https://pleroma.soykaf.com/media/83d4e1e2-7746-4c81-bcdb-372f6ecbb40e/image.png)
 
 ## About Pleroma
 
