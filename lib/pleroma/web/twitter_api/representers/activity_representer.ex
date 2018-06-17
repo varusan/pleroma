@@ -180,6 +180,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
       "is_post_verb" => true,
       "created_at" => created_at,
       "in_reply_to_status_id" => object["inReplyToStatusId"],
+      "in_reply_to_screen_name" => object["inReplyToScreenName"],
       "statusnet_conversation_id" => conversation_id,
       "attachments" => (object["attachment"] || []) |> ObjectRepresenter.enum_to_list(opts),
       "attentions" => attentions,

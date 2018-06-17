@@ -138,9 +138,12 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     }
 
     if inReplyTo do
+      reply_nickname = User.get_cached_by_ap_id(inReplyTo.data["object"]["actor"]).nickname || ""
+
       object
       |> Map.put("inReplyTo", inReplyTo.data["object"]["id"])
       |> Map.put("inReplyToStatusId", inReplyTo.id)
+      |> Map.put("inReplyToScreenName", reply_nickname)
     else
       object
     end
