@@ -144,8 +144,17 @@ defmodule Pleroma.Formatter do
     @emoji
   end
 
-  @link_regex ~r/https?:\/\/[\w\.\/?=\-#\+%&@~'\(\):]+[\w\/]/u
+  @link_regex ~r/[0-9a-z+\-\.]+:[0-9a-z$-_.+!*'(),]+/ui
 
+  # TODO: Copy from https://www.iana.org/assignments/uri-schemes/uri-schemes.txt
+  @uri_schemes [
+    "http://",
+    "https://",
+    "magnet:",
+    "xmpp:"
+  ]
+
+  # TODO: make it use something other than @link_regex
   def html_escape(text) do
     Regex.split(@link_regex, text, include_captures: true)
     |> Enum.map_every(2, fn chunk ->
@@ -155,11 +164,14 @@ defmodule Pleroma.Formatter do
     |> Enum.join("")
   end
 
-  @doc "changes http:... links to html links"
+  @doc "changes scheme:... urls to html links"
   def add_links({subs, text}) do
     links =
-      Regex.scan(@link_regex, text)
-      |> Enum.map(fn [url] -> {Ecto.UUID.generate(), url} end)
+      text
+      |> String.split(" ")
+      |> Enum.filter(fn (word) -> String.starts_with?(word, @uri_schemes) end)
+      |> Enum.filter(fn (word) -> Regex.match?(@link_regex, word) end)
+      |> Enum.map(fn (url) -> {Ecto.UUID.generate(), url} end)
       |> Enum.sort_by(fn {_, url} -> -String.length(url) end)
 
     uuid_text =
