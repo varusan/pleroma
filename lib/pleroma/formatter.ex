@@ -169,9 +169,9 @@ defmodule Pleroma.Formatter do
     links =
       text
       |> String.split(" ")
-      |> Enum.filter(fn (word) -> String.starts_with?(word, @uri_schemes) end)
-      |> Enum.filter(fn (word) -> Regex.match?(@link_regex, word) end)
-      |> Enum.map(fn (url) -> {Ecto.UUID.generate(), url} end)
+      |> Enum.filter(fn word -> String.starts_with?(word, @uri_schemes) end)
+      |> Enum.filter(fn word -> Regex.match?(@link_regex, word) end)
+      |> Enum.map(fn url -> {Ecto.UUID.generate(), url} end)
       |> Enum.sort_by(fn {_, url} -> -String.length(url) end)
 
     uuid_text =
