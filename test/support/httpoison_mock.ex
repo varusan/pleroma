@@ -304,6 +304,17 @@ defmodule HTTPoisonMock do
      }}
   end
 
+  def get("https://mastodon.social/users/lambadalambda", _body, _headers) do
+    {:ok,
+     %Response{
+       status_code: 200,
+       body:
+         File.read!(
+           "test/fixtures/httpoison_mock/https___mastodon.social_users_lambadalambda.json"
+         )
+     }}
+  end
+
   def get(
         "https://social.stopwatchingus-heidelberg.de/api/statuses/user_timeline/18330.atom",
         _body,
