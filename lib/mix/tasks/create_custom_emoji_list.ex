@@ -20,6 +20,7 @@ defmodule Mix.Tasks.CreateCustomEmojiList do
   def handle_dir(dir, file_handle) do
     for entry <- File.ls!(dir) do
       full_entry_path = Path.join(dir, entry)
+
       if File.dir?(full_entry_path) do
         handle_dir(full_entry_path, file_handle)
       else
