@@ -1,0 +1,13 @@
+$HTTP["host"] =~ "example.tld" {
+  setenv.add-response-header =(
+    "Content-Security-Policy" => "default-src 'none'; base-uri 'self'; form-acti\
+on 'self'; img-src 'self' data: https:; media-src 'self' https:; style-src 'self\
+' 'unsafe-inline'; font-src 'self'; script-src 'self'; connect-src 'self' wss://\
+example.tld; upgrade-insecure-requests;"
+)
+ proxy.server = ( "" => (
+   "example.tld:443" =>
+       ( "host" => "127.0.0.1",
+         "port" => 4000)
+  ))
+}
