@@ -3,9 +3,10 @@ defmodule Pleroma.Filter do
   import Ecto.{Changeset, Query}
   alias Pleroma.{User, Repo, Activity}
 
+  @primary_key false
   schema "filters" do
-    belongs_to(:user, Pleroma.User)
-    field(:filter_id, :integer)
+    belongs_to(:user, Pleroma.User, primary_key: true)
+    field(:filter_id, :id, primary_key: true)
     field(:hide, :boolean, default: false)
     field(:whole_word, :boolean, default: true)
     field(:phrase, :string)
@@ -40,16 +41,8 @@ defmodule Pleroma.Filter do
     Repo.insert(filter)
   end
 
-  def delete(%Pleroma.Filter{id: filter_key} = filter) when is_number(filter_key) do
+  def delete(%Pleroma.Filter{} = filter) do
     Repo.delete(filter)
-  end
-
-  def delete(%Pleroma.Filter{id: filter_key} = filter) when is_nil(filter_key) do
-    %Pleroma.Filter{id: id} = get(filter.filter_id, %{id: filter.user_id})
-
-    filter
-    |> Map.put(:id, id)
-    |> Repo.delete()
   end
 
   def update(%Pleroma.Filter{} = filter) do
