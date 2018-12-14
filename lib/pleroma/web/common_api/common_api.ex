@@ -124,16 +124,14 @@ defmodule Pleroma.Web.CommonAPI do
              |> Enum.reduce(%{}, fn {name, file}, acc ->
                Map.put(acc, name, "#{Pleroma.Web.Endpoint.static_url()}#{file}")
              end)
-           ),
-         local_only <- !!(String.last(status) == "👁️") do
+           ) do
       res =
         ActivityPub.create(%{
           to: to,
           actor: user,
           context: context,
           object: object,
-          additional: %{"cc" => cc},
-          local: local_only
+          additional: %{"cc" => cc}
         })
 
       res
