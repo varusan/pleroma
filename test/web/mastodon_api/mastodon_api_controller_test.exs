@@ -1429,4 +1429,30 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     user = User.get_cached_by_ap_id(user.ap_id)
     assert user.info.settings == %{"programming" => "socks"}
   end
+
+  test "bookmarks" do
+    user = insert(:user)
+
+    {:ok, activity} =
+      CommonAPI.post(user, %{
+        "status" => "heweoo!"
+      })
+
+    response = build_conn()
+      |> assign(:user, user)
+      |> post("/api/v1/statuses/#{activity.id}/bookmark")
+
+    bookmarks = build_conn()
+      |> assign(:user, user)
+      |> get("/api/v1/bookmarks")
+
+    assert [json_response(response, 200)] == json_response(bookmarks, 200)
+    assert json_response(response, 200)["bookmarked"] == true
+
+    response2 = build_conn()
+      |> assign(:user, user)
+      |> post("/api/v1/statuses/#{activity.id}/unbookmark")
+
+    assert json_response(response2, 200)["bookmarked"] == false
+  end
 end
