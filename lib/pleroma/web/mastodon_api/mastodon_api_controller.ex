@@ -405,6 +405,24 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
+  def bookmark_status(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+    with %Activity{} = activity <- Repo.get(Activity, id),
+         %User{} = user <- User.get_by_nickname(user.nickname),
+         true <- ActivityPub.visible_for_user?(activity, user),
+         :ok <- User.bookmark(user, activity.data["object"]["id"]) do
+      try_render(conn, StatusView, "status.json", %{activity: activity, for: user})
+    end
+  end
+
+  def unbookmark_status(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+    with %Activity{} = activity <- Repo.get(Activity, id),
+         %User{} = user <- User.get_by_nickname(user.nickname),
+         true <- ActivityPub.visible_for_user?(activity, user),
+         :ok <- User.unbookmark(user, activity.data["object"]["id"]) do
+      try_render(conn, StatusView, "status.json", %{activity: activity, for: user})
+    end
+  end
+
   def notifications(%{assigns: %{user: user}} = conn, params) do
     notifications = Notification.for_user(user, params)
 
@@ -818,6 +836,17 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     conn
     |> put_view(StatusView)
     |> render("index.json", %{activities: activities, for: user, as: :activity})
+  end
+
+  def bookmarks(%{assigns: %{user: user}} = conn, _) do
+    user = Repo.get(User, user.id)
+
+    activities =
+      user.bookmarks
+      |> Enum.map(fn id -> Activity.get_create_activity_by_object_ap_id(id) end)
+
+    conn
+    |> render(StatusView, "index.json", %{activities: activities, for: user, as: :activity})
   end
 
   def get_lists(%{assigns: %{user: user}} = conn, opts) do

@@ -71,6 +71,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       favourites_count: 0,
       reblogged: false,
       favourited: false,
+      bookmarked: false,
       muted: false,
       sensitive: false,
       spoiler_text: "",
@@ -89,6 +90,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
   def render("status.json", %{activity: %{data: %{"object" => object}} = activity} = opts) do
     user = User.get_cached_by_ap_id(activity.data["actor"])
+
+    bookmarked = object["id"] in user.bookmarks
 
     like_count = object["like_count"] || 0
     announcement_count = object["announcement_count"] || 0
@@ -134,6 +137,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       favourites_count: like_count,
       reblogged: present?(repeated),
       favourited: present?(favorited),
+      bookmarked: bookmarked,
       muted: false,
       sensitive: sensitive,
       spoiler_text: object["summary"] || "",

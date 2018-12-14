@@ -175,6 +175,7 @@ defmodule Pleroma.Web.Router do
     get("/timelines/direct", MastodonAPIController, :dm_timeline)
 
     get("/favourites", MastodonAPIController, :favourites)
+    get("/bookmarks", MastodonAPIController, :bookmarks)
 
     post("/statuses", MastodonAPIController, :post_status)
     delete("/statuses/:id", MastodonAPIController, :delete_status)
@@ -183,6 +184,8 @@ defmodule Pleroma.Web.Router do
     post("/statuses/:id/unreblog", MastodonAPIController, :unreblog_status)
     post("/statuses/:id/favourite", MastodonAPIController, :fav_status)
     post("/statuses/:id/unfavourite", MastodonAPIController, :unfav_status)
+    post("/statuses/:id/bookmark", MastodonAPIController, :bookmark_status)
+    post("/statuses/:id/unbookmark", MastodonAPIController, :unbookmark_status)
 
     post("/notifications/clear", MastodonAPIController, :clear_notifications)
     post("/notifications/dismiss", MastodonAPIController, :dismiss_notification)
@@ -219,8 +222,6 @@ defmodule Pleroma.Web.Router do
     get("/suggestions", MastodonAPIController, :suggestions)
 
     get("/endorsements", MastodonAPIController, :empty_array)
-
-    get("/bookmarks", MastodonAPIController, :empty_array)
   end
 
   scope "/api/web", Pleroma.Web.MastodonAPI do
