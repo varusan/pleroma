@@ -691,4 +691,29 @@ defmodule Pleroma.UserTest do
                User.search("lain@ple") |> List.first() |> Map.put(:search_distance, nil)
     end
   end
+
+  test "bookmarks" do
+    user = insert(:user)
+
+    {:ok, activity1} =
+      CommonAPI.post(user, %{
+        "status" => "heweoo!"
+      })
+
+    {:ok, activity2} =
+      CommonAPI.post(user, %{
+        "status" => "heweoo!"
+      })
+
+    id1 = activity1.data["object"]["id"]
+    id2 = activity2.data["object"]["id"]
+
+    assert :ok == User.bookmark(user, id1)
+    assert :ok == User.unbookmark(user, id1)
+    assert :ok == User.bookmark(user, id2)
+
+    user = Repo.get(User, user.id)
+    assert id2 in user.bookmarks
+    assert id1 not in user.bookmarks
+  end
 end
