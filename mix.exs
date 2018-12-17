@@ -4,7 +4,7 @@ defmodule Pleroma.Mixfile do
   def project do
     [
       app: :pleroma,
-      version: version("0.9.0"),
+      version: version("0.9.9-beta-1"),
       elixir: "~> 1.4",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: [:phoenix, :gettext] ++ Mix.compilers(),
