@@ -1438,18 +1438,21 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         "status" => "heweoo!"
       })
 
-    response = build_conn()
+    response =
+      build_conn()
       |> assign(:user, user)
       |> post("/api/v1/statuses/#{activity.id}/bookmark")
 
-    bookmarks = build_conn()
+    bookmarks =
+      build_conn()
       |> assign(:user, user)
       |> get("/api/v1/bookmarks")
 
     assert [json_response(response, 200)] == json_response(bookmarks, 200)
     assert json_response(response, 200)["bookmarked"] == true
 
-    response2 = build_conn()
+    response2 =
+      build_conn()
       |> assign(:user, user)
       |> post("/api/v1/statuses/#{activity.id}/unbookmark")
 

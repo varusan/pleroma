@@ -1,11 +1,9 @@
-defmodule Pleroma.Repo.Migrations.AddBookmarkssToUsers do
+defmodule Pleroma.Repo.Migrations.AddBookmarksToUsers do
   use Ecto.Migration
 
   def change do
     alter table(:users) do
-      add :bookmarks, {:array, :string}
+      add :bookmarks, {:array, :string}, null: false, default: []
     end
-
-    create index(:users, [:bookmarks], using: :gin)
   end
 end
