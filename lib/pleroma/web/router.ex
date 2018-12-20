@@ -456,11 +456,28 @@ end
 
 defmodule Fallback.RedirectController do
   use Pleroma.Web, :controller
+  alias Pleroma.User
 
-  def redirector(conn, _params) do
+  defp send_spa_html(conn) do
     conn
     |> put_resp_content_type("text/html")
     |> send_file(200, Pleroma.Plugs.InstanceStatic.file_path("index.html"))
+  end
+
+  defp redirect_for_user(conn, %User{local: true, nickname: nickname}) do
+    conn
+    |> redirect(to: "/users/#{nickname}")
+  end
+
+  defp redirect_for_user(conn, _), do: send_spa_html(conn)
+
+  def redirector(conn, params) do
+    path = params["path"] || []
+    [possible_username | _] = path
+
+    u = User.get_by_nickname(possible_username)
+
+    redirect_for_user(conn, u)
   end
 
   def registration_page(conn, params) do
