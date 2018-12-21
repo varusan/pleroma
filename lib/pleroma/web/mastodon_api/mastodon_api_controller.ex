@@ -410,7 +410,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
          %User{} = user <- User.get_by_nickname(user.nickname),
          true <- ActivityPub.visible_for_user?(activity, user),
          :ok <- User.bookmark(user, activity.data["object"]["id"]) do
-      try_render(conn, StatusView, "status.json", %{activity: activity, for: user})
+      conn
+      |> put_view(StatusView)
+      |> try_render("status.json", %{activity: activity, for: user, as: :activity})
     end
   end
 
@@ -419,7 +421,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
          %User{} = user <- User.get_by_nickname(user.nickname),
          true <- ActivityPub.visible_for_user?(activity, user),
          :ok <- User.unbookmark(user, activity.data["object"]["id"]) do
-      try_render(conn, StatusView, "status.json", %{activity: activity, for: user})
+      conn
+      |> put_view(StatusView)
+      |> try_render("status.json", %{activity: activity, for: user, as: :activity})
     end
   end
 
