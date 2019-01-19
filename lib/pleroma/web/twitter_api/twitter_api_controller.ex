@@ -86,7 +86,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   def friends_timeline(%{assigns: %{user: user}} = conn, params) do
     params =
       params
-      |> Map.put("type", ["Create", "Announce", "Follow", "Like"])
+      |> Map.put("type", ["Create", "Announce"])
       |> Map.put("blocking_user", user)
       |> Map.put("user", user)
 
