@@ -40,22 +40,6 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
     assert tw_user["statusnet_profile_url"] == user.ap_id
   end
 
-  test "tries to get a user by nickname if fetching by ap_id doesn't work" do
-    user = insert(:user)
-
-    {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey @shp!", "visibility" => "direct"})
-
-    {:ok, user} =
-      user
-      |> Ecto.Changeset.change(%{ap_id: "#{user.ap_id}/extension/#{user.nickname}"})
-      |> Repo.update()
-
-    Cachex.clear(:user_cache)
-
-    result = ActivityView.render("activity.json", activity: activity)
-    assert result["user"]["id"] == user.id
-  end
-
   test "a create activity with a html status" do
     text = """
     #Bike log - Commute Tuesday\nhttps://pla.bike/posts/20181211/\n#cycling #CHScycling #commute\nMVIMG_20181211_054020.jpg
@@ -233,6 +217,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
 
     {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey @shp!"})
     {:ok, like, _object} = CommonAPI.favorite(activity.id, other_user)
+
     CommonAPI.delete(activity.id, user)
 
     result = ActivityView.render("activity.json", activity: like)
@@ -261,6 +246,39 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
 
     {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey @shp!"})
     {:ok, announce, _object} = CommonAPI.repeat(activity.id, other_user)
+
+    convo_id = TwitterAPI.context_to_conversation_id(activity.data["object"]["context"])
+
+    activity = Repo.get(Activity, activity.id)
+
+    result = ActivityView.render("activity.json", activity: announce)
+
+    expected = %{
+      "activity_type" => "repeat",
+      "created_at" => announce.data["published"] |> Utils.date_to_asctime(),
+      "external_url" => announce.data["id"],
+      "id" => announce.id,
+      "is_local" => true,
+      "is_post_verb" => false,
+      "statusnet_html" => "shp retweeted a status.",
+      "text" => "shp retweeted a status.",
+      "uri" => "tag:#{announce.data["id"]}:objectType=note",
+      "user" => UserView.render("show.json", user: other_user),
+      "retweeted_status" => ActivityView.render("activity.json", activity: activity),
+      "statusnet_conversation_id" => convo_id
+    }
+
+    assert result == expected
+  end
+
+  test "an announce activity for a deleted post" do
+    user = insert(:user)
+    other_user = insert(:user, %{nickname: "shp"})
+
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey @shp!"})
+    {:ok, announce, _object} = CommonAPI.repeat(activity.id, other_user)
+
+    CommonAPI.delete(announce.id, other_user)
 
     convo_id = TwitterAPI.context_to_conversation_id(activity.data["object"]["context"])
 
