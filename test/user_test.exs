@@ -15,6 +15,55 @@ defmodule Pleroma.UserTest do
     :ok
   end
 
+  test "user deletion doesn't break things" do
+    doomed_user = insert(:user)
+    user = insert(:user)
+
+    {:ok, doomed_user} = User.follow(doomed_user, user)
+    {:ok, user} = User.follow(user, doomed_user)
+
+    # Posts
+    {:ok, user_post} = CommonAPI.post(user, %{"status" => "test"})
+    {:ok, doomed_user_post} = CommonAPI.post(doomed_user, %{"status" => "test"})
+
+    {:ok, user_reply} =
+      CommonAPI.post(user, %{
+        "status" => "hey @#{doomed_user.nickname}",
+        "in_reply_to_status_id" => doomed_user_post.id
+      })
+
+    # Like
+    {:ok, like, _object} = CommonAPI.favorite(user_post.id, doomed_user)
+
+    # Announce
+    {:ok, announce_of_doomed_post, _object} = CommonAPI.repeat(doomed_user_post.id, user)
+
+    # Remove the user
+    {:ok, _doomed_user} = Repo.delete(doomed_user)
+    Cachex.clear(:user_cache)
+    Cachex.clear(:object_cache)
+
+    # Posts
+    refute Repo.get(Activity, doomed_user_post.id)
+    refute Repo.get(Activity, like.id)
+
+    # Displaying them doesn't blow up.
+
+    assert Pleroma.Web.MastodonAPI.StatusView.render("status.json", %{activity: user_post})
+    assert Pleroma.Web.MastodonAPI.StatusView.render("status.json", %{activity: user_reply})
+
+    assert Pleroma.Web.MastodonAPI.StatusView.render("status.json", %{
+             activity: announce_of_doomed_post
+           })
+
+    assert Pleroma.Web.TwitterAPI.ActivityView.render("activity.json", %{activity: user_post})
+    assert Pleroma.Web.TwitterAPI.ActivityView.render("activity.json", %{activity: user_reply})
+
+    assert Pleroma.Web.TwitterAPI.ActivityView.render("activity.json", %{
+             activity: announce_of_doomed_post
+           })
+  end
+
   describe "when tags are nil" do
     test "tagging a user" do
       user = insert(:user, %{tags: nil})
