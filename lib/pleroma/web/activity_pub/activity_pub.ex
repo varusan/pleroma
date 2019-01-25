@@ -664,7 +664,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       Transmogrifier.upgrade_user_from_ap_id(ap_id)
     else
       with {:ok, data} <- fetch_and_prepare_user_from_ap_id(ap_id) do
-        User.insert_or_update_user(data)
+        User.insert_or_update_remote_user(data)
       else
         e -> {:error, e}
       end

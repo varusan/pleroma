@@ -147,6 +147,20 @@ defmodule Pleroma.User do
     end
   end
 
+  def remote_user_update(user, params) do
+    params =
+      params
+      |> Map.put(:info, params[:info] || %{})
+
+    info_cng = User.Info.remote_user_update(user.info, params[:info])
+
+    user
+    |> cast(params, [:bio, :name, :avatar])
+    |> validate_length(:bio, max: 5000)
+    |> validate_length(:name, max: 100)
+    |> put_embed(:info, info_cng)
+  end
+
   def update_changeset(struct, params \\ %{}) do
     struct
     |> cast(params, [:bio, :name, :avatar])
@@ -1032,14 +1046,22 @@ defmodule Pleroma.User do
   defp blank?(""), do: nil
   defp blank?(n), do: n
 
-  def insert_or_update_user(data) do
+  def insert_or_update_remote_user(data) do
     data =
       data
       |> Map.put(:name, blank?(data[:name]) || data[:nickname])
 
-    cs = User.remote_user_creation(data)
+    with %User{local: false} = user <- get_by_ap_id(data[:ap_id] || "") do
+      cs = User.remote_user_update(user, data)
+      Repo.update(cs)
+    else
+      %User{} ->
+        {:error, "local user with that ap_id exists"}
 
-    Repo.insert(cs, on_conflict: :replace_all, conflict_target: :nickname)
+      _ ->
+        cs = User.remote_user_creation(data)
+        Repo.insert(cs)
+    end
   end
 
   def ap_enabled?(%User{local: true}), do: true

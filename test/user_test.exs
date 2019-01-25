@@ -775,13 +775,6 @@ defmodule Pleroma.UserTest do
     assert {:ok, _key} = User.get_public_key_for_ap_id("http://mastodon.example.org/users/admin")
   end
 
-  test "insert or update a user from given data" do
-    user = insert(:user, %{nickname: "nick@name.de"})
-    data = %{ap_id: user.ap_id <> "xxx", name: user.name, nickname: user.nickname}
-
-    assert {:ok, %User{}} = User.insert_or_update_user(data)
-  end
-
   describe "per-user rich-text filtering" do
     test "html_filter_policy returns default policies, when rich-text is enabled" do
       user = insert(:user)
@@ -991,6 +984,53 @@ defmodule Pleroma.UserTest do
         }'>" <> "@<span>nick@domain.com</span></a></span>"
 
       assert expected_text == User.parse_bio(bio, user)
+    end
+  end
+
+  describe "insert_or_update_remote_remote_user" do
+    test "it creates a new user" do
+      {:ok, _user} =
+        User.insert_or_update_remote_user(%{
+          nickname: "shp@shpuld.fi",
+          ap_id: "https://shpuld.fi/users/shp"
+        })
+    end
+
+    test "it updates an existing user (based on ap_id)" do
+      user = insert(:user, %{nickname: "shp@shpuld.fi", local: false})
+
+      {:ok, user} =
+        User.insert_or_update_remote_user(%{
+          ap_id: user.ap_id,
+          nickname: user.nickname,
+          name: "test"
+        })
+
+      assert user.name == "test"
+    end
+
+    # TODO: Updating the nickname might be ok.
+    test "it does not update an existing user's ap_id or nickname" do
+      user = insert(:user, %{nickname: "shp@shpuld.fi", local: false})
+
+      # Changing the nickname does nothing
+      {:ok, changed_user} =
+        User.insert_or_update_remote_user(%{
+          ap_id: user.ap_id,
+          nickname: user.nickname <> "uguu",
+          name: "test"
+        })
+
+      assert changed_user.name == "test"
+      assert changed_user.nickname == user.nickname
+
+      # Having a different ap_id with the same nickname will give you an error
+      {:error, _changed_user} =
+        User.insert_or_update_remote_user(%{
+          ap_id: user.ap_id <> "uguu",
+          nickname: user.nickname,
+          name: "test"
+        })
     end
   end
 end

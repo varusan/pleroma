@@ -125,6 +125,16 @@ defmodule Pleroma.User.Info do
     ])
   end
 
+  def remote_user_update(info, params) do
+    info
+    |> cast(params, [
+      :source_data,
+      :banner,
+      :locked,
+      :magic_key
+    ])
+  end
+
   def user_upgrade(info, params) do
     info
     |> cast(params, [
