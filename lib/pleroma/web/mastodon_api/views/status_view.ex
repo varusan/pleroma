@@ -26,7 +26,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         nil
     end)
     |> Enum.filter(& &1)
-    |> Activity.create_activity_by_object_id_query()
+    |> Activity.create_by_object_ap_id()
     |> Repo.all()
     |> Enum.reduce(%{}, fn activity, acc ->
       Map.put(acc, activity.data["object"]["id"], activity)
@@ -65,7 +65,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     user = get_user(activity.data["actor"])
     created_at = Utils.to_masto_date(activity.data["published"])
 
-    reblogged = Activity.get_create_activity_by_object_ap_id(object)
+    reblogged = Activity.get_create_by_object_ap_id(object)
     reblogged = render("status.json", Map.put(opts, :activity, reblogged))
 
     mentions =
@@ -210,7 +210,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
   def get_reply_to(%{data: %{"object" => object}}, _) do
     if object["inReplyTo"] && object["inReplyTo"] != "" do
-      Activity.get_create_activity_by_object_ap_id(object["inReplyTo"])
+      Activity.get_create_by_object_ap_id(object["inReplyTo"])
     else
       nil
     end

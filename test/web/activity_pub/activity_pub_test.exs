@@ -85,6 +85,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert {:error, {:remote_limit_error, _}} = ActivityPub.insert(data)
     end
 
+    test "doesn't drop activities with content being null" do
+      data = %{
+        "ok" => true,
+        "object" => %{
+          "content" => nil
+        }
+      }
+
+      assert {:ok, _} = ActivityPub.insert(data)
+    end
+
     test "returns the activity if one with the same id is already in" do
       activity = insert(:note_activity)
       {:ok, new_activity} = ActivityPub.insert(activity.data)
@@ -160,7 +171,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       assert activity.data["to"] == ["user1", "user2"]
       assert activity.actor == user.ap_id
-      assert activity.recipients == ["user1", "user2"]
+      assert activity.recipients == ["user1", "user2", user.ap_id]
     end
   end
 
@@ -216,7 +227,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
     {:ok, user} = User.block(user, %{ap_id: activity_three.data["actor"]})
     {:ok, _announce, %{data: %{"id" => id}}} = CommonAPI.repeat(activity_three.id, booster)
-    %Activity{} = boost_activity = Activity.get_create_activity_by_object_ap_id(id)
+    %Activity{} = boost_activity = Activity.get_create_by_object_ap_id(id)
     activity_three = Repo.get(Activity, activity_three.id)
 
     activities = ActivityPub.fetch_activities([], %{"blocking_user" => user})
@@ -330,7 +341,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert like_activity == same_like_activity
       assert object.data["likes"] == [user.ap_id]
 
-      [note_activity] = Activity.all_by_object_ap_id(object.data["id"])
+      [note_activity] = Activity.get_all_create_by_object_ap_id(object.data["id"])
       assert note_activity.data["object"]["like_count"] == 1
 
       {:ok, _like_activity, object} = ActivityPub.like(user_two, object)
@@ -445,7 +456,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       {:ok, object} =
         ActivityPub.fetch_object_from_id("http://mastodon.example.org/@admin/99541947525187367")
 
-      assert activity = Activity.get_create_activity_by_object_ap_id(object.data["id"])
+      assert activity = Activity.get_create_by_object_ap_id(object.data["id"])
       assert activity.data["id"]
 
       {:ok, object_again} =
@@ -459,7 +470,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
     test "it works with objects only available via Ostatus" do
       {:ok, object} = ActivityPub.fetch_object_from_id("https://shitposter.club/notice/2827873")
-      assert activity = Activity.get_create_activity_by_object_ap_id(object.data["id"])
+      assert activity = Activity.get_create_by_object_ap_id(object.data["id"])
       assert activity.data["id"]
 
       {:ok, object_again} =

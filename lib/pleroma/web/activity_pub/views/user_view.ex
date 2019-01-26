@@ -162,7 +162,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       "partOf" => iri,
       "totalItems" => info.note_count,
       "orderedItems" => collection,
-      "next" => "#{iri}?max_id=#{min_id - 1}"
+      "next" => "#{iri}?max_id=#{min_id}"
     }
 
     if max_qid == nil do
@@ -209,7 +209,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       "partOf" => iri,
       "totalItems" => -1,
       "orderedItems" => collection,
-      "next" => "#{iri}?max_id=#{min_id - 1}"
+      "next" => "#{iri}?max_id=#{min_id}"
     }
 
     if max_qid == nil do

@@ -36,6 +36,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     {recipients, to, cc}
   end
 
+  defp get_recipients(%{"type" => "Create"} = data) do
+    to = data["to"] || []
+    cc = data["cc"] || []
+    actor = data["actor"] || []
+    recipients = (to ++ cc ++ [actor]) |> Enum.uniq()
+    {recipients, to, cc}
+  end
+
   defp get_recipients(data) do
     to = data["to"] || []
     cc = data["cc"] || []
@@ -56,7 +64,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  defp check_remote_limit(%{"object" => %{"content" => content}}) do
+  defp check_remote_limit(%{"object" => %{"content" => content}}) when not is_nil(content) do
     limit = Pleroma.Config.get([:instance, :remote_limit])
     String.length(content) <= limit
   end
@@ -414,6 +422,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Enum.reverse()
   end
 
+  defp restrict_since(query, %{"since_id" => ""}), do: query
+
   defp restrict_since(query, %{"since_id" => since_id}) do
     from(activity in query, where: activity.id > ^since_id)
   end
@@ -468,6 +478,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp restrict_local(query, _), do: query
+
+  defp restrict_max(query, %{"max_id" => ""}), do: query
 
   defp restrict_max(query, %{"max_id" => max_id}) do
     from(activity in query, where: activity.id < ^max_id)
