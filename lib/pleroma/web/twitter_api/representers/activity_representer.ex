@@ -145,7 +145,8 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
   end
 
   def to_map(
-        %Activity{data: %{"object" => %{"content" => _content} = object}} = activity,
+        %Activity{data: %{"object" => %{"id" => object_id, "content" => _content} = object}} =
+          activity,
         %{user: user} = opts
       ) do
     created_at = object["published"] |> Utils.date_to_asctime()
@@ -153,7 +154,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
     announcement_count = object["announcement_count"] || 0
     favorited = opts[:for] && opts[:for].ap_id in (object["likes"] || [])
     repeated = opts[:for] && opts[:for].ap_id in (object["announcements"] || [])
-    pinned = activity.id in user.info.pinned_activities
+    pinned = object_id in user.info.pinned_objects
 
     mentions = opts[:mentioned] || []
 

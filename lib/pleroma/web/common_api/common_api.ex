@@ -177,22 +177,20 @@ defmodule Pleroma.Web.CommonAPI do
     with %Activity{
            actor: ^user_ap_id,
            data: %{
-             "type" => "Create",
-             "object" => %{
-               "to" => object_to,
-               "type" => "Note"
-             }
+             "type" => "Create"
            }
          } = activity <- get_by_id_or_ap_id(id_or_ap_id),
+         %Object{data: %{"actor" => ^user_ap_id, "to" => object_to, "type" => "Note"}} = object <-
+           Object.normalize(activity.data["object"]),
          true <- Enum.member?(object_to, "https://www.w3.org/ns/activitystreams#Public"),
          %{valid?: true} = info_changeset <-
-           Pleroma.User.Info.add_pinnned_activity(user.info, activity),
+           Pleroma.User.Info.add_pinned_object(user.info, object),
          changeset <-
            Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_changeset),
          {:ok, _user} <- User.update_and_set_cache(changeset) do
       {:ok, activity}
     else
-      %{errors: [pinned_activities: {err, _}]} ->
+      %{errors: [pinned_objects: {err, _}]} ->
         {:error, err}
 
       _ ->
@@ -202,14 +200,15 @@ defmodule Pleroma.Web.CommonAPI do
 
   def unpin(id_or_ap_id, user) do
     with %Activity{} = activity <- get_by_id_or_ap_id(id_or_ap_id),
+         %Object{} = object <- Object.normalize(activity.data["object"]),
          %{valid?: true} = info_changeset <-
-           Pleroma.User.Info.remove_pinnned_activity(user.info, activity),
+           Pleroma.User.Info.remove_pinned_object(user.info, object),
          changeset <-
            Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_changeset),
          {:ok, _user} <- User.update_and_set_cache(changeset) do
       {:ok, activity}
     else
-      %{errors: [pinned_activities: {err, _}]} ->
+      %{errors: [pinned_objects: {err, _}]} ->
         {:error, err}
 
       _ ->

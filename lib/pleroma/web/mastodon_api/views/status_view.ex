@@ -6,6 +6,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   use Pleroma.Web, :view
 
   alias Pleroma.Activity
+  alias Pleroma.Object
   alias Pleroma.HTML
   alias Pleroma.Repo
   alias Pleroma.User
@@ -314,6 +315,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   defp present?(false), do: false
   defp present?(_), do: true
 
-  defp pinned?(%Activity{id: id}, %User{info: %{pinned_activities: pinned_activities}}),
-    do: id in pinned_activities
+  defp pinned?(%Activity{data: %{"object" => object}}, %User{
+         info: %{pinned_objects: pinned_objects}
+       }) do
+    %Object{data: %{"id" => ap_id}} = Object.normalize(object)
+    ap_id in pinned_objects
+  end
 end

@@ -137,6 +137,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     end
   end
 
+  def pinned(conn, %{"nickname" => nickname}) do
+    with %User{} = user <- User.get_cached_by_nickname(nickname),
+         {:ok, user} <- Pleroma.Web.WebFinger.ensure_keys_present(user) do
+      conn
+      |> put_resp_header("content-type", "application/activity+json")
+      |> json(UserView.render("featured.json", %{user: user}))
+    end
+  end
+
   def outbox(conn, %{"nickname" => nickname} = params) do
     with %User{} = user <- User.get_cached_by_nickname(nickname),
          {:ok, user} <- Pleroma.Web.WebFinger.ensure_keys_present(user) do

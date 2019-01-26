@@ -7,6 +7,8 @@ defmodule Pleroma.Web.ActivityPub.UserView do
   alias Pleroma.Web.Salmon
   alias Pleroma.Web.WebFinger
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ObjectView
+  alias Pleroma.Activity
   alias Pleroma.Repo
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Transmogrifier
@@ -240,5 +242,23 @@ defmodule Pleroma.Web.ActivityPub.UserView do
     if offset < total do
       Map.put(map, "next", "#{iri}?page=#{page + 1}")
     end
+  end
+
+  def render("featured.json", %{
+        user: %{nickname: nickname, info: %{pinned_activities: pinned_activities}}
+      }) do
+    rendered_activities =
+      Enum.reduce(pinned_activities, [], fn id, acc ->
+        [ObjectView.render("object.json", %{object: Activity.get_by_id(id).data["object"]}) | acc]
+      end)
+
+    %{
+      "id" =>
+        Pleroma.Web.Router.Helpers.activity_pub_url(Pleroma.Web.Endpoint, :pinned, nickname),
+      "type" => "OrderedCollection",
+      "orderedItems" => rendered_activities
+    }
+    |> Map.merge(Utils.make_json_ld_header())
+    |> IO.inspect()
   end
 end

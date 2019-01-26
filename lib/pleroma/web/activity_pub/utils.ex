@@ -556,6 +556,9 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     if activity_id, do: Map.put(data, "id", activity_id), else: data
   end
 
+  def make_pin_data() do
+  end
+
   #### Create-related helpers
 
   def make_create_data(params, additional) do

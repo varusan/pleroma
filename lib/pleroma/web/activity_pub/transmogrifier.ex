@@ -638,6 +638,16 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
+  # Mastodon pins
+  def handle_incoming(%{
+        "type" => "Add",
+        "target" => target,
+        "object" => object_id,
+        "actor" => actor_ap_id
+      })
+      when target <> "/collections/featured" == actor_ap_id do
+  end
+
   def handle_incoming(_), do: :error
 
   def fetch_obj_helper(id) when is_bitstring(id), do: ActivityPub.fetch_object_from_id(id)
