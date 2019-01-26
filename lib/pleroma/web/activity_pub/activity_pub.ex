@@ -336,7 +336,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def pin(%User{} = actor, %Activity{} = activity, local \\ true) do
+  def pin(%User{} = actor, %Object{} = object, local \\ true) do
     "blah"
   end
 

@@ -9,6 +9,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ObjectView
   alias Pleroma.Activity
+  alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Transmogrifier
@@ -245,20 +246,19 @@ defmodule Pleroma.Web.ActivityPub.UserView do
   end
 
   def render("featured.json", %{
-        user: %{nickname: nickname, info: %{pinned_activities: pinned_activities}}
+        user: %{nickname: nickname, info: %{pinned_objects: pinned_objects}}
       }) do
-    rendered_activities =
-      Enum.reduce(pinned_activities, [], fn id, acc ->
-        [ObjectView.render("object.json", %{object: Activity.get_by_id(id).data["object"]}) | acc]
+    rendered_objects =
+      Enum.reduce(pinned_objects, [], fn id, acc ->
+        [ObjectView.render("object.json", %{object: Object.get_cached_by_ap_id(id)}) | acc]
       end)
 
     %{
       "id" =>
         Pleroma.Web.Router.Helpers.activity_pub_url(Pleroma.Web.Endpoint, :pinned, nickname),
       "type" => "OrderedCollection",
-      "orderedItems" => rendered_activities
+      "orderedItems" => rendered_objects
     }
     |> Map.merge(Utils.make_json_ld_header())
-    |> IO.inspect()
   end
 end
