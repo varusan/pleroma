@@ -563,7 +563,19 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp restrict_pinned(query, %{"pinned" => "true", "pinned_object_ids" => ids}) do
-    from(object in query, where: fragment("(?)->>'id' = any (?)", object.data, ^ids))
+    from(activity in query,
+      where:
+        fragment(
+          """
+          (?)->>'type' = 'Create' and ((?)->'object'->>'id' = any (?) or (?)->>'object' = any (?))
+          """,
+          activity.data,
+          activity.data,
+          ^ids,
+          activity.data,
+          ^ids
+        )
+    )
   end
 
   defp restrict_pinned(query, _), do: query
