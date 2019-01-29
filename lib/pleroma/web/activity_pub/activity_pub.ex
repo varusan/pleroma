@@ -340,8 +340,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def pin(%User{} = user, %Object{} = object, local \\ true) do
-    with %Object{data: %{"actor" => ^user.ap_id}},
+  def pin(%User{ap_id: user_ap_id} = user, %Object{} = object, local \\ true) do
+    with %Object{data: %{"actor" => ^user_ap_id}} <- object,
          true <- Enum.member?(object.data["to"], "https://www.w3.org/ns/activitystreams#Public"),
          %{valid?: true} = info_cng <- User.Info.add_pinned_object(user.info, object, local),
          user_cng <- Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_cng),
