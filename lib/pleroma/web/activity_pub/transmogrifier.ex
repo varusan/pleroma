@@ -639,13 +639,42 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   # Mastodon pins
-  def handle_incoming(%{
-        "type" => "Add",
-        "target" => target,
-        "object" => object_id,
-        "actor" => actor_ap_id
-      })
-      when target <> "/collections/featured" == actor_ap_id do
+  def handle_incoming(
+        %{
+          "type" => "Add",
+          "target" => target,
+          "object" => object_id,
+          "actor" => actor_ap_id
+        } = data
+      )
+      when target == actor_ap_id <> "/collections/featured" do
+    with actor <- get_actor(data),
+         %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
+         {:ok, object} <- get_obj_helper(object_id) || fetch_obj_helper(object_id),
+         {:ok, activity, _} <- ActivityPub.pin(actor, object, false) do
+      {:ok, activity}
+    else
+      _e -> :error
+    end
+  end
+
+  def handle_incoming(
+        %{
+          "type" => "Remove",
+          "target" => target,
+          "object" => object_id,
+          "actor" => actor_ap_id
+        } = data
+      )
+      when target == actor_ap_id <> "/collections/featured" do
+    with actor <- get_actor(data),
+         %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
+         {:ok, object} <- get_obj_helper(object_id) || fetch_obj_helper(object_id),
+         {:ok, activity, _} <- ActivityPub.unpin(actor, object, false) do
+      {:ok, activity}
+    else
+      _e -> :error
+    end
   end
 
   def handle_incoming(_), do: :error

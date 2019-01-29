@@ -556,7 +556,26 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     if activity_id, do: Map.put(data, "id", activity_id), else: data
   end
 
-  def make_pin_data() do
+  def make_pin_data(user, object_ap_id) do
+    %{
+      "target" =>
+        Pleroma.Web.Router.Helpers.activity_pub_url(Pleroma.Web.Endpoint, :pinned, user.nickname),
+      "object" => object_ap_id,
+      "actor" => user.ap_id,
+      "type" => "Add",
+      "to" => ["https://www.w3.org/ns/activitystreams#Public"]
+    }
+  end
+
+  def make_unpin_data(user, object_ap_id) do
+    %{
+      "target" =>
+        Pleroma.Web.Router.Helpers.activity_pub_url(Pleroma.Web.Endpoint, :pinned, user.nickname),
+      "object" => object_ap_id,
+      "actor" => user.ap_id,
+      "type" => "Remove",
+      "to" => ["https://www.w3.org/ns/activitystreams#Public"]
+    }
   end
 
   #### Create-related helpers

@@ -8,7 +8,6 @@ defmodule Pleroma.Web.ActivityPub.UserView do
   alias Pleroma.Web.WebFinger
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ObjectView
-  alias Pleroma.Activity
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -226,6 +225,23 @@ defmodule Pleroma.Web.ActivityPub.UserView do
     end
   end
 
+  def render("featured.json", %{
+        user: %{nickname: nickname, info: %{pinned_objects: pinned_objects}}
+      }) do
+    rendered_objects =
+      Enum.reduce(pinned_objects, [], fn id, acc ->
+        [ObjectView.render("object.json", %{object: Object.get_cached_by_ap_id(id)}) | acc]
+      end)
+
+    %{
+      "id" =>
+        Pleroma.Web.Router.Helpers.activity_pub_url(Pleroma.Web.Endpoint, :pinned, nickname),
+      "type" => "OrderedCollection",
+      "orderedItems" => rendered_objects
+    }
+    |> Map.merge(Utils.make_json_ld_header())
+  end
+
   def collection(collection, iri, page, show_items \\ true, total \\ nil) do
     offset = (page - 1) * 10
     items = Enum.slice(collection, offset, 10)
@@ -243,22 +259,5 @@ defmodule Pleroma.Web.ActivityPub.UserView do
     if offset < total do
       Map.put(map, "next", "#{iri}?page=#{page + 1}")
     end
-  end
-
-  def render("featured.json", %{
-        user: %{nickname: nickname, info: %{pinned_objects: pinned_objects}}
-      }) do
-    rendered_objects =
-      Enum.reduce(pinned_objects, [], fn id, acc ->
-        [ObjectView.render("object.json", %{object: Object.get_cached_by_ap_id(id)}) | acc]
-      end)
-
-    %{
-      "id" =>
-        Pleroma.Web.Router.Helpers.activity_pub_url(Pleroma.Web.Endpoint, :pinned, nickname),
-      "type" => "OrderedCollection",
-      "orderedItems" => rendered_objects
-    }
-    |> Map.merge(Utils.make_json_ld_header())
   end
 end

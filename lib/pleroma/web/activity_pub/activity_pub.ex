@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ActivityPub do
-  alias Pleroma.{Activity, Repo, Object, Upload, User, Notification}
+  alias Pleroma.{Activity, User, Repo, Object, Upload, User, Notification}
   alias Pleroma.Web.ActivityPub.{Transmogrifier, MRF}
   alias Pleroma.Web.WebFinger
   alias Pleroma.Web.Federator
@@ -336,8 +336,27 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def pin(%User{} = actor, %Object{} = object, local \\ true) do
-    "blah"
+  def pin(%User{} = user, %Object{} = object, local \\ true) do
+    with true <- Enum.member?(object.data["to"], "https://www.w3.org/ns/activitystreams#Public"),
+         %{valid?: true} = info_cng <- User.Info.add_pinned_object(user.info, object),
+         user_cng <- Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_cng),
+         {:ok, user} <- User.update_and_set_cache(user_cng),
+         pin_data <- make_pin_data(user, object.data["id"]),
+         {:ok, activity} <- insert(pin_data, local),
+         :ok <- maybe_federate(activity) do
+      {:ok, activity, object}
+    end
+  end
+
+  def unpin(%User{} = user, %Object{} = object, local \\ true) do
+    with %{valid?: true} = info_cng <- User.Info.remove_pinned_object(user.info, object),
+         user_cng <- Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_cng),
+         {:ok, user} <- User.update_and_set_cache(user_cng),
+         pin_data <- make_unpin_data(user, object.data["id"]),
+         {:ok, activity} <- insert(pin_data, local),
+         :ok <- maybe_federate(activity) do
+      {:ok, object}
+    end
   end
 
   def fetch_activities_for_context(context, opts \\ %{}) do
@@ -563,15 +582,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp restrict_pinned(query, %{"pinned" => "true", "pinned_object_ids" => ids}) do
-    from(activity in query,
+    from(
+      activity in query,
       where:
         fragment(
-          """
-          (?)->>'type' = 'Create' and ((?)->'object'->>'id' = any (?) or (?)->>'object' = any (?))
-          """,
+          "(?)->>'type' = 'Create' and coalesce((?)->'object'->>'id', (?)->>'object') = any (?)",
           activity.data,
           activity.data,
-          ^ids,
           activity.data,
           ^ids
         )
