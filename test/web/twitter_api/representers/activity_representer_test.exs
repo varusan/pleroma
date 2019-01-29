@@ -104,6 +104,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
         "to" => to,
         "actor" => User.ap_id(user),
         "object" => %{
+          "id" => "object_id",
           "published" => date,
           "type" => "Note",
           "content" => content_html,
