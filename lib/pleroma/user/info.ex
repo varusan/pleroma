@@ -198,17 +198,22 @@ defmodule Pleroma.User.Info do
     ])
   end
 
-  def add_pinned_object(info, %Pleroma.Object{data: %{"id" => ap_id}}) do
+  def add_pinned_object(info, %Pleroma.Object{data: %{"id" => ap_id}}, local \\ true) do
     if ap_id not in info.pinned_objects do
       max_pinned_statuses = Pleroma.Config.get([:instance, :max_pinned_statuses], 0)
       params = %{pinned_objects: [ap_id | info.pinned_objects]}
 
-      info
-      |> cast(params, [:pinned_objects])
-      |> validate_length(:pinned_objects,
-        max: max_pinned_statuses,
-        message: "You have already pinned the maximum number of statuses"
-      )
+      if local do
+        info
+        |> cast(params, [:pinned_objects])
+        |> validate_length(:pinned_objects,
+          max: max_pinned_statuses,
+          message: "You have already pinned the maximum number of statuses"
+        )
+      else
+        info
+        |> cast(params, [:pinned_objects])
+      end
     else
       change(info)
     end

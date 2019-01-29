@@ -342,13 +342,19 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   def pin(%User{} = user, %Object{} = object, local \\ true) do
     with true <- Enum.member?(object.data["to"], "https://www.w3.org/ns/activitystreams#Public"),
-         %{valid?: true} = info_cng <- User.Info.add_pinned_object(user.info, object),
+         %{valid?: true} = info_cng <- User.Info.add_pinned_object(user.info, object, local),
          user_cng <- Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_cng),
          {:ok, user} <- User.update_and_set_cache(user_cng),
          pin_data <- make_pin_data(user, object.data["id"]),
          {:ok, activity} <- insert(pin_data, local),
          :ok <- maybe_federate(activity) do
       {:ok, activity, object}
+    else
+      %{errors: [pinned_objects: {err, _}]} ->
+        {:error, err}
+
+      _ ->
+        {:error, "Could not pin"}
     end
   end
 
