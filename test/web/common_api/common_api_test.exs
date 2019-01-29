@@ -117,10 +117,10 @@ defmodule Pleroma.Web.CommonAPI.Test do
     test "pin status", %{user: user, activity: activity} do
       assert {:ok, ^activity} = CommonAPI.pin(activity.id, user)
 
-      id = activity.id
+      id = activity.data["object"]["id"]
       user = refresh_record(user)
 
-      assert %User{info: %{pinned_activities: [^id]}} = user
+      assert %User{info: %{pinned_objects: [^id]}} = user
     end
 
     test "only self-authored can be pinned", %{activity: activity} do
@@ -149,7 +149,7 @@ defmodule Pleroma.Web.CommonAPI.Test do
 
       user = refresh_record(user)
 
-      assert %User{info: %{pinned_activities: []}} = user
+      assert %User{info: %{pinned_objects: []}} = user
     end
 
     test "should unpin when deleting a status", %{user: user, activity: activity} do
@@ -161,7 +161,7 @@ defmodule Pleroma.Web.CommonAPI.Test do
 
       user = refresh_record(user)
 
-      assert %User{info: %{pinned_activities: []}} = user
+      assert %User{info: %{pinned_objects: []}} = user
     end
   end
 end
