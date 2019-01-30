@@ -174,17 +174,21 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   def pin(id_or_ap_id, %{ap_id: user_ap_id} = user) do
-    with %Activity{
-           actor: ^user_ap_id,
-           data: %{
-             "type" => "Create"
-           }
-         } = activity <- get_by_id_or_ap_id(id_or_ap_id),
+    with {_,
+          %Activity{
+            actor: ^user_ap_id,
+            data: %{
+              "type" => "Create"
+            }
+          } = activity} <- {:user_error, get_by_id_or_ap_id(id_or_ap_id)},
          %Object{data: %{"actor" => ^user_ap_id, "type" => "Note"}} = object <-
            Object.normalize(activity.data["object"]),
          {:ok, _activity, _object} <- ActivityPub.pin(user, object) do
       {:ok, activity}
     else
+      {:user_error, _} ->
+        {:error, "Could not pin"}
+
       e ->
         e
     end
