@@ -67,6 +67,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
+  def contain_origin_from_id(_, _) do
+    :ok
+  end
+
   @doc """
   Modifies an incoming AP object (mastodon format) to our internal format.
   """
