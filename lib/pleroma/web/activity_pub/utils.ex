@@ -581,7 +581,8 @@ defmodule Pleroma.Web.ActivityPub.Utils do
         Pleroma.Web.Router.Helpers.activity_pub_url(Pleroma.Web.Endpoint, :pinned, user.nickname),
       "object" => object_ap_id,
       "actor" => user.ap_id,
-      "type" => "Add"
+      "type" => "Add",
+      "to" => ["https://www.w3.org/ns/activitystreams#Public"]
     }
   end
 
@@ -591,7 +592,8 @@ defmodule Pleroma.Web.ActivityPub.Utils do
         Pleroma.Web.Router.Helpers.activity_pub_url(Pleroma.Web.Endpoint, :pinned, user.nickname),
       "object" => object_ap_id,
       "actor" => user.ap_id,
-      "type" => "Remove"
+      "type" => "Remove",
+      "to" => ["https://www.w3.org/ns/activitystreams#Public"]
     }
   end
 
