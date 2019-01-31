@@ -57,6 +57,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       "followers" => "#{user.ap_id}/followers",
       "inbox" => "#{user.ap_id}/inbox",
       "outbox" => "#{user.ap_id}/outbox",
+      "featured" => "#{user.ap_id}/collections/featured",
       "preferredUsername" => user.nickname,
       "name" => user.name,
       "summary" => user.bio,
@@ -226,7 +227,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
   end
 
   def render("featured.json", %{
-        user: %{nickname: nickname, info: %{pinned_objects: pinned_objects}}
+        user: %{ap_id: ap_id, info: %{pinned_objects: pinned_objects}}
       }) do
     rendered_objects =
       Enum.reduce(pinned_objects, [], fn id, acc ->
@@ -234,8 +235,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       end)
 
     %{
-      "id" =>
-        Pleroma.Web.Router.Helpers.activity_pub_url(Pleroma.Web.Endpoint, :pinned, nickname),
+      "id" => "#{ap_id}/collections/featured",
       "type" => "OrderedCollection",
       "orderedItems" => rendered_objects
     }
