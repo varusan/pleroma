@@ -891,8 +891,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   def is_public?(%Activity{data: data}), do: is_public?(data)
   def is_public?(%{"directMessage" => true}), do: false
 
-  def is_public?(data) do
-    "https://www.w3.org/ns/activitystreams#Public" in (data["to"] ++ (data["cc"] || []))
+  def is_public?(%{"to" => to, "cc" => cc}) do
+    "https://www.w3.org/ns/activitystreams#Public" in (to ++ (cc || []))
+  end
+
+  def is_public?(%{"to" => to}) do
+    is_public?(%{"to" => to, "cc" => []})
+  end
+
+  def is_public?(_) do
+    true
   end
 
   def is_private?(activity) do
