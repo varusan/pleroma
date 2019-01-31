@@ -161,6 +161,10 @@ defmodule Pleroma.Web.Salmon do
     |> Enum.filter(fn user -> user && !user.local end)
   end
 
+  def remote_users(_) do
+    []
+  end
+
   # push an activity to remote accounts
   #
   defp send_to_user(%{info: %{salmon: salmon}}, feed, poster),
