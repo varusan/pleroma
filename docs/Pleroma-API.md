@@ -1,12 +1,8 @@
-# Authentication
+# Pleroma API
 
 Requests that require it can be authenticated with [an OAuth token](https://tools.ietf.org/html/rfc6749), the `_pleroma_key` cookie, or [HTTP Basic Authentication](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Authorization).
 
-# Request parameters
-
 Request parameters can be passed via [query strings](https://en.wikipedia.org/wiki/Query_string) or as [form data](https://www.w3.org/TR/html401/interact/forms.html). Files must be uploaded as `multipart/form-data`.
-
-# Endpoints
 
 ## `/api/pleroma/emoji`
 ### Lists the custom emoji on that server.
@@ -56,6 +52,7 @@ Request parameters can be passed via [query strings](https://en.wikipedia.org/wi
     * `confirm`
     * `captcha_solution`: optional, contains provider-specific captcha solution,
     * `captcha_token`: optional, contains provider-specific captcha token
+    * `token`: invite token required when the registerations aren't public.
 * Response: JSON. Returns a user object on success, otherwise returns `{"error": "error_msg"}`
 * Example response:
 ```

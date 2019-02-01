@@ -7,11 +7,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
-  alias Pleroma.{Activity, Object, User}
+  alias Pleroma.{Activity, Object, User, Instances}
   alias Pleroma.Builders.ActivityBuilder
 
   import Pleroma.Factory
   import Tesla.Mock
+  import Mock
 
   setup do
     mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -623,8 +624,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
           "in_reply_to_status_id" => private_activity_2.id
         })
 
-      assert user1.following == [user3.ap_id <> "/followers", user1.ap_id]
-
       activities = ActivityPub.fetch_activities([user1.ap_id | user1.following])
 
       assert [public_activity, private_activity_1, private_activity_3] == activities
@@ -696,6 +695,46 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     activities = ActivityPub.fetch_user_activities(user, nil, %{"pinned" => "true"})
 
     assert 3 = length(activities)
+  end
+
+  describe "publish_one/1" do
+    test_with_mock "it calls `Instances.set_unreachable` on target inbox on non-2xx HTTP response code",
+                   Instances,
+                   [:passthrough],
+                   [] do
+      actor = insert(:user)
+      inbox = "http://404.site/users/nick1/inbox"
+
+      assert {:error, _} =
+               ActivityPub.publish_one(%{inbox: inbox, json: "{}", actor: actor, id: 1})
+
+      assert called(Instances.set_unreachable(inbox))
+    end
+
+    test_with_mock "it calls `Instances.set_unreachable` on target inbox on request error of any kind",
+                   Instances,
+                   [:passthrough],
+                   [] do
+      actor = insert(:user)
+      inbox = "http://connrefused.site/users/nick1/inbox"
+
+      assert {:error, _} =
+               ActivityPub.publish_one(%{inbox: inbox, json: "{}", actor: actor, id: 1})
+
+      assert called(Instances.set_unreachable(inbox))
+    end
+
+    test_with_mock "it does NOT call `Instances.set_unreachable` if target is reachable",
+                   Instances,
+                   [:passthrough],
+                   [] do
+      actor = insert(:user)
+      inbox = "http://200.site/users/nick1/inbox"
+
+      assert {:ok, _} = ActivityPub.publish_one(%{inbox: inbox, json: "{}", actor: actor, id: 1})
+
+      refute called(Instances.set_unreachable(inbox))
+    end
   end
 
   def data_uri do

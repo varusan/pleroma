@@ -423,6 +423,28 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
+  def bookmark_status(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+    with %Activity{} = activity <- Repo.get(Activity, id),
+         %User{} = user <- User.get_by_nickname(user.nickname),
+         true <- ActivityPub.visible_for_user?(activity, user),
+         {:ok, user} <- User.bookmark(user, activity.data["object"]["id"]) do
+      conn
+      |> put_view(StatusView)
+      |> try_render("status.json", %{activity: activity, for: user, as: :activity})
+    end
+  end
+
+  def unbookmark_status(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+    with %Activity{} = activity <- Repo.get(Activity, id),
+         %User{} = user <- User.get_by_nickname(user.nickname),
+         true <- ActivityPub.visible_for_user?(activity, user),
+         {:ok, user} <- User.unbookmark(user, activity.data["object"]["id"]) do
+      conn
+      |> put_view(StatusView)
+      |> try_render("status.json", %{activity: activity, for: user, as: :activity})
+    end
+  end
+
   def notifications(%{assigns: %{user: user}} = conn, params) do
     notifications = Notification.for_user(user, params)
 
@@ -583,7 +605,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       followers =
         cond do
           for_user && user.id == for_user.id -> followers
-          user.info.hide_network -> []
+          user.info.hide_followers -> []
           true -> followers
         end
 
@@ -599,7 +621,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       followers =
         cond do
           for_user && user.id == for_user.id -> followers
-          user.info.hide_network -> []
+          user.info.hide_followings -> []
           true -> followers
         end
 
@@ -859,6 +881,19 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     |> render("index.json", %{activities: activities, for: user, as: :activity})
   end
 
+  def bookmarks(%{assigns: %{user: user}} = conn, _) do
+    user = Repo.get(User, user.id)
+
+    activities =
+      user.bookmarks
+      |> Enum.map(fn id -> Activity.get_create_by_object_ap_id(id) end)
+      |> Enum.reverse()
+
+    conn
+    |> put_view(StatusView)
+    |> render("index.json", %{activities: activities, for: user, as: :activity})
+  end
+
   def get_lists(%{assigns: %{user: user}} = conn, opts) do
     lists = Pleroma.List.for_user(user, opts)
     res = ListView.render("lists.json", lists: lists)
@@ -870,7 +905,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       res = ListView.render("list.json", list: list)
       json(conn, res)
     else
-      _e -> json(conn, "error")
+      _e ->
+        conn
+        |> put_status(404)
+        |> json(%{error: "Record not found"})
     end
   end
 
@@ -1311,7 +1349,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
                [],
                adapter: [
                  timeout: timeout,
-                 recv_timeout: timeout
+                 recv_timeout: timeout,
+                 pool: :default
                ]
              ),
            {:ok, data} <- Jason.decode(body) do

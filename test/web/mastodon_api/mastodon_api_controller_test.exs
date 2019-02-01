@@ -1099,9 +1099,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert id == to_string(user.id)
   end
 
-  test "getting followers, hide_network", %{conn: conn} do
+  test "getting followers, hide_followers", %{conn: conn} do
     user = insert(:user)
-    other_user = insert(:user, %{info: %{hide_network: true}})
+    other_user = insert(:user, %{info: %{hide_followers: true}})
     {:ok, _user} = User.follow(user, other_user)
 
     conn =
@@ -1111,9 +1111,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert [] == json_response(conn, 200)
   end
 
-  test "getting followers, hide_network, same user requesting", %{conn: conn} do
+  test "getting followers, hide_followers, same user requesting", %{conn: conn} do
     user = insert(:user)
-    other_user = insert(:user, %{info: %{hide_network: true}})
+    other_user = insert(:user, %{info: %{hide_followers: true}})
     {:ok, _user} = User.follow(user, other_user)
 
     conn =
@@ -1137,8 +1137,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert id == to_string(other_user.id)
   end
 
-  test "getting following, hide_network", %{conn: conn} do
-    user = insert(:user, %{info: %{hide_network: true}})
+  test "getting following, hide_followings", %{conn: conn} do
+    user = insert(:user, %{info: %{hide_followings: true}})
     other_user = insert(:user)
     {:ok, user} = User.follow(user, other_user)
 
@@ -1149,8 +1149,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert [] == json_response(conn, 200)
   end
 
-  test "getting following, hide_network, same user requesting", %{conn: conn} do
-    user = insert(:user, %{info: %{hide_network: true}})
+  test "getting following, hide_followings, same user requesting", %{conn: conn} do
+    user = insert(:user, %{info: %{hide_followings: true}})
     other_user = insert(:user)
     {:ok, user} = User.follow(user, other_user)
 
@@ -1692,5 +1692,56 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
                }
              }
     end
+  end
+
+  test "bookmarks" do
+    user = insert(:user)
+    for_user = insert(:user)
+
+    {:ok, activity1} =
+      CommonAPI.post(user, %{
+        "status" => "heweoo?"
+      })
+
+    {:ok, activity2} =
+      CommonAPI.post(user, %{
+        "status" => "heweoo!"
+      })
+
+    response1 =
+      build_conn()
+      |> assign(:user, for_user)
+      |> post("/api/v1/statuses/#{activity1.id}/bookmark")
+
+    assert json_response(response1, 200)["bookmarked"] == true
+
+    response2 =
+      build_conn()
+      |> assign(:user, for_user)
+      |> post("/api/v1/statuses/#{activity2.id}/bookmark")
+
+    assert json_response(response2, 200)["bookmarked"] == true
+
+    bookmarks =
+      build_conn()
+      |> assign(:user, for_user)
+      |> get("/api/v1/bookmarks")
+
+    assert [json_response(response2, 200), json_response(response1, 200)] ==
+             json_response(bookmarks, 200)
+
+    response1 =
+      build_conn()
+      |> assign(:user, for_user)
+      |> post("/api/v1/statuses/#{activity1.id}/unbookmark")
+
+    assert json_response(response1, 200)["bookmarked"] == false
+
+    bookmarks =
+      build_conn()
+      |> assign(:user, for_user)
+      |> get("/api/v1/bookmarks")
+
+    assert [json_response(response2, 200)] == json_response(bookmarks, 200)
   end
 end
