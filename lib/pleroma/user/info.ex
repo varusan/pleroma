@@ -31,8 +31,7 @@ defmodule Pleroma.User.Info do
     field(:hub, :string, default: nil)
     field(:salmon, :string, default: nil)
     field(:pinned_objects, {:array, :string}, default: [])
-    field(:hide_followers, :boolean, default: false)
-    field(:hide_followings, :boolean, default: false)
+    field(:hide_network, :boolean, default: false)
 
     # Found in the wild
     # ap_id -> Where is this used?
@@ -144,8 +143,7 @@ defmodule Pleroma.User.Info do
       :no_rich_text,
       :default_scope,
       :banner,
-      :hide_followings,
-      :hide_followers,
+      :hide_network,
       :background
     ])
   end
