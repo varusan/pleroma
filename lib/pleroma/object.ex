@@ -62,6 +62,20 @@ defmodule Pleroma.Object do
     end
   end
 
+  def set_cache(%Object{data: %{"id" => ap_id}} = object) do
+    Cachex.put(:user_cache, "object:#{ap_id}", object)
+    {:ok, object}
+  end
+
+  def update_and_set_cache(changeset) do
+   IO.inspect changeset
+    with {:ok, object} <- Repo.update(changeset) do
+      set_cache(object)
+    else
+      e -> e
+    end
+  end
+
   def context_mapping(context) do
     Object.change(%Object{}, %{data: %{"id" => context}})
   end

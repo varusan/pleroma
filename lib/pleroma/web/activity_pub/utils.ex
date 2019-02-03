@@ -213,7 +213,6 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     # Alternatively, just don't do this and fetch the current object each time. Most
     # could probably be taken from cache.
     relevant_activities = Activity.get_all_create_by_object_ap_id(id)
-
     Enum.map(relevant_activities, fn activity ->
       new_activity_data = activity.data |> Map.put("object", object.data)
       changeset = Changeset.change(activity, data: new_activity_data)
@@ -285,7 +284,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
            |> Map.put("#{property}_count", length(element))
            |> Map.put("#{property}s", element),
          changeset <- Changeset.change(object, data: new_data),
-         {:ok, object} <- Repo.update(changeset),
+         {:ok, object} <- Object.update_and_set_cache(changeset),
          _ <- update_object_in_activities(object) do
       {:ok, object}
     end
