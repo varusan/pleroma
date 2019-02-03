@@ -68,7 +68,6 @@ defmodule Pleroma.Object do
   end
 
   def update_and_set_cache(changeset) do
-   IO.inspect changeset
     with {:ok, object} <- Repo.update(changeset) do
       set_cache(object)
     else
