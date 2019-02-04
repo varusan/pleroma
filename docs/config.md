@@ -17,7 +17,7 @@ Note: `strip_exif` has been replaced by `Pleroma.Upload.Filter.Mogrify`.
 
 ## Pleroma.Upload.Filter.Mogrify
 
-* `args`: List of actions for the `mogrify` command like `"strip"` or `["strip", {"impode", "1"}]`.
+* `args`: List of actions for the `mogrify` command like `"strip"` or `["strip", "auto-orient", {"impode", "1"}]`.
 
 ## Pleroma.Upload.Filter.Dedupe
 
@@ -148,7 +148,8 @@ This section is used to configure Pleroma-FE, unless ``:managed_config`` in ``:i
 * `allow_direct`: whether to allow direct messages
 
 ## :mrf_hellthread
-* `threshold`: Number of mentioned users after which the message gets discarded as spam
+* `delist_threshold`: Number of mentioned users after which the message gets delisted (the message can still be seen, but it will not show up in public timelines and mentioned users won't get notifications about it). Set to 0 to disable.
+* `reject_threshold`: Number of mentioned users after which the messaged gets rejected. Set to 0 to disable.
 
 ## :media_proxy
 * `enabled`: Enables proxying of remote media to the instance’s proxy
