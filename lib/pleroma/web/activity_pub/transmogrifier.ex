@@ -642,18 +642,15 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
-  # Mastodon pins
   def handle_incoming(
         %{
           "type" => "Add",
           "target" => target,
-          "object" => object_id,
-          "actor" => actor_ap_id
+          "object" => object_id
         } = data
-      )
-      when target == actor_ap_id <> "/collections/featured" do
+      ) do
     with actor <- get_actor(data),
-         %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
+         %User{featured_address: ^target} = actor <- User.get_or_fetch_by_ap_id(actor),
          {:ok, object} <- get_obj_helper(object_id) || fetch_obj_helper(object_id),
          {:ok, activity, _} <- ActivityPub.pin(actor, object, false) do
       {:ok, activity}
@@ -666,13 +663,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         %{
           "type" => "Remove",
           "target" => target,
-          "object" => object_id,
-          "actor" => actor_ap_id
+          "object" => object_id
         } = data
-      )
-      when target == actor_ap_id <> "/collections/featured" do
+      ) do
     with actor <- get_actor(data),
-         %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
+         %User{featured_address: ^target} = actor <- User.get_or_fetch_by_ap_id(actor),
          {:ok, object} <- get_obj_helper(object_id) || fetch_obj_helper(object_id),
          {:ok, activity, _} <- ActivityPub.unpin(actor, object, false) do
       {:ok, activity}

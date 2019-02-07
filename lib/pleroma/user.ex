@@ -37,6 +37,7 @@ defmodule Pleroma.User do
     field(:avatar, :map)
     field(:local, :boolean, default: true)
     field(:follower_address, :string)
+    field(:featured_address, :string)
     field(:search_rank, :float, virtual: true)
     field(:tags, {:array, :string}, default: [])
     field(:bookmarks, {:array, :string}, default: [])
@@ -96,6 +97,10 @@ defmodule Pleroma.User do
     "#{ap_id(user)}/followers"
   end
 
+  def ap_featured_collection(%User{} = user) do
+    "#{ap_id(user)}/collections/featured"
+  end
+
   def follow_changeset(struct, params \\ %{}) do
     struct
     |> cast(params, [:following])
@@ -124,7 +129,7 @@ defmodule Pleroma.User do
 
     changes =
       %User{}
-      |> cast(params, [:bio, :name, :ap_id, :nickname, :avatar])
+      |> cast(params, [:bio, :name, :ap_id, :nickname, :avatar, :featured_address])
       |> validate_required([:name, :ap_id])
       |> unique_constraint(:nickname)
       |> validate_format(:nickname, @email_regex)
@@ -229,12 +234,14 @@ defmodule Pleroma.User do
       hashed = Pbkdf2.hashpwsalt(changeset.changes[:password])
       ap_id = User.ap_id(%User{nickname: changeset.changes[:nickname]})
       followers = User.ap_followers(%User{nickname: changeset.changes[:nickname]})
+      featured = User.ap_featured_collection(%User{nickname: changeset.changes[:nickname]})
 
       changeset
       |> put_change(:password_hash, hashed)
       |> put_change(:ap_id, ap_id)
       |> put_change(:following, [followers])
       |> put_change(:follower_address, followers)
+      |> put_change(:featured_address, featured)
     else
       changeset
     end
