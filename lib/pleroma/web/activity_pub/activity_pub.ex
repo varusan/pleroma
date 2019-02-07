@@ -755,6 +755,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  def fetch_and_prepare_featured_from_ap_id(nil) do
+    nil
+  end
+
   def fetch_and_prepare_featured_from_ap_id(ap_id) do
     with {:ok, data} <- fetch_and_contain_remote_object_from_id(ap_id) do
       pin_data_from_featured_collection(data)
