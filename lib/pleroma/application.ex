@@ -26,6 +26,11 @@ defmodule Pleroma.Application do
 
     Pleroma.Config.DeprecationWarnings.warn()
 
+    default_settings = [ default_ttl: 25000,
+                         ttl_interval: 1000,
+                         limit: 2500
+                       ]
+
     # Define workers and child supervisors to be supervised
     children =
       [
@@ -33,6 +38,11 @@ defmodule Pleroma.Application do
         supervisor(Pleroma.Repo, []),
         worker(Pleroma.Emoji, []),
         worker(Pleroma.Captcha, []),
+        worker(Cachex, 
+          [
+            :keyword_policy_cache,
+            default_settings
+          ])
         worker(
           Cachex,
           [
@@ -47,11 +57,7 @@ defmodule Pleroma.Application do
           Cachex,
           [
             :user_cache,
-            [
-              default_ttl: 25000,
-              ttl_interval: 1000,
-              limit: 2500
-            ]
+            default_settings
           ],
           id: :cachex_user
         ),
@@ -59,11 +65,7 @@ defmodule Pleroma.Application do
           Cachex,
           [
             :object_cache,
-            [
-              default_ttl: 25000,
-              ttl_interval: 1000,
-              limit: 2500
-            ]
+            default_settings
           ],
           id: :cachex_object
         ),

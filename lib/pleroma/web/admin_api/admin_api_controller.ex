@@ -183,6 +183,13 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     |> json(token.token)
   end
 
+  @doc "Add another MRF Keyword Policy rule"
+  def add_keyword_policy(conn, %{"keyword_policy" => %{"pattern" => pattern, "replacement" => replacement}}) when is_binary(pattern) and
+                                                                                                                 is_binary(replacement) do
+    
+  end
+
+
   def errors(conn, {:param_cast, _}) do
     conn
     |> put_status(400)

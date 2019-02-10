@@ -25,4 +25,5 @@ defmodule Pleroma.Web.ActivityPub.MRF do
   defp get_policies(policy) when is_atom(policy), do: [policy]
   defp get_policies(policies) when is_list(policies), do: policies
   defp get_policies(_), do: []
+
 end

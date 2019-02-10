@@ -158,6 +158,10 @@ defmodule Pleroma.Web.Router do
     post("/email_invite", AdminAPIController, :email_invite)
 
     get("/password_reset", AdminAPIController, :get_password_reset)
+
+    post("/mrf/keyword_policy/add", AdminAPIController, :add_keyword_policy)
+    delete("/mrf/keyword_policy/delete", AdminAPIController, :delete_keyword_policy)
+    get("/mrf/keyword_policy/list", AdminAPIController, :list_keyword_policy)
   end
 
   scope "/", Pleroma.Web.TwitterAPI do

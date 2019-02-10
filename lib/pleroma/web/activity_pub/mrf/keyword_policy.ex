@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
   @behaviour Pleroma.Web.ActivityPub.MRF
+
   defp string_matches?(string, pattern) when is_binary(pattern) do
     String.contains?(string, pattern)
   end
@@ -57,6 +58,10 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
      message
      |> put_in(["object", "content"], content)
      |> put_in(["object", "summary"], summary)}
+  end
+
+  def save_keyword_policy(keyword_policy) do
+    Pleroma.Config.put(:mrf_keyword, keyword_policy)
   end
 
   @impl true
