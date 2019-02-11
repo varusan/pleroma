@@ -371,30 +371,34 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       Map.put(data, "actor", actor)
       |> fix_addressing
 
-    with nil <- Activity.get_create_by_object_ap_id(object["id"]),
-         %User{} = user <- User.get_or_fetch_by_ap_id(data["actor"]) do
-      object = fix_object(data["object"])
+    key = "activity-by-object:#{object["id"]}"
 
-      params = %{
-        to: data["to"],
-        object: object,
-        actor: user,
-        context: object["conversation"],
-        local: false,
-        published: data["published"],
-        additional:
-          Map.take(data, [
-            "cc",
-            "directMessage",
-            "id"
-          ])
-      }
+    Cachex.fetch!(:object_cache, key, fn _ ->
+      with nil <- Activity.get_create_by_object_ap_id(object["id"]),
+           %User{} = user <- User.get_or_fetch_by_ap_id(data["actor"]) do
+        object = fix_object(data["object"])
 
-      ActivityPub.create(params)
-    else
-      %Activity{} = activity -> {:ok, activity}
-      _e -> :error
-    end
+        params = %{
+          to: data["to"],
+          object: object,
+          actor: user,
+          context: object["conversation"],
+          local: false,
+          published: data["published"],
+          additional:
+            Map.take(data, [
+              "cc",
+              "directMessage",
+              "id"
+            ])
+        }
+
+        {:commit, ActivityPub.create(params)}
+      else
+        %Activity{} = activity -> {:commit, {:ok, activity}}
+        _e -> {:ignore, :error}
+      end
+    end)
   end
 
   def handle_incoming(

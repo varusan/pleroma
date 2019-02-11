@@ -23,16 +23,24 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
   describe "handle_incoming" do
     test "it ignores an incoming notice if we already have it" do
-      activity = insert(:note_activity)
-
       data =
         File.read!("test/fixtures/mastodon-post-activity.json")
         |> Poison.decode!()
-        |> Map.put("object", activity.data["object"])
 
-      {:ok, returned_activity} = Transmogrifier.handle_incoming(data)
+      Enum.map(1..10, fn i ->
+        data =
+          data
+          |> Map.put("id", "#{data["id"]}-#{i}")
 
-      assert activity == returned_activity
+        Task.async(fn ->
+          Transmogrifier.handle_incoming(data)
+        end)
+      end)
+      |> Enum.map(fn task -> Task.await(task) end)
+      |> Enum.reduce(fn {:ok, activity}, {:ok, returned_activity} ->
+        assert activity == returned_activity
+        {:ok, returned_activity}
+      end)
     end
 
     test "it fetches replied-to activities if we don't have them" do
