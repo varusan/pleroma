@@ -49,6 +49,13 @@ defmodule Pleroma.Notification do
 
   defp restrict_since(query, _), do: query
 
+  defp restrict_type(query, %{"exclude_types" => exclude_types})
+       when is_list(exclude_types) do
+    from(activity in query, where: activity.type not in ^exclude_types)
+  end
+
+  defp restrict_type(query, _), do: query
+
   def for_user(user, opts \\ %{}) do
     query =
       from(
@@ -64,6 +71,7 @@ defmodule Pleroma.Notification do
       query
       |> restrict_since(opts)
       |> restrict_max(opts)
+      |> restrict_type(opts)
 
     Repo.all(query)
   end

@@ -704,6 +704,31 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert all = json_response(conn, 200)
       assert all == []
     end
+
+    test "getting type-restricted notifications", %{conn: conn} do
+      user1 = insert(:user)
+      user2 = insert(:user)
+      conn = assign(conn, :user, user1)
+
+      {:ok, activity} = CommonAPI.post(user2, %{"status" => "hi @#{user1.nickname}"})
+      {:ok, _} = Notification.create_notifications(activity)
+
+      {:ok, activity} = CommonAPI.post(user1, %{"status" => "hi @#{user2.nickname}"})
+      {:ok, _} = Notification.create_notifications(activity)
+
+      {:ok, activity} = CommonAPI.favorite(user2, activity.id)
+      {:ok, _} = Notification.create_notifications(activity)
+
+      all = get(conn, "/api/v1/notifications")
+      no_fav = get(conn, "/api/v1/notifications", %{"exclude_types" => ["favourite"]})
+      no_mention = get(conn, "/api/v1/notifications", %{"exclude_types" => ["mention"]})
+      none = get(conn, "/api/v1/notifications", %{"exclude_types" => ["mention", "favourite"]})
+
+      assert [favourite, mention] = json_response(all, 200)
+      assert json_response(no_fav, 200) == mention
+      assert json_response(no_mention, 200) == favourite
+      assert json_response(none, 200) == []
+    end
   end
 
   describe "reblogging" do

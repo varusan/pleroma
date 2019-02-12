@@ -482,6 +482,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def notifications(%{assigns: %{user: user}} = conn, params) do
+    params =
+      params
+      |> Map.put("exclude_types", Notification.masto_to_ap(params["exclude_types"]))
+
     notifications = Notification.for_user(user, params)
 
     result =
