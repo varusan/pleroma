@@ -1265,7 +1265,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def render_notification(user, %{id: id, activity: activity, inserted_at: created_at} = _params) do
     actor = User.get_cached_by_ap_id(activity.data["actor"])
     parent_activity = Activity.get_create_by_object_ap_id(activity.data["object"])
-    mastodon_type = Activity.mastodon_notification_type(activity)
+    mastodon_type = Notification.ap_to_masto(activity.data["type"])
 
     response = %{
       id: to_string(id),

@@ -22,6 +22,20 @@ defmodule Pleroma.Notification do
     timestamps()
   end
 
+  # https://github.com/tootsuite/mastodon/blob/master/app/models/notification.rb#L19
+  @mastodon_notification_types %{
+    "Create" => "mention",
+    "Follow" => "follow",
+    "Announce" => "reblog",
+    "Like" => "favourite"
+  }
+  @supported_activity_types Map.keys(@mastodon_notification_types)
+  @activity_mastodon_types Utils.map_exchange_key_value(@mastodon_notification_types)
+
+  def mastodon_notification_types(), do: @mastodon_notification_types
+  def supported_activity_types(), do: @supported_activity_types
+  def activity_mastodon_types(), do: @activity_mastodon_types
+
   # TODO: Make generic and unify (see activity_pub.ex)
   defp restrict_max(query, %{"max_id" => max_id}) do
     from(activity in query, where: activity.id < ^max_id)
@@ -106,7 +120,7 @@ defmodule Pleroma.Notification do
   end
 
   def create_notifications(%Activity{data: %{"to" => _, "type" => type}} = activity)
-      when type in ["Create", "Like", "Announce", "Follow"] do
+      when type in @supported_activity_types do
     users = get_notified_from_activity(activity)
 
     notifications = Enum.map(users, fn user -> create_notification(activity, user) end)
@@ -138,7 +152,7 @@ defmodule Pleroma.Notification do
         %Activity{data: %{"to" => _, "type" => type} = _data} = activity,
         local_only
       )
-      when type in ["Create", "Like", "Announce", "Follow"] do
+      when type in @supported_activity_types do
     recipients =
       []
       |> Utils.maybe_notify_to_recipients(activity)
@@ -149,4 +163,24 @@ defmodule Pleroma.Notification do
   end
 
   def get_notified_from_activity(_, _local_only), do: []
+
+  @doc "Transforms Mastodon notification types to ActivityPub types"
+  def masto_to_ap(masto_types) when is_list(masto_types) do
+    masto_types
+    |> Enum.map(fn x -> @activity_mastodon_types[x] end)
+  end
+
+  def masto_to_ap(masto_type) do
+    @activity_mastodon_types[masto_type]
+  end
+
+  @doc "Transforms Activity types to Mastodon Notifications"
+  def ap_to_masto(ap_types) when is_list(ap_types) do
+    ap_types
+    |> Enum.map(fn x -> @mastodon_notification_types[x] end)
+  end
+
+  def ap_to_masto(ap_type) do
+    @mastodon_notification_types[ap_type]
+  end
 end

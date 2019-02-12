@@ -7,12 +7,11 @@ defmodule Pleroma.Web.Push do
 
   alias Pleroma.Repo
   alias Pleroma.User
+  alias Pleroma.Notification
   alias Pleroma.Web.Push.Subscription
 
   require Logger
   import Ecto.Query
-
-  @types ["Create", "Follow", "Announce", "Like"]
 
   def start_link() do
     GenServer.start_link(__MODULE__, :ok, name: __MODULE__)
@@ -52,14 +51,16 @@ defmodule Pleroma.Web.Push do
     end
   end
 
+  @supported_activity_types Notification.supported_activity_types()
+
   def handle_cast(
         {:send, %{activity: %{data: %{"type" => type}}, user_id: user_id} = notification},
         state
       )
-      when type in @types do
+      when type in @supported_activity_types do
     actor = User.get_cached_by_ap_id(notification.activity.data["actor"])
 
-    type = Pleroma.Activity.mastodon_notification_type(notification.activity)
+    type = Notification.ap_to_masto(type)
 
     Subscription
     |> where(user_id: ^user_id)

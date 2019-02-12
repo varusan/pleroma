@@ -322,4 +322,12 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   end
 
   def maybe_extract_mentions(_), do: []
+
+  @spec map_exchange_key_value(Map) :: Map
+  def map_exchange_key_value(map) do
+    map
+    |> Map.to_list()
+    |> Enum.map(fn {v, k} -> {k, v} end)
+    |> Enum.into(%{})
+  end
 end

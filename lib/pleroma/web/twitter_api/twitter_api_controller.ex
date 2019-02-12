@@ -97,7 +97,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   def friends_timeline(%{assigns: %{user: user}} = conn, params) do
     params =
       params
-      |> Map.put("type", ["Create", "Announce", "Follow", "Like"])
+      |> Map.put("type", Notification.supported_activity_types())
       |> Map.put("blocking_user", user)
       |> Map.put("user", user)
 
@@ -164,7 +164,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   def mentions_timeline(%{assigns: %{user: user}} = conn, params) do
     params =
       params
-      |> Map.put("type", ["Create", "Announce", "Follow", "Like"])
+      |> Map.put("type", Notification.supported_activity_types())
       |> Map.put("blocking_user", user)
 
     activities = ActivityPub.fetch_activities([user.ap_id], params)

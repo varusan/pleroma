@@ -14,14 +14,6 @@ defmodule Pleroma.Activity do
   @type t :: %__MODULE__{}
   @primary_key {:id, Pleroma.FlakeId, autogenerate: true}
 
-  # https://github.com/tootsuite/mastodon/blob/master/app/models/notification.rb#L19
-  @mastodon_notification_types %{
-    "Create" => "mention",
-    "Follow" => "follow",
-    "Announce" => "reblog",
-    "Like" => "favourite"
-  }
-
   schema "activities" do
     field(:data, :map)
     field(:local, :boolean, default: true)
@@ -106,11 +98,4 @@ defmodule Pleroma.Activity do
   end
 
   def get_in_reply_to_activity(_), do: nil
-
-  for {ap_type, type} <- @mastodon_notification_types do
-    def mastodon_notification_type(%Activity{data: %{"type" => unquote(ap_type)}}),
-      do: unquote(type)
-  end
-
-  def mastodon_notification_type(%Activity{}), do: nil
 end
