@@ -124,7 +124,8 @@ defmodule Pleroma.User.Info do
       :uri,
       :hub,
       :topic,
-      :salmon
+      :salmon,
+      :pinned_objects
     ])
   end
 
@@ -135,8 +136,14 @@ defmodule Pleroma.User.Info do
       :source_data,
       :banner,
       :locked,
-      :magic_key
+      :magic_key,
+      :pinned_objects
     ])
+  end
+
+  def user_update(info, params) do
+    info
+    |> cast(params, [:pinned_objects])
   end
 
   def profile_update(info, params) do

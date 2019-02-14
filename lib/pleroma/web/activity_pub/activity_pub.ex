@@ -716,6 +716,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     locked = data["manuallyApprovesFollowers"] || false
     featured_address = data["featured"]
     pinned_objects = fetch_and_prepare_featured_from_ap_id(featured_address)
+
     data = Transmogrifier.maybe_fix_user_object(data)
 
     user_data = %{

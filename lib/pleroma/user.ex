@@ -106,7 +106,7 @@ defmodule Pleroma.User do
   def ap_followers(%User{} = user) do
     "#{ap_id(user)}/followers"
   end
-  
+
   def ap_featured_collection(%User{} = user) do
     "#{ap_id(user)}/collections/featured"
   end
@@ -166,12 +166,15 @@ defmodule Pleroma.User do
   end
 
   def update_changeset(struct, params \\ %{}) do
+    info_cng = User.Info.user_update(struct.info, params[:info])
+
     struct
-    |> cast(params, [:bio, :name, :avatar])
+    |> cast(params, [:bio, :name, :avatar, :featured_address])
     |> unique_constraint(:nickname)
     |> validate_format(:nickname, local_nickname_regex())
     |> validate_length(:bio, max: 5000)
     |> validate_length(:name, min: 1, max: 100)
+    |> put_embed(:info, info_cng)
   end
 
   def upgrade_changeset(struct, params \\ %{}) do
@@ -184,7 +187,14 @@ defmodule Pleroma.User do
       |> User.Info.user_upgrade(params[:info])
 
     struct
-    |> cast(params, [:bio, :name, :follower_address, :avatar, :last_refreshed_at])
+    |> cast(params, [
+      :bio,
+      :name,
+      :follower_address,
+      :avatar,
+      :last_refreshed_at,
+      :featured_address
+    ])
     |> unique_constraint(:nickname)
     |> validate_format(:nickname, local_nickname_regex())
     |> validate_length(:bio, max: 5000)
