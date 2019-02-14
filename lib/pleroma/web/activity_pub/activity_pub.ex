@@ -766,7 +766,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def fetch_and_prepare_featured_from_ap_id(nil) do
-    nil
+    []
   end
 
   def fetch_and_prepare_featured_from_ap_id(ap_id) do
