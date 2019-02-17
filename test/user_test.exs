@@ -4,7 +4,9 @@
 
 defmodule Pleroma.UserTest do
   alias Pleroma.Builders.UserBuilder
-  alias Pleroma.{User, Repo, Activity}
+  alias Pleroma.Activity
+  alias Pleroma.Repo
+  alias Pleroma.User
   alias Pleroma.Web.CommonAPI
   use Pleroma.DataCase
 
@@ -55,18 +57,21 @@ defmodule Pleroma.UserTest do
     followed_two = insert(:user)
     blocked = insert(:user)
     not_followed = insert(:user)
+    reverse_blocked = insert(:user)
 
     {:ok, user} = User.block(user, blocked)
+    {:ok, reverse_blocked} = User.block(reverse_blocked, user)
 
     {:ok, user} = User.follow(user, followed_zero)
 
-    {:ok, user} = User.follow_all(user, [followed_one, followed_two, blocked])
+    {:ok, user} = User.follow_all(user, [followed_one, followed_two, blocked, reverse_blocked])
 
     assert User.following?(user, followed_one)
     assert User.following?(user, followed_two)
     assert User.following?(user, followed_zero)
     refute User.following?(user, not_followed)
     refute User.following?(user, blocked)
+    refute User.following?(user, reverse_blocked)
   end
 
   test "follow_all follows mutliple users without duplicating" do
@@ -872,6 +877,16 @@ defmodule Pleroma.UserTest do
       Enum.each(["mary", "a", ""], fn query ->
         assert [] == User.search(query)
       end)
+    end
+
+    test "works with URIs" do
+      results = User.search("http://mastodon.example.org/users/admin", true)
+      result = results |> List.first()
+
+      user = User.get_by_ap_id("http://mastodon.example.org/users/admin")
+
+      assert length(results) == 1
+      assert user == result |> Map.put(:search_rank, nil)
     end
   end
 

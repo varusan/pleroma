@@ -334,12 +334,12 @@ defmodule Pleroma.User do
     end
   end
 
-  @doc "A mass follow for local users. Respects blocks but does not create activities."
+  @doc "A mass follow for local users. Respects blocks in both directions but does not create activities."
   @spec follow_all(User.t(), list(User.t())) :: {atom(), User.t()}
   def follow_all(follower, followeds) do
     followed_addresses =
       followeds
-      |> Enum.reject(fn %{ap_id: ap_id} -> ap_id in follower.info.blocks end)
+      |> Enum.reject(fn followed -> blocks?(follower, followed) || blocks?(followed, follower) end)
       |> Enum.map(fn %{follower_address: fa} -> fa end)
 
     q =
@@ -754,7 +754,7 @@ defmodule Pleroma.User do
     # Strip the beginning @ off if there is a query
     query = String.trim_leading(query, "@")
 
-    if resolve, do: User.get_or_fetch_by_nickname(query)
+    if resolve, do: get_or_fetch(query)
 
     fts_results = do_search(fts_search_subquery(query), for_user)
 
