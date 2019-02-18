@@ -227,6 +227,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       |> Map.merge(Map.take(params, ["to", "cc"]))
       |> Map.put("attributedTo", user.ap_id())
       |> Transmogrifier.fix_object()
+      |> Transmogrifier.reformat_object()
 
     ActivityPub.create(%{
       to: params["to"],

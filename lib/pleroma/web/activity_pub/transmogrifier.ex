@@ -12,6 +12,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   alias Pleroma.Repo
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.Formatter
 
   import Ecto.Query
 
@@ -66,6 +67,28 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       :error
     end
   end
+
+  def reformat_object(
+        %{"source" => %{"content" => content, "mediaType" => content_type}} = object
+      )
+      when content_type in ["text/plain", "text/markdown"] do
+    with mentions <- Formatter.parse_mentions(content),
+         tags <- Formatter.parse_tags(content),
+         html <-
+           Pleroma.Web.CommonAPI.Utils.make_content_html(
+             content,
+             mentions,
+             [],
+             tags,
+             content_type,
+             false
+           ) do
+      object
+      |> Map.put("content", html)
+    end
+  end
+
+  def reformat_object(object), do: object
 
   @doc """
   Modifies an incoming AP object (mastodon format) to our internal format.
