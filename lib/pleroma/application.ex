@@ -38,13 +38,6 @@ defmodule Pleroma.Application do
         worker(
           Cachex,
           [
-            :keyword_policy_cache,
-            default_settings
-          ]
-        ),
-        worker(
-          Cachex,
-          [
             :used_captcha_cache,
             [
               ttl_interval: :timer.seconds(Pleroma.Config.get!([Pleroma.Captcha, :seconds_valid]))
