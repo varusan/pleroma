@@ -26,7 +26,11 @@ defmodule Pleroma.Application do
 
     Pleroma.Config.DeprecationWarnings.warn()
 
-    default_settings = [default_ttl: 25000, ttl_interval: 1000, limit: 2500]
+    default_settings = [
+      expiration:
+        expiration(default: :timer.seconds(25), interval: :timer.seconds(1), lazy: true),
+      limit: 2500
+    ]
 
     # Define workers and child supervisors to be supervised
     children =
