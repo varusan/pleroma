@@ -159,7 +159,7 @@ defmodule Pleroma.Web.Router do
 
     get("/password_reset", AdminAPIController, :get_password_reset)
 
-    post("/mrf/keyword_policy/add", AdminAPIController, :add_keyword_policy)
+    post("/mrf/keyword_policy/save", AdminAPIController, :add_keyword_policy)
     delete("/mrf/keyword_policy/reset", AdminAPIController, :reset_keyword_policy)
     get("/mrf/keyword_policy/list", AdminAPIController, :list_keyword_policy)
   end
