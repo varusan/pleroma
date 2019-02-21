@@ -196,8 +196,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   @doc "Add another MRF Keyword Policy rule"
   def add_keyword_policy(conn, %{"policy" => policy}) do
     result = policy
-    |> Poison.decode! #FIXME: Better handling of invalid JSON
-    |> IO.inspect()
+    |> Poison.decode!
     |> KeywordPolicy.save_keyword_policy()
 
     case result do
@@ -211,7 +210,17 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
         |> json(%{status: "error", message: msg})
 
     end
+  end
 
+  @doc "Reset the keyword policy"
+  def reset_keyword_policy(conn, _params) do
+    KeywordPolicy.save_keyword_policy(%{"federated_timeline_removal" => [],
+                                           "reject" => [],
+                                           "replace" => %{}
+                                          })
+    conn
+    |> put_status(200)
+    |> json(%{status: "success", message: "Keyword Policy has been successfully reset"})
   end
 
 

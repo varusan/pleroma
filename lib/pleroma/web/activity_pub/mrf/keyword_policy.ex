@@ -60,14 +60,17 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
      |> put_in(["object", "summary"], summary)}
   end
 
-  def save_keyword_policy(keyword_policy=%{"federated_timeline_removal" => ftr,
-                                           "reject" => reject,
-                                           "replace" => replace}) do
+  def save_keyword_policy(%{"federated_timeline_removal" => ftr,
+                            "reject" => reject,
+                            "replace" => replace}) do
     with true <- Enum.all?(ftr, &String.valid?(&1)),
          true <- Enum.all?(reject, &String.valid?(&1)),
          true <- Enum.all?(Map.keys(replace), &String.valid?(&1)),
          true <- Enum.all?(Map.values(replace), &String.valid?(&1)) do
-          Pleroma.Config.put(:mrf_keyword, keyword_policy)
+        Pleroma.Config.put(:mrf_keyword, %{federated_timeline_removal: ftr,
+                                           reject: reject,
+                                           replace: replace
+                                          })
           :ok
     else
       false -> {:error, "All elements must be valid strings"}
