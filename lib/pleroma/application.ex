@@ -42,7 +42,7 @@ defmodule Pleroma.Application do
           [
             :keyword_policy_cache,
             default_settings
-          ])
+          ]),
         worker(
           Cachex,
           [
