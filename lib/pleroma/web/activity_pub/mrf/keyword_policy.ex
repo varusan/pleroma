@@ -60,8 +60,47 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
      |> put_in(["object", "summary"], summary)}
   end
 
-  def save_keyword_policy(keyword_policy) do
-    Pleroma.Config.put(:mrf_keyword, keyword_policy)
+  def save_keyword_policy(keyword_policy=%{"federated_timeline_removal" => ftr,
+                                           "reject" => reject,
+                                           "replace" => replace}) do
+    with true <- Enum.all?(ftr, &String.valid?(&1)),
+         true <- Enum.all?(reject, &String.valid?(&1)),
+         true <- Enum.all?(Map.keys(replace), &String.valid?(&1)),
+         true <- Enum.all?(Map.values(replace), &String.valid?(&1)) do
+          Pleroma.Config.put(:mrf_keyword, keyword_policy)
+          :ok
+    else
+      false -> {:error, "All elements must be valid strings"}
+    end
+  end
+
+  def list_keyword_policy(), do: Pleroma.Config.get(:mrf_keyword)
+
+  def nodeinfo_keyword_policy() do
+    Pleroma.Config.get(:mrf_keyword, [])
+      |> Enum.map(fn {key, value} ->
+        {key,
+          Enum.map(value, fn
+            {pattern, replacement} ->
+              %{
+                "pattern" =>
+                  if not is_binary(pattern) do
+                    inspect(pattern)
+                  else
+                    pattern
+                  end,
+                "replacement" => replacement
+              }
+
+          pattern ->
+            if not is_binary(pattern) do
+              inspect(pattern)
+            else
+              pattern
+            end
+          end)}
+      end)
+      |> Enum.into(%{})
   end
 
   @impl true

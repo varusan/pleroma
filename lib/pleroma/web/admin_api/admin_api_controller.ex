@@ -6,6 +6,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   use Pleroma.Web, :controller
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Relay
+  alias Pleroma.Web.ActivityPub.MRF.KeywordPolicy
 
   import Pleroma.Web.ControllerHelper, only: [json_response: 3]
 
@@ -183,10 +184,34 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     |> json(token.token)
   end
 
+  @doc "List this instance's keyword policy"
+  def list_keyword_policy(conn, _params) do
+    mrf_keyword = KeywordPolicy.list_keyword_policy()
+
+    conn
+    |> put_status(200)
+    |> json(mrf_keyword)
+  end
+
   @doc "Add another MRF Keyword Policy rule"
-  def add_keyword_policy(conn, %{"keyword_policy" => %{"pattern" => pattern, "replacement" => replacement}}) when is_binary(pattern) and
-                                                                                                                 is_binary(replacement) do
-    
+  def add_keyword_policy(conn, %{"policy" => policy}) do
+    result = policy
+    |> Poison.decode! #FIXME: Better handling of invalid JSON
+    |> IO.inspect()
+    |> KeywordPolicy.save_keyword_policy()
+
+    case result do
+      :ok ->
+        conn
+        |> put_status(201)
+        |> json(%{status: "success", message: "New keyword policy created"})
+      {:error, msg} ->
+        conn
+        |> put_status(422)
+        |> json(%{status: "error", message: msg})
+
+    end
+
   end
 
 
