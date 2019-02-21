@@ -11,6 +11,7 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
   alias Pleroma.User
   alias Pleroma.Web
   alias Pleroma.Web.ActivityPub.MRF
+  alias Pleroma.Web.ActivityPub.MRF.KeywordPolicy
 
   plug(Pleroma.Web.FederatingPlug)
 
@@ -45,32 +46,7 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
       Application.get_env(:pleroma, :mrf_simple)
       |> Enum.into(%{})
 
-    # This horror is needed to convert regex sigils to strings
-    mrf_keyword =
-      Application.get_env(:pleroma, :mrf_keyword, [])
-      |> Enum.map(fn {key, value} ->
-        {key,
-         Enum.map(value, fn
-           {pattern, replacement} ->
-             %{
-               "pattern" =>
-                 if not is_binary(pattern) do
-                   inspect(pattern)
-                 else
-                   pattern
-                 end,
-               "replacement" => replacement
-             }
-
-           pattern ->
-             if not is_binary(pattern) do
-               inspect(pattern)
-             else
-               pattern
-             end
-         end)}
-      end)
-      |> Enum.into(%{})
+    mrf_keyword = KeywordPolicy.nodeinfo_keyword_policy()
 
     mrf_policies =
       MRF.get_policies()
