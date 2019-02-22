@@ -8,7 +8,21 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicyTest do
   alias Pleroma.Web.ActivityPub.MRF.KeywordPolicy
 
   setup do
-    Pleroma.Config.put([:mrf_keyword], %{reject: [], federated_timeline_removal: [], replace: []})
+    Pleroma.Config.put([:mrf_keyword], %{reject: [], federated_timeline_removal: [], replace: %{}})
+  end
+
+  describe "managing keyword policies" do
+    test "save a new valid keyword policy" do
+      config = Pleroma.Config.get(:mrf_keyword)
+      result = KeywordPolicy.save_keyword_policy(%{config | replace: %{"toot" => "jort"}})
+      assert result == :ok
+    end
+
+    test "save a new invalid keyword policy" do
+      config = Pleroma.Config.get(:mrf_keyword)
+      result = KeywordPolicy.save_keyword_policy(%{config | replace: %{3 => "jort"}})
+      assert {:error, _} = result
+    end
   end
 
   describe "rejecting based on keywords" do
