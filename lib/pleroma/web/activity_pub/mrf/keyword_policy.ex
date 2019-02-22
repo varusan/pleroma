@@ -61,9 +61,9 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
   end
 
   def save_keyword_policy(%{
-        "federated_timeline_removal" => ftr,
-        "reject" => reject,
-        "replace" => replace
+        federated_timeline_removal: ftr,
+        reject: reject,
+        replace: replace
       }) do
     with true <- Enum.all?(ftr, &String.valid?(&1)),
          true <- Enum.all?(reject, &String.valid?(&1)),
