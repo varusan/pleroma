@@ -2,7 +2,7 @@
 # Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Web.CommonAPI.Test do
+defmodule Pleroma.Web.CommonAPITest do
   use Pleroma.DataCase
   alias Pleroma.Web.CommonAPI
   alias Pleroma.User
@@ -188,6 +188,37 @@ defmodule Pleroma.Web.CommonAPI.Test do
     test "check that mutes can't be duplicate", %{user: user, activity: activity} do
       CommonAPI.add_mute(user, activity)
       {:error, _} = CommonAPI.add_mute(user, activity)
+    end
+  end
+
+  describe "reports" do
+    test "creates a report" do
+      reporter = insert(:user)
+      target_user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(target_user, %{"status" => "foobar"})
+
+      reporter_ap_id = reporter.ap_id
+      target_ap_id = target_user.ap_id
+      activity_ap_id = activity.data["id"]
+      comment = "foobar"
+
+      report_data = %{
+        "account_id" => target_user.id,
+        "comment" => comment,
+        "status_ids" => [activity.id]
+      }
+
+      assert {:ok, flag_activity} = CommonAPI.report(reporter, report_data)
+
+      assert %Activity{
+               actor: ^reporter_ap_id,
+               data: %{
+                 "type" => "Flag",
+                 "content" => ^comment,
+                 "object" => [^target_ap_id, ^activity_ap_id]
+               }
+             } = flag_activity
     end
   end
 end

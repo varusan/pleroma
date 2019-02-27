@@ -9,6 +9,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.ActivityPub.ActivityPubController
   alias Pleroma.Web.ActivityPub.ObjectView
   alias Pleroma.Web.OStatus.ActivityRepresenter
@@ -31,6 +32,9 @@ defmodule Pleroma.Web.OStatus.OStatusController do
         end
 
       "activity+json" ->
+        ActivityPubController.call(conn, :user)
+
+      "json" ->
         ActivityPubController.call(conn, :user)
 
       _ ->
@@ -87,19 +91,19 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     {:ok, body, _conn} = read_body(conn)
     {:ok, doc} = decode_or_retry(body)
 
-    Federator.enqueue(:incoming_doc, doc)
+    Federator.incoming_doc(doc)
 
     conn
     |> send_resp(200, "")
   end
 
   def object(conn, %{"uuid" => uuid}) do
-    if get_format(conn) == "activity+json" do
+    if get_format(conn) in ["activity+json", "json"] do
       ActivityPubController.call(conn, :object)
     else
       with id <- o_status_url(conn, :object, uuid),
            {_, %Activity{} = activity} <- {:activity, Activity.get_create_by_object_ap_id(id)},
-           {_, true} <- {:public?, ActivityPub.is_public?(activity)},
+           {_, true} <- {:public?, Visibility.is_public?(activity)},
            %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
         case get_format(conn) do
           "html" -> redirect(conn, to: "/notice/#{activity.id}")
@@ -119,12 +123,12 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   end
 
   def activity(conn, %{"uuid" => uuid}) do
-    if get_format(conn) == "activity+json" do
+    if get_format(conn) in ["activity+json", "json"] do
       ActivityPubController.call(conn, :activity)
     else
       with id <- o_status_url(conn, :activity, uuid),
            {_, %Activity{} = activity} <- {:activity, Activity.normalize(id)},
-           {_, true} <- {:public?, ActivityPub.is_public?(activity)},
+           {_, true} <- {:public?, Visibility.is_public?(activity)},
            %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
         case format = get_format(conn) do
           "html" -> redirect(conn, to: "/notice/#{activity.id}")
@@ -145,7 +149,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
 
   def notice(conn, %{"id" => id}) do
     with {_, %Activity{} = activity} <- {:activity, Activity.get_by_id(id)},
-         {_, true} <- {:public?, ActivityPub.is_public?(activity)},
+         {_, true} <- {:public?, Visibility.is_public?(activity)},
          %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
       case format = get_format(conn) do
         "html" ->
@@ -153,6 +157,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
             %Object{} = object = Object.normalize(activity.data["object"])
 
             Fallback.RedirectController.redirector_with_meta(conn, %{
+              activity_id: activity.id,
               object: object,
               url:
                 Pleroma.Web.Router.Helpers.o_status_url(
@@ -181,6 +186,30 @@ defmodule Pleroma.Web.OStatus.OStatusController do
 
       e ->
         e
+    end
+  end
+
+  # Returns an HTML embedded <audio> or <video> player suitable for embed iframes.
+  def notice_player(conn, %{"id" => id}) do
+    with %Activity{data: %{"type" => "Create"}} = activity <- Activity.get_by_id(id),
+         true <- Visibility.is_public?(activity),
+         %Object{} = object <- Object.normalize(activity.data["object"]),
+         %{data: %{"attachment" => [%{"url" => [url | _]} | _]}} <- object,
+         true <- String.starts_with?(url["mediaType"], ["audio", "video"]) do
+      conn
+      |> put_layout(:metadata_player)
+      |> put_resp_header("x-frame-options", "ALLOW")
+      |> put_resp_header(
+        "content-security-policy",
+        "default-src 'none';style-src 'self' 'unsafe-inline';img-src 'self' data: https:; media-src 'self' https:;"
+      )
+      |> put_view(Pleroma.Web.Metadata.PlayerView)
+      |> render("player.html", url)
+    else
+      _error ->
+        conn
+        |> put_status(404)
+        |> Fallback.RedirectController.redirector(nil, 404)
     end
   end
 

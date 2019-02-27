@@ -21,7 +21,14 @@ defmodule Pleroma.Mixfile do
       homepage_url: "https://pleroma.social/",
       docs: [
         logo: "priv/static/static/logo.png",
-        extras: ["README.md", "docs/config.md", "docs/Pleroma-API.md", "docs/Admin-API.md"],
+        extras: [
+          "README.md",
+          "docs/config.md",
+          "docs/Pleroma-API.md",
+          "docs/Admin-API.md",
+          "docs/Clients.md",
+          "docs/Differences-in-MastodonAPI-Responses.md"
+        ],
         main: "readme",
         output: "priv/static/doc"
       ]
@@ -82,7 +89,11 @@ defmodule Pleroma.Mixfile do
       {:gen_smtp, "~> 0.13"},
       {:websocket_client, git: "https://github.com/jeremyong/websocket_client.git", only: :test},
       {:floki, "~> 0.20.0"},
-      {:ex_syslogger, github: "slashmili/ex_syslogger", tag: "1.4.0"}
+      {:ex_syslogger, github: "slashmili/ex_syslogger", tag: "1.4.0"},
+      {:timex, "~> 3.5"},
+      {:auto_linker,
+       git: "https://git.pleroma.social/pleroma/auto_linker.git",
+       ref: "94193ca5f97c1f9fdf3d1469653e2d46fac34bcd"}
     ]
   end
 

@@ -164,7 +164,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
         _ -> 5
       end
 
-    Pleroma.Web.Federator.enqueue(:publish, activity, priority)
+    Pleroma.Web.Federator.publish(activity, priority)
     :ok
   end
 
@@ -616,6 +616,22 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "actor" => params.actor.ap_id,
       "object" => params.object,
       "published" => published,
+      "context" => params.context
+    }
+    |> Map.merge(additional)
+  end
+
+  #### Flag-related helpers
+
+  def make_flag_data(params, additional) do
+    status_ap_ids = Enum.map(params.statuses || [], & &1.data["id"])
+    object = [params.account.ap_id] ++ status_ap_ids
+
+    %{
+      "type" => "Flag",
+      "actor" => params.actor.ap_id,
+      "content" => params.content,
+      "object" => object,
       "context" => params.context
     }
     |> Map.merge(additional)

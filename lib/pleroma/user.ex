@@ -259,6 +259,7 @@ defmodule Pleroma.User do
       changeset
       |> put_change(:password_hash, hashed)
       |> put_change(:ap_id, ap_id)
+      |> unique_constraint(:ap_id)
       |> put_change(:following, [followers])
       |> put_change(:follower_address, followers)
       |> put_change(:featured_address, featured)
@@ -284,6 +285,7 @@ defmodule Pleroma.User do
   def register(%Ecto.Changeset{} = changeset) do
     with {:ok, user} <- Repo.insert(changeset),
          {:ok, user} <- autofollow_users(user),
+         {:ok, _} <- Pleroma.User.WelcomeMessage.post_welcome_message_to_user(user),
          {:ok, _} <- try_send_confirmation_email(user) do
       {:ok, user}
     end
@@ -294,7 +296,7 @@ defmodule Pleroma.User do
          Pleroma.Config.get([:instance, :account_activation_required]) do
       user
       |> Pleroma.UserEmail.account_confirmation_email()
-      |> Pleroma.Mailer.deliver()
+      |> Pleroma.Mailer.deliver_async()
     else
       {:ok, :noop}
     end
@@ -641,6 +643,32 @@ defmodule Pleroma.User do
     )
   end
 
+  def update_follow_request_count(%User{} = user) do
+    subquery =
+      user
+      |> User.get_follow_requests_query()
+      |> select([a], %{count: count(a.id)})
+
+    User
+    |> where(id: ^user.id)
+    |> join(:inner, [u], s in subquery(subquery))
+    |> update([u, s],
+      set: [
+        info:
+          fragment(
+            "jsonb_set(?, '{follow_request_count}', ?::varchar::jsonb, true)",
+            u.info,
+            s.count
+          )
+      ]
+    )
+    |> Repo.update_all([], returning: true)
+    |> case do
+      {1, [user]} -> {:ok, user}
+      _ -> {:error, user}
+    end
+  end
+
   def get_follow_requests(%User{} = user) do
     q = get_follow_requests_query(user)
     reqs = Repo.all(q)
@@ -767,6 +795,12 @@ defmodule Pleroma.User do
     Enum.uniq_by(fts_results ++ trigram_results, & &1.id)
   end
 
+  def all_except_one(user) do
+    query = from(u in User, where: u.id != ^user.id)
+
+    Repo.all(query)
+  end
+
   defp do_search(subquery, for_user, options \\ []) do
     q =
       from(
@@ -883,6 +917,30 @@ defmodule Pleroma.User do
     )
   end
 
+  def mute(muter, %User{ap_id: ap_id}) do
+    info_cng =
+      muter.info
+      |> User.Info.add_to_mutes(ap_id)
+
+    cng =
+      change(muter)
+      |> put_embed(:info, info_cng)
+
+    update_and_set_cache(cng)
+  end
+
+  def unmute(muter, %{ap_id: ap_id}) do
+    info_cng =
+      muter.info
+      |> User.Info.remove_from_mutes(ap_id)
+
+    cng =
+      change(muter)
+      |> put_embed(:info, info_cng)
+
+    update_and_set_cache(cng)
+  end
+
   def block(blocker, %User{ap_id: ap_id} = blocked) do
     # sever any follow relationships to prevent leaks per activitypub (Pleroma issue #213)
     blocker =
@@ -925,6 +983,8 @@ defmodule Pleroma.User do
     update_and_set_cache(cng)
   end
 
+  def mutes?(user, %{ap_id: ap_id}), do: Enum.member?(user.info.mutes, ap_id)
+
   def blocks?(user, %{ap_id: ap_id}) do
     blocks = user.info.blocks
     domain_blocks = user.info.domain_blocks
@@ -935,6 +995,9 @@ defmodule Pleroma.User do
         host == domain
       end)
   end
+
+  def muted_users(user),
+    do: Repo.all(from(u in User, where: u.ap_id in ^user.info.mutes))
 
   def blocked_users(user),
     do: Repo.all(from(u in User, where: u.ap_id in ^user.info.blocks))
@@ -1153,9 +1216,6 @@ defmodule Pleroma.User do
   def parse_bio(bio, _user) when bio == "", do: bio
 
   def parse_bio(bio, user) do
-    mentions = Formatter.parse_mentions(bio)
-    tags = Formatter.parse_tags(bio)
-
     emoji =
       (user.info.source_data["tag"] || [])
       |> Enum.filter(fn %{"type" => t} -> t == "Emoji" end)
@@ -1164,7 +1224,8 @@ defmodule Pleroma.User do
       end)
 
     bio
-    |> CommonUtils.format_input(mentions, tags, "text/plain", user_links: [format: :full])
+    |> CommonUtils.format_input("text/plain", mentions_format: :full)
+    |> elem(0)
     |> Formatter.emojify(emoji)
   end
 
@@ -1196,7 +1257,7 @@ defmodule Pleroma.User do
     {:ok, updated_user} =
       user
       |> change(%{tags: new_tags})
-      |> Repo.update()
+      |> update_and_set_cache()
 
     updated_user
   end
@@ -1249,5 +1310,14 @@ defmodule Pleroma.User do
       nickname: "erroruser@example.com",
       inserted_at: NaiveDateTime.utc_now()
     }
+  end
+
+  def all_superusers do
+    from(
+      u in User,
+      where: u.local == true,
+      where: fragment("?->'is_admin' @> 'true' OR ?->'is_moderator' @> 'true'", u.info, u.info)
+    )
+    |> Repo.all()
   end
 end

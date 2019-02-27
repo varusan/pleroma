@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
@@ -270,6 +270,48 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     assert Enum.member?(activities, activity_one)
 
     activities = ActivityPub.fetch_activities([], %{"blocking_user" => nil})
+
+    assert Enum.member?(activities, activity_two)
+    assert Enum.member?(activities, activity_three)
+    assert Enum.member?(activities, boost_activity)
+    assert Enum.member?(activities, activity_one)
+  end
+
+  test "doesn't return muted activities" do
+    activity_one = insert(:note_activity)
+    activity_two = insert(:note_activity)
+    activity_three = insert(:note_activity)
+    user = insert(:user)
+    booster = insert(:user)
+    {:ok, user} = User.mute(user, %User{ap_id: activity_one.data["actor"]})
+
+    activities = ActivityPub.fetch_activities([], %{"muting_user" => user})
+
+    assert Enum.member?(activities, activity_two)
+    assert Enum.member?(activities, activity_three)
+    refute Enum.member?(activities, activity_one)
+
+    {:ok, user} = User.unmute(user, %User{ap_id: activity_one.data["actor"]})
+
+    activities = ActivityPub.fetch_activities([], %{"muting_user" => user})
+
+    assert Enum.member?(activities, activity_two)
+    assert Enum.member?(activities, activity_three)
+    assert Enum.member?(activities, activity_one)
+
+    {:ok, user} = User.mute(user, %User{ap_id: activity_three.data["actor"]})
+    {:ok, _announce, %{data: %{"id" => id}}} = CommonAPI.repeat(activity_three.id, booster)
+    %Activity{} = boost_activity = Activity.get_create_by_object_ap_id(id)
+    activity_three = Repo.get(Activity, activity_three.id)
+
+    activities = ActivityPub.fetch_activities([], %{"muting_user" => user})
+
+    assert Enum.member?(activities, activity_two)
+    refute Enum.member?(activities, activity_three)
+    refute Enum.member?(activities, boost_activity)
+    assert Enum.member?(activities, activity_one)
+
+    activities = ActivityPub.fetch_activities([], %{"muting_user" => nil})
 
     assert Enum.member?(activities, activity_two)
     assert Enum.member?(activities, activity_three)
@@ -698,6 +740,37 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     activities = ActivityPub.fetch_user_activities(user, nil, %{"pinned" => "true"})
 
     assert 3 = length(activities)
+  end
+
+  test "it can create a Flag activity" do
+    reporter = insert(:user)
+    target_account = insert(:user)
+    {:ok, activity} = CommonAPI.post(target_account, %{"status" => "foobar"})
+    context = Utils.generate_context_id()
+    content = "foobar"
+
+    reporter_ap_id = reporter.ap_id
+    target_ap_id = target_account.ap_id
+    activity_ap_id = activity.data["id"]
+
+    assert {:ok, activity} =
+             ActivityPub.flag(%{
+               actor: reporter,
+               context: context,
+               account: target_account,
+               statuses: [activity],
+               content: content
+             })
+
+    assert %Activity{
+             actor: ^reporter_ap_id,
+             data: %{
+               "type" => "Flag",
+               "content" => ^content,
+               "context" => ^context,
+               "object" => [^target_ap_id, ^activity_ap_id]
+             }
+           } = activity
   end
 
   describe "publish_one/1" do

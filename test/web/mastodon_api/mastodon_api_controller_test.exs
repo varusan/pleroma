@@ -937,7 +937,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     end
 
     test "/api/v1/follow_requests/:id/authorize works" do
-      user = insert(:user, %{info: %Pleroma.User.Info{locked: true}})
+      user = insert(:user, %{info: %User.Info{locked: true}})
       other_user = insert(:user)
 
       {:ok, _activity} = ActivityPub.follow(other_user, user)
@@ -946,6 +946,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       other_user = Repo.get(User, other_user.id)
 
       assert User.following?(other_user, user) == false
+      assert user.info.follow_request_count == 1
 
       conn =
         build_conn()
@@ -959,6 +960,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       other_user = Repo.get(User, other_user.id)
 
       assert User.following?(other_user, user) == true
+      assert user.info.follow_request_count == 0
     end
 
     test "verify_credentials", %{conn: conn} do
@@ -979,6 +981,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       {:ok, _activity} = ActivityPub.follow(other_user, user)
 
+      user = Repo.get(User, user.id)
+      assert user.info.follow_request_count == 1
+
       conn =
         build_conn()
         |> assign(:user, user)
@@ -991,6 +996,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       other_user = Repo.get(User, other_user.id)
 
       assert User.following?(other_user, user) == false
+      assert user.info.follow_request_count == 0
     end
   end
 
@@ -1200,6 +1206,42 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert id == to_string(other_user.id)
   end
 
+  test "muting / unmuting a user", %{conn: conn} do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    conn =
+      conn
+      |> assign(:user, user)
+      |> post("/api/v1/accounts/#{other_user.id}/mute")
+
+    assert %{"id" => _id, "muting" => true} = json_response(conn, 200)
+
+    user = Repo.get(User, user.id)
+
+    conn =
+      build_conn()
+      |> assign(:user, user)
+      |> post("/api/v1/accounts/#{other_user.id}/unmute")
+
+    assert %{"id" => _id, "muting" => false} = json_response(conn, 200)
+  end
+
+  test "getting a list of mutes", %{conn: conn} do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    {:ok, user} = User.mute(user, other_user)
+
+    conn =
+      conn
+      |> assign(:user, user)
+      |> get("/api/v1/mutes")
+
+    other_user_id = to_string(other_user.id)
+    assert [%{"id" => ^other_user_id}] = json_response(conn, 200)
+  end
+
   test "blocking / unblocking a user", %{conn: conn} do
     user = insert(:user)
     other_user = insert(:user)
@@ -1276,26 +1318,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert "even.worse.site" in domain_blocks
   end
 
-  test "unimplemented mute endpoints" do
-    user = insert(:user)
-    other_user = insert(:user)
-
-    ["mute", "unmute"]
-    |> Enum.each(fn endpoint ->
-      conn =
-        build_conn()
-        |> assign(:user, user)
-        |> post("/api/v1/accounts/#{other_user.id}/#{endpoint}")
-
-      assert %{"id" => id} = json_response(conn, 200)
-      assert id == to_string(other_user.id)
-    end)
-  end
-
-  test "unimplemented mutes, follow_requests, blocks, domain blocks" do
+  test "unimplemented follow_requests, blocks, domain blocks" do
     user = insert(:user)
 
-    ["blocks", "domain_blocks", "mutes", "follow_requests"]
+    ["blocks", "domain_blocks", "follow_requests"]
     |> Enum.each(fn endpoint ->
       conn =
         build_conn()
@@ -1530,6 +1556,24 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert user_response = json_response(conn, 200)
       assert user_response["header"] != User.banner_url(user)
     end
+
+    test "requires 'write' permission", %{conn: conn} do
+      token1 = insert(:oauth_token, scopes: ["read"])
+      token2 = insert(:oauth_token, scopes: ["write", "follow"])
+
+      for token <- [token1, token2] do
+        conn =
+          conn
+          |> put_req_header("authorization", "Bearer #{token.token}")
+          |> patch("/api/v1/accounts/update_credentials", %{})
+
+        if token == token1 do
+          assert %{"error" => "Insufficient permissions: write."} == json_response(conn, 403)
+        else
+          assert json_response(conn, 200)
+        end
+      end
+    end
   end
 
   test "get instance information", %{conn: conn} do
@@ -1700,6 +1744,18 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
                }
              }
 
+      # works with private posts
+      {:ok, activity} =
+        CommonAPI.post(user, %{"status" => "http://example.com/ogp", "visibility" => "direct"})
+
+      response_two =
+        conn
+        |> assign(:user, user)
+        |> get("/api/v1/statuses/#{activity.id}/card")
+        |> json_response(200)
+
+      assert response_two == response
+
       Pleroma.Config.put([:rich_media, :enabled], false)
     end
   end
@@ -1784,6 +1840,96 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
                |> assign(:user, user)
                |> post("/api/v1/statuses/#{activity.id}/unmute")
                |> json_response(200)
+    end
+  end
+
+  test "flavours switching (Pleroma Extension)", %{conn: conn} do
+    user = insert(:user)
+
+    get_old_flavour =
+      conn
+      |> assign(:user, user)
+      |> get("/api/v1/pleroma/flavour")
+
+    assert "glitch" == json_response(get_old_flavour, 200)
+
+    set_flavour =
+      conn
+      |> assign(:user, user)
+      |> post("/api/v1/pleroma/flavour/vanilla")
+
+    assert "vanilla" == json_response(set_flavour, 200)
+
+    get_new_flavour =
+      conn
+      |> assign(:user, user)
+      |> post("/api/v1/pleroma/flavour/vanilla")
+
+    assert json_response(set_flavour, 200) == json_response(get_new_flavour, 200)
+  end
+
+  describe "reports" do
+    setup do
+      reporter = insert(:user)
+      target_user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(target_user, %{"status" => "foobar"})
+
+      [reporter: reporter, target_user: target_user, activity: activity]
+    end
+
+    test "submit a basic report", %{conn: conn, reporter: reporter, target_user: target_user} do
+      assert %{"action_taken" => false, "id" => _} =
+               conn
+               |> assign(:user, reporter)
+               |> post("/api/v1/reports", %{"account_id" => target_user.id})
+               |> json_response(200)
+    end
+
+    test "submit a report with statuses and comment", %{
+      conn: conn,
+      reporter: reporter,
+      target_user: target_user,
+      activity: activity
+    } do
+      assert %{"action_taken" => false, "id" => _} =
+               conn
+               |> assign(:user, reporter)
+               |> post("/api/v1/reports", %{
+                 "account_id" => target_user.id,
+                 "status_ids" => [activity.id],
+                 "comment" => "bad status!"
+               })
+               |> json_response(200)
+    end
+
+    test "accound_id is required", %{
+      conn: conn,
+      reporter: reporter,
+      activity: activity
+    } do
+      assert %{"error" => "Valid `account_id` required"} =
+               conn
+               |> assign(:user, reporter)
+               |> post("/api/v1/reports", %{"status_ids" => [activity.id]})
+               |> json_response(400)
+    end
+
+    test "comment must be up to the size specified in the config", %{
+      conn: conn,
+      reporter: reporter,
+      target_user: target_user
+    } do
+      max_size = Pleroma.Config.get([:instance, :max_report_comment_size], 1000)
+      comment = String.pad_trailing("a", max_size + 1, "a")
+
+      error = %{"error" => "Comment must be up to #{max_size} characters"}
+
+      assert ^error =
+               conn
+               |> assign(:user, reporter)
+               |> post("/api/v1/reports", %{"account_id" => target_user.id, "comment" => comment})
+               |> json_response(400)
     end
   end
 end

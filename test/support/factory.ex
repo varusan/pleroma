@@ -215,7 +215,7 @@ defmodule Pleroma.Factory do
     %Pleroma.Web.OAuth.App{
       client_name: "Some client",
       redirect_uris: "https://example.com/callback",
-      scopes: "read",
+      scopes: ["read", "write", "follow", "push"],
       website: "https://example.com",
       client_id: "aaabbb==",
       client_secret: "aaa;/&bbb"
@@ -226,6 +226,19 @@ defmodule Pleroma.Factory do
     %Pleroma.Instances.Instance{
       host: "domain.com",
       unreachable_since: nil
+    }
+  end
+
+  def oauth_token_factory do
+    user = insert(:user)
+    oauth_app = insert(:oauth_app)
+
+    %Pleroma.Web.OAuth.Token{
+      token: :crypto.strong_rand_bytes(32) |> Base.url_encode64(),
+      refresh_token: :crypto.strong_rand_bytes(32) |> Base.url_encode64(),
+      user_id: user.id,
+      app_id: oauth_app.id,
+      valid_until: NaiveDateTime.add(NaiveDateTime.utc_now(), 60 * 10)
     }
   end
 end

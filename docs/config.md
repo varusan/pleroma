@@ -36,14 +36,15 @@ This filter replaces the filename (not the path) of an upload. For complete obfu
 
 An example for Sendgrid adapter:
 
-```
+```exs
 config :pleroma, Pleroma.Mailer,
   adapter: Swoosh.Adapters.Sendgrid,
   api_key: "YOUR_API_KEY"
 ```
 
 An example for SMTP adapter:
-```
+
+```exs
 config :pleroma, Pleroma.Mailer,
   adapter: Swoosh.Adapters.SMTP,
   relay: "smtp.gmail.com",
@@ -97,13 +98,16 @@ config :pleroma, Pleroma.Mailer,
 * `max_pinned_statuses`: The maximum number of pinned statuses. `0` will disable the feature.
 * `autofollowed_nicknames`: Set to nicknames of (local) users that every new user should automatically follow.
 * `no_attachment_links`: Set to true to disable automatically adding attachment link text to statuses
+* `welcome_message`: A message that will be send to a newly registered users as a direct message.
+* `welcome_user_nickname`: The nickname of the local user that sends the welcome message.
+* `max_report_size`: The maximum size of the report comment (Default: `1000`)
 
 ## :logger
 * `backends`: `:console` is used to send logs to stdout, `{ExSyslogger, :ex_syslogger}` to log to syslog
 
 An example to enable ONLY ExSyslogger (f/ex in ``prod.secret.exs``) with info and debug suppressed:
 ```
-config :logger, 
+config :logger,
   backends: [{ExSyslogger, :ex_syslogger}]
 
 config :logger, :ex_syslogger,
@@ -207,7 +211,7 @@ their ActivityPub ID.
 
 An example:
 
-```
+```exs
 config :pleroma, :mrf_user_allowlist,
   "example.org": ["https://example.org/users/admin"]
 ```
@@ -236,18 +240,34 @@ the source code is here: https://github.com/koto-bank/kocaptcha. The default end
 
 Allows to set a token that can be used to authenticate with the admin api without using an actual user by giving it as the 'admin_token' parameter. Example:
 
-```
+```exs
 config :pleroma, :admin_token, "somerandomtoken"
 ```
 
 You can then do
-```
+
+```sh
 curl "http://localhost:4000/api/pleroma/admin/invite_token?admin_token=somerandomtoken"
 ```
 
-## Pleroma.Web.Federator
+## Pleroma.Jobs
 
-* `max_jobs`: The maximum amount of parallel federation jobs running at the same time.
+A list of job queues and their settings.
+
+Job queue settings:
+
+* `max_jobs`: The maximum amount of parallel jobs running at the same time.
+
+Example:
+
+```exs
+config :pleroma, Pleroma.Jobs,
+  federator_incoming: [max_jobs: 50],
+  federator_outgoing: [max_jobs: 50]
+```
+
+This config contains two queues: `federator_incoming` and `federator_outgoing`. Both have the `max_jobs` set to `50`.
+
 
 ## Pleroma.Web.Federator.RetryQueue
 
@@ -281,3 +301,28 @@ For each pool, the options are:
 * `max_connections` - how much connections a pool can hold
 * `timeout` - retention duration for connections
 
+## :auto_linker
+
+Configuration for the `auto_linker` library:
+
+* `class: "auto-linker"` - specify the class to be added to the generated link. false to clear
+* `rel: "noopener noreferrer"` - override the rel attribute. false to clear
+* `new_window: true` - set to false to remove `target='_blank'` attribute
+* `scheme: false` - Set to true to link urls with schema `http://google.com`
+* `truncate: false` - Set to a number to truncate urls longer then the number. Truncated urls will end in `..`
+* `strip_prefix: true` - Strip the scheme prefix
+* `extra: false` - link urls with rarely used schemes (magnet, ipfs, irc, etc.)
+
+Example:
+
+```exs
+config :auto_linker,
+  opts: [
+    scheme: true,
+    extra: true,
+    class: false,
+    strip_prefix: false,
+    new_window: false,
+    rel: false
+  ]
+```

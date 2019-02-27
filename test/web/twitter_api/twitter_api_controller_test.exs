@@ -13,6 +13,8 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
   alias Pleroma.Object
   alias Pleroma.Notification
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.OAuth.Token
+  alias Pleroma.Web.TwitterAPI.Controller
   alias Pleroma.Web.TwitterAPI.UserView
   alias Pleroma.Web.TwitterAPI.NotificationView
   alias Pleroma.Web.CommonAPI
@@ -21,6 +23,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
   alias Ecto.Changeset
 
   import Pleroma.Factory
+  import Mock
 
   @banner "data:image/gif;base64,R0lGODlhEAAQAMQAAORHHOVSKudfOulrSOp3WOyDZu6QdvCchPGolfO0o/XBs/fNwfjZ0frl3/zy7////wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAkAABAALAAAAAAQABAAAAVVICSOZGlCQAosJ6mu7fiyZeKqNKToQGDsM8hBADgUXoGAiqhSvp5QAnQKGIgUhwFUYLCVDFCrKUE1lBavAViFIDlTImbKC5Gm2hB0SlBCBMQiB0UjIQA7"
 
@@ -185,6 +188,20 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       |> with_credentials(user.nickname, "test")
       |> get("/api/statuses/public_timeline.json")
       |> json_response(200)
+    end
+
+    test_with_mock "treats user as unauthenticated if `assigns[:token]` is present but lacks `read` permission",
+                   Controller,
+                   [:passthrough],
+                   [] do
+      token = insert(:oauth_token, scopes: ["write"])
+
+      build_conn()
+      |> put_req_header("authorization", "Bearer #{token.token}")
+      |> get("/api/statuses/public_timeline.json")
+      |> json_response(200)
+
+      assert called(Controller.public_timeline(%{assigns: %{user: nil}}, :_))
     end
   end
 
@@ -636,6 +653,24 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
       current_user = Repo.get(User, current_user.id)
       assert User.ap_followers(followed) in current_user.following
+
+      assert json_response(conn, 200) ==
+               UserView.render("show.json", %{user: followed, for: current_user})
+    end
+
+    test "for restricted account", %{conn: conn, user: current_user} do
+      followed = insert(:user, info: %User.Info{locked: true})
+
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> post("/api/friendships/create.json", %{user_id: followed.id})
+
+      current_user = Repo.get(User, current_user.id)
+      followed = Repo.get(User, followed.id)
+
+      refute User.ap_followers(followed) in current_user.following
+      assert followed.info.follow_request_count == 1
 
       assert json_response(conn, 200) ==
                UserView.render("show.json", %{user: followed, for: current_user})
@@ -1218,7 +1253,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       assert Enum.sort(expected) == Enum.sort(result)
     end
 
-    test "it returns 20 friends per page", %{conn: conn} do
+    test "it returns 20 friends per page, except if 'export' is set to true", %{conn: conn} do
       user = insert(:user)
       followeds = insert_list(21, :user)
 
@@ -1242,6 +1277,14 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
       result = json_response(res_conn, 200)
       assert length(result) == 1
+
+      res_conn =
+        conn
+        |> assign(:user, user)
+        |> get("/api/statuses/friends", %{all: true})
+
+      result = json_response(res_conn, 200)
+      assert length(result) == 21
     end
 
     test "it returns a given user's friends with user_id", %{conn: conn} do
@@ -1663,6 +1706,24 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       assert [relationship] = json_response(conn, 200)
       assert other_user.id == relationship["id"]
     end
+
+    test "requires 'read' permission", %{conn: conn} do
+      token1 = insert(:oauth_token, scopes: ["write"])
+      token2 = insert(:oauth_token, scopes: ["read"])
+
+      for token <- [token1, token2] do
+        conn =
+          conn
+          |> put_req_header("authorization", "Bearer #{token.token}")
+          |> get("/api/pleroma/friend_requests")
+
+        if token == token1 do
+          assert %{"error" => "Insufficient permissions: read."} == json_response(conn, 403)
+        else
+          assert json_response(conn, 200)
+        end
+      end
+    end
   end
 
   describe "POST /api/pleroma/friendships/approve" do
@@ -1676,15 +1737,19 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       other_user = Repo.get(User, other_user.id)
 
       assert User.following?(other_user, user) == false
+      assert user.info.follow_request_count == 1
 
       conn =
         build_conn()
         |> assign(:user, user)
         |> post("/api/pleroma/friendships/approve", %{"user_id" => other_user.id})
 
+      user = Repo.get(User, user.id)
+
       assert relationship = json_response(conn, 200)
       assert other_user.id == relationship["id"]
       assert relationship["follows_you"] == true
+      assert user.info.follow_request_count == 0
     end
   end
 
@@ -1699,15 +1764,19 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       other_user = Repo.get(User, other_user.id)
 
       assert User.following?(other_user, user) == false
+      assert user.info.follow_request_count == 1
 
       conn =
         build_conn()
         |> assign(:user, user)
         |> post("/api/pleroma/friendships/deny", %{"user_id" => other_user.id})
 
+      user = Repo.get(User, user.id)
+
       assert relationship = json_response(conn, 200)
       assert other_user.id == relationship["id"]
       assert relationship["follows_you"] == false
+      assert user.info.follow_request_count == 0
     end
   end
 
@@ -1879,6 +1948,40 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
       assert json_response(response, 200) ==
                ActivityRepresenter.to_map(activity, %{user: user, for: user})
+    end
+  end
+
+  describe "GET /api/oauth_tokens" do
+    setup do
+      token = insert(:oauth_token) |> Repo.preload(:user)
+
+      %{token: token}
+    end
+
+    test "renders list", %{token: token} do
+      response =
+        build_conn()
+        |> assign(:user, token.user)
+        |> get("/api/oauth_tokens")
+
+      keys =
+        json_response(response, 200)
+        |> hd()
+        |> Map.keys()
+
+      assert keys -- ["id", "app_name", "valid_until"] == []
+    end
+
+    test "revoke token", %{token: token} do
+      response =
+        build_conn()
+        |> assign(:user, token.user)
+        |> delete("/api/oauth_tokens/#{token.id}")
+
+      tokens = Token.get_user_tokens(token.user)
+
+      assert tokens == []
+      assert response.status == 201
     end
   end
 end

@@ -12,12 +12,14 @@ defmodule Pleroma.User.Info do
     field(:source_data, :map, default: %{})
     field(:note_count, :integer, default: 0)
     field(:follower_count, :integer, default: 0)
+    field(:follow_request_count, :integer, default: 0)
     field(:locked, :boolean, default: false)
     field(:confirmation_pending, :boolean, default: false)
     field(:confirmation_token, :string, default: nil)
     field(:default_scope, :string, default: "public")
     field(:blocks, {:array, :string}, default: [])
     field(:domain_blocks, {:array, :string}, default: [])
+    field(:mutes, {:array, :string}, default: [])
     field(:deactivated, :boolean, default: false)
     field(:no_rich_text, :boolean, default: false)
     field(:ap_enabled, :boolean, default: false)
@@ -35,6 +37,7 @@ defmodule Pleroma.User.Info do
     field(:hide_followers, :boolean, default: false)
     field(:hide_follows, :boolean, default: false)
     field(:pinned_activities, {:array, :string}, default: [])
+    field(:flavour, :string, default: nil)
 
     # Found in the wild
     # ap_id -> Where is this used?
@@ -73,12 +76,28 @@ defmodule Pleroma.User.Info do
     |> validate_required([:follower_count])
   end
 
+  def set_mutes(info, mutes) do
+    params = %{mutes: mutes}
+
+    info
+    |> cast(params, [:mutes])
+    |> validate_required([:mutes])
+  end
+
   def set_blocks(info, blocks) do
     params = %{blocks: blocks}
 
     info
     |> cast(params, [:blocks])
     |> validate_required([:blocks])
+  end
+
+  def add_to_mutes(info, muted) do
+    set_mutes(info, Enum.uniq([muted | info.mutes]))
+  end
+
+  def remove_from_mutes(info, muted) do
+    set_mutes(info, List.delete(info.mutes, muted))
   end
 
   def add_to_block(info, blocked) do
@@ -192,6 +211,14 @@ defmodule Pleroma.User.Info do
     info
     |> cast(params, [:settings])
     |> validate_required([:settings])
+  end
+
+  def mastodon_flavour_update(info, flavour) do
+    params = %{flavour: flavour}
+
+    info
+    |> cast(params, [:flavour])
+    |> validate_required([:flavour])
   end
 
   def set_source_data(info, source_data) do

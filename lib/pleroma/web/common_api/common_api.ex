@@ -82,40 +82,20 @@ defmodule Pleroma.Web.CommonAPI do
 
   def get_visibility(_), do: "public"
 
-  defp get_content_type(content_type) do
-    if Enum.member?(Pleroma.Config.get([:instance, :allowed_post_formats]), content_type) do
-      content_type
-    else
-      "text/plain"
-    end
-  end
-
   def post(user, %{"status" => status} = data) do
     visibility = get_visibility(data)
     limit = Pleroma.Config.get([:instance, :limit])
 
     with status <- String.trim(status),
-         attachments <- attachments_from_ids(data["media_ids"]),
-         mentions <- Formatter.parse_mentions(status),
+         attachments <- attachments_from_ids(data),
          inReplyTo <- get_replied_to_activity(data["in_reply_to_status_id"]),
-         {to, cc} <- to_for_user_and_mentions(user, mentions, inReplyTo, visibility),
-         tags <- Formatter.parse_tags(status, data),
-         content_html <-
+         {content_html, mentions, tags} <-
            make_content_html(
              status,
-             mentions,
              attachments,
-             tags,
-             get_content_type(data["content_type"]),
-             Enum.member?(
-               [true, "true"],
-               Map.get(
-                 data,
-                 "no_attachment_links",
-                 Pleroma.Config.get([:instance, :no_attachment_links], false)
-               )
-             )
+             data
            ),
+         {to, cc} <- to_for_user_and_mentions(user, mentions, inReplyTo, visibility),
          context <- make_context(inReplyTo),
          cw <- data["spoiler_text"],
          full_payload <- String.trim(status <> (data["spoiler_text"] || "")),
@@ -232,6 +212,33 @@ defmodule Pleroma.Web.CommonAPI do
       false
     else
       _ -> true
+    end
+  end
+
+  def report(user, data) do
+    with {:account_id, %{"account_id" => account_id}} <- {:account_id, data},
+         {:account, %User{} = account} <- {:account, User.get_by_id(account_id)},
+         {:ok, {content_html, _, _}} <- make_report_content_html(data["comment"]),
+         {:ok, statuses} <- get_report_statuses(account, data),
+         {:ok, activity} <-
+           ActivityPub.flag(%{
+             context: Utils.generate_context_id(),
+             actor: user,
+             account: account,
+             statuses: statuses,
+             content: content_html
+           }) do
+      Enum.each(User.all_superusers(), fn superuser ->
+        superuser
+        |> Pleroma.AdminEmail.report(user, account, statuses, content_html)
+        |> Pleroma.Mailer.deliver_async()
+      end)
+
+      {:ok, activity}
+    else
+      {:error, err} -> {:error, err}
+      {:account_id, %{}} -> {:error, "Valid `account_id` required"}
+      {:account, nil} -> {:error, "Account not found"}
     end
   end
 end
