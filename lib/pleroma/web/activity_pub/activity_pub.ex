@@ -758,7 +758,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
     locked = data["manuallyApprovesFollowers"] || false
     featured_address = data["featured"]
-    pinned_objects = fetch_and_prepare_featured_from_ap_id(featured_address)
+    {:ok, pinned_objects} = fetch_and_prepare_featured_from_ap_id(featured_address)
 
     data = Transmogrifier.maybe_fix_user_object(data)
 
@@ -797,7 +797,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         "type" => "OrderedCollection",
         "orderedItems" => objects
       }) do
-    Enum.map(objects, fn %{"id" => object_ap_id} -> object_ap_id end)
+    with ap_ids = Enum.map(objects, fn %{"id" => object_ap_id} -> object_ap_id end),
+         true <-
+           Enum.all?(ap_ids, fn ap_id ->
+             match?({:ok, _object}, fetch_object_from_id(ap_id))
+           end) do
+      {:ok, ap_ids}
+    else
+      _e ->
+        {:error, "Failed to fetch one or more featured objects"}
+    end
   end
 
   def fetch_and_prepare_user_from_ap_id(ap_id) do
@@ -809,12 +818,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def fetch_and_prepare_featured_from_ap_id(nil) do
-    []
+    {:ok, []}
   end
 
   def fetch_and_prepare_featured_from_ap_id(ap_id) do
-    with {:ok, data} <- fetch_and_contain_remote_object_from_id(ap_id) do
-      pin_data_from_featured_collection(data)
+    with {:ok, data} <- fetch_and_contain_remote_object_from_id(ap_id),
+         {:ok, featured} <- pin_data_from_featured_collection(data) do
+      {:ok, featured}
     else
       e -> Logger.error("Could not decode featured collection at fetch #{ap_id}, #{inspect(e)}")
     end
