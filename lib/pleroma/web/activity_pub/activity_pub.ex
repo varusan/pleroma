@@ -797,16 +797,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         "type" => "OrderedCollection",
         "orderedItems" => objects
       }) do
-    with ap_ids = Enum.map(objects, fn %{"id" => object_ap_id} -> object_ap_id end),
-         true <-
-           Enum.all?(ap_ids, fn ap_id ->
-             match?({:ok, _object}, fetch_object_from_id(ap_id))
-           end) do
-      {:ok, ap_ids}
-    else
-      _e ->
-        {:error, "Failed to fetch one or more featured objects"}
-    end
+    Enum.map(objects, fn %{"id" => object_ap_id} -> object_ap_id end)
   end
 
   def fetch_and_prepare_user_from_ap_id(ap_id) do
@@ -822,11 +813,21 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def fetch_and_prepare_featured_from_ap_id(ap_id) do
-    with {:ok, data} <- fetch_and_contain_remote_object_from_id(ap_id),
-         {:ok, featured} <- pin_data_from_featured_collection(data) do
-      {:ok, featured}
+    with {:ok, data} <- fetch_and_contain_remote_object_from_id(ap_id) do
+      {:ok, pin_data_from_featured_collection(data)}
     else
       e -> Logger.error("Could not decode featured collection at fetch #{ap_id}, #{inspect(e)}")
+    end
+  end
+
+  def pinned_fetch_task(%User{info: %User.Info{pinned_objects: pins}} = _user) do
+    if Enum.all?(pins, fn ap_id ->
+         Object.get_cached_by_ap_id(ap_id) != nil or
+           match?({:ok, _object}, fetch_object_from_id(ap_id))
+       end) do
+      :ok
+    else
+      :error
     end
   end
 
@@ -835,7 +836,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       Transmogrifier.upgrade_user_from_ap_id(ap_id)
     else
       with {:ok, data} <- fetch_and_prepare_user_from_ap_id(ap_id) do
-        User.insert_or_update_user(data)
+        {:ok, user} = User.insert_or_update_user(data)
+        {:ok, _pid} = Task.start(fn -> pinned_fetch_task(user) end)
+        {:ok, user}
       else
         e -> {:error, e}
       end
