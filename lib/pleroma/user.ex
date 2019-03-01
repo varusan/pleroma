@@ -166,15 +166,19 @@ defmodule Pleroma.User do
   end
 
   def update_changeset(struct, params \\ %{}) do
-    info_cng = User.Info.user_update(struct.info, params[:info])
+    if params[:info] != nil do
+      info_cng = User.Info.user_update(struct.info, params[:info])
 
-    struct
+      struct
+      |> put_embed(:info, info_cng)
+    else
+      struct
+    end
     |> cast(params, [:bio, :name, :avatar, :featured_address])
     |> unique_constraint(:nickname)
     |> validate_format(:nickname, local_nickname_regex())
     |> validate_length(:bio, max: 5000)
     |> validate_length(:name, min: 1, max: 100)
-    |> put_embed(:info, info_cng)
   end
 
   def upgrade_changeset(struct, params \\ %{}) do
