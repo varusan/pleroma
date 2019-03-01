@@ -374,4 +374,5 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     %Object{data: %{"id" => ap_id}} = Object.normalize(object)
     ap_id in pinned_objects
   end
+  defp pinned?(_, _), do: false
 end

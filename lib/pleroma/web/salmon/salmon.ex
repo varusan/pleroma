@@ -164,10 +164,6 @@ defmodule Pleroma.Web.Salmon do
     |> Enum.filter(fn user -> user && !user.local end)
   end
 
-  def remote_users(_) do
-    []
-  end
-
   @doc "Pushes an activity to remote account."
   def send_to_user(%{recipient: %{info: %{salmon: salmon}}} = params),
     do: send_to_user(Map.put(params, :recipient, salmon))

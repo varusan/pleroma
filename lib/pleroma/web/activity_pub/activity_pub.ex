@@ -794,9 +794,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def pin_data_from_featured_collection(%{
-        "type" => "OrderedCollection",
+        "type" => type,
         "orderedItems" => objects
-      }) do
+      })
+      when type in ["OrderedCollection", "Collection"] do
     Enum.map(objects, fn %{"id" => object_ap_id} -> object_ap_id end)
   end
 

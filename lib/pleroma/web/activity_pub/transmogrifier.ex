@@ -69,7 +69,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def contain_origin_from_id(_, _) do
-    :ok
+    :error
   end
 
   @doc """
