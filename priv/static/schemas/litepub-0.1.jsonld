@@ -4,6 +4,10 @@
         "https://w3id.org/security/v1",
         {
             "Emoji": "toot:Emoji",
+            "featured": {
+               "@id": "toot:featured",
+                "@type" :"@id"
+            },
             "Hashtag": "as:Hashtag",
             "PropertyValue": "schema:PropertyValue",
             "atomUri": "ostatus:atomUri",
