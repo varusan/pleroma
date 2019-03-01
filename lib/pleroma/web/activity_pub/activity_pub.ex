@@ -632,6 +632,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_reblogs(query, _), do: query
 
+  defp restrict_muted(query, %{"with_muted" => val}) when val in [true, "true", "1"], do: query
+
   defp restrict_muted(query, %{"muting_user" => %User{info: info}}) do
     mutes = info.mutes
 
@@ -904,7 +906,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
     date =
       NaiveDateTime.utc_now()
-      |> Timex.format!("{WDshort}, {D} {Mshort} {YYYY} {h24}:{m}:{s} GMT")
+      |> Timex.format!("{WDshort}, {0D} {Mshort} {YYYY} {h24}:{m}:{s} GMT")
 
     signature =
       Pleroma.Web.HTTPSignatures.sign(actor, %{
