@@ -650,13 +650,17 @@ defmodule Fallback.RedirectController do
   end
 
   def redirector_with_meta(conn, params) do
-    {:ok, index_content} = File.read(index_file_path())
-    tags = Metadata.build_tags(params)
-    response = String.replace(index_content, "<!--server-generated-meta-->", tags)
+    if Pleroma.Config.get([:instance, :static_fe], false) do
+      Pleroma.Web.StaticFE.StaticFEController.show(conn, params)
+    else
+      {:ok, index_content} = File.read(index_file_path())
+      tags = Metadata.build_tags(params)
+      response = String.replace(index_content, "<!--server-generated-meta-->", tags)
 
-    conn
-    |> put_resp_content_type("text/html")
-    |> send_resp(200, response)
+      conn
+      |> put_resp_content_type("text/html")
+      |> send_resp(200, response)
+    end
   end
 
   def index_file_path do
