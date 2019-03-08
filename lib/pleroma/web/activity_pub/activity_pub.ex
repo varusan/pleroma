@@ -81,6 +81,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp check_remote_limit(_), do: true
 
+  def increase_note_count_if_public(actor, object) do
+    if is_public?(object), do: User.increase_note_count(actor), else: {:ok, actor}
+  end
+
+  def decrease_note_count_if_public(actor, object) do
+    if is_public?(object), do: User.decrease_note_count(actor), else: {:ok, actor}
+  end
+
   def insert(map, local \\ true) when is_map(map) do
     with nil <- Activity.normalize(map),
          map <- lazy_put_activity_defaults(map),
@@ -163,7 +171,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
            ),
          {:ok, activity} <- insert(create_data, local),
          # Changing note count prior to enqueuing federation task in order to avoid race conditions on updating user.info
-         {:ok, _actor} <- User.increase_note_count(actor),
+         {:ok, _actor} <- increase_note_count_if_public(actor, activity),
          :ok <- maybe_federate(activity) do
       {:ok, activity}
     end
@@ -175,8 +183,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
     with data <- %{"to" => to, "type" => "Accept", "actor" => actor.ap_id, "object" => object},
          {:ok, activity} <- insert(data, local),
-         :ok <- maybe_federate(activity),
-         _ <- User.update_follow_request_count(actor) do
+         :ok <- maybe_federate(activity) do
       {:ok, activity}
     end
   end
@@ -187,8 +194,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
     with data <- %{"to" => to, "type" => "Reject", "actor" => actor.ap_id, "object" => object},
          {:ok, activity} <- insert(data, local),
-         :ok <- maybe_federate(activity),
-         _ <- User.update_follow_request_count(actor) do
+         :ok <- maybe_federate(activity) do
       {:ok, activity}
     end
   end
@@ -286,8 +292,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   def follow(follower, followed, activity_id \\ nil, local \\ true) do
     with data <- make_follow_data(follower, followed, activity_id),
          {:ok, activity} <- insert(data, local),
-         :ok <- maybe_federate(activity),
-         _ <- User.update_follow_request_count(followed) do
+         :ok <- maybe_federate(activity) do
       {:ok, activity}
     end
   end
@@ -297,26 +302,26 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          {:ok, follow_activity} <- update_follow_state(follow_activity, "cancelled"),
          unfollow_data <- make_unfollow_data(follower, followed, follow_activity, activity_id),
          {:ok, activity} <- insert(unfollow_data, local),
-         :ok <- maybe_federate(activity),
-         _ <- User.update_follow_request_count(followed) do
+         :ok <- maybe_federate(activity) do
       {:ok, activity}
     end
   end
 
   def delete(%Object{data: %{"id" => id, "actor" => actor}} = object, local \\ true) do
     user = User.get_cached_by_ap_id(actor)
+    to = object.data["to"] || [] ++ object.data["cc"] || []
 
     data = %{
       "type" => "Delete",
       "actor" => actor,
       "object" => id,
-      "to" => [user.follower_address, "https://www.w3.org/ns/activitystreams#Public"]
+      "to" => to
     }
 
     with {:ok, _} <- Object.delete(object),
          {:ok, activity} <- insert(data, local),
          # Changing note count prior to enqueuing federation task in order to avoid race conditions on updating user.info
-         {:ok, _actor} <- User.decrease_note_count(user),
+         {:ok, _actor} <- decrease_note_count_if_public(user, object),
          :ok <- maybe_federate(activity) do
       {:ok, activity}
     end
@@ -449,6 +454,30 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   @valid_visibilities ~w[direct unlisted public private]
+
+  defp restrict_visibility(query, %{visibility: visibility})
+       when is_list(visibility) do
+    if Enum.all?(visibility, &(&1 in @valid_visibilities)) do
+      query =
+        from(
+          a in query,
+          where:
+            fragment(
+              "activity_visibility(?, ?, ?) = ANY (?)",
+              a.actor,
+              a.recipients,
+              a.data,
+              ^visibility
+            )
+        )
+
+      Ecto.Adapters.SQL.to_sql(:all, Repo, query)
+
+      query
+    else
+      Logger.error("Could not restrict visibility to #{visibility}")
+    end
+  end
 
   defp restrict_visibility(query, %{visibility: visibility})
        when visibility in @valid_visibilities do

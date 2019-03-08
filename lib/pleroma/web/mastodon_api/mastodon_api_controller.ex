@@ -15,14 +15,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Web
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MediaProxy
-  alias Pleroma.Web.Push
-  alias Push.Subscription
 
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.FilterView
   alias Pleroma.Web.MastodonAPI.ListView
   alias Pleroma.Web.MastodonAPI.MastodonView
-  alias Pleroma.Web.MastodonAPI.PushSubscriptionView
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.MastodonAPI.ReportView
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -193,6 +190,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   defp add_link_headers(conn, method, activities, param \\ nil, params \\ %{}) do
+    params =
+      conn.params
+      |> Map.drop(["since_id", "max_id"])
+      |> Map.merge(params)
+
     last = List.last(activities)
     first = List.first(activities)
 
@@ -292,13 +294,17 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def dm_timeline(%{assigns: %{user: user}} = conn, params) do
-    query =
-      ActivityPub.fetch_activities_query(
-        [user.ap_id],
-        Map.merge(params, %{"type" => "Create", visibility: "direct"})
-      )
+    params =
+      params
+      |> Map.put("type", "Create")
+      |> Map.put("blocking_user", user)
+      |> Map.put("user", user)
+      |> Map.put(:visibility, "direct")
 
-    activities = Repo.all(query)
+    activities =
+      [user.ap_id]
+      |> ActivityPub.fetch_activities_query(params)
+      |> Repo.all()
 
     conn
     |> add_link_headers(:dm_timeline, activities)
@@ -733,14 +739,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   def follow(%{assigns: %{user: follower}} = conn, %{"id" => id}) do
     with %User{} = followed <- Repo.get(User, id),
-         {:ok, follower} <- User.maybe_direct_follow(follower, followed),
-         {:ok, _activity} <- ActivityPub.follow(follower, followed),
-         {:ok, follower, followed} <-
-           User.wait_and_refresh(
-             Config.get([:activitypub, :follow_handshake_timeout]),
-             follower,
-             followed
-           ) do
+         {:ok, follower, followed, _} <- CommonAPI.follow(follower, followed) do
       conn
       |> put_view(AccountView)
       |> render("relationship.json", %{user: follower, target: followed})
@@ -754,8 +753,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   def follow(%{assigns: %{user: follower}} = conn, %{"uri" => uri}) do
     with %User{} = followed <- Repo.get_by(User, nickname: uri),
-         {:ok, follower} <- User.maybe_direct_follow(follower, followed),
-         {:ok, _activity} <- ActivityPub.follow(follower, followed) do
+         {:ok, follower, followed, _} <- CommonAPI.follow(follower, followed) do
       conn
       |> put_view(AccountView)
       |> render("account.json", %{user: followed, for: follower})
@@ -894,7 +892,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def search2(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
-    accounts = User.search(query, params["resolve"] == "true", user)
+    accounts = User.search(query, resolve: params["resolve"] == "true", for_user: user)
 
     statuses = status_search(user, query)
 
@@ -919,7 +917,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def search(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
-    accounts = User.search(query, params["resolve"] == "true", user)
+    accounts = User.search(query, resolve: params["resolve"] == "true", for_user: user)
 
     statuses = status_search(user, query)
 
@@ -941,7 +939,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def account_search(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
-    accounts = User.search(query, params["resolve"] == "true", user)
+    accounts = User.search(query, resolve: params["resolve"] == "true", for_user: user)
 
     res = AccountView.render("accounts.json", users: accounts, for: user, as: :user)
 
@@ -1424,37 +1422,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     json(conn, %{})
   end
 
-  def create_push_subscription(%{assigns: %{user: user, token: token}} = conn, params) do
-    true = Push.enabled()
-    Subscription.delete_if_exists(user, token)
-    {:ok, subscription} = Subscription.create(user, token, params)
-    view = PushSubscriptionView.render("push_subscription.json", subscription: subscription)
-    json(conn, view)
-  end
-
-  def get_push_subscription(%{assigns: %{user: user, token: token}} = conn, _params) do
-    true = Push.enabled()
-    subscription = Subscription.get(user, token)
-    view = PushSubscriptionView.render("push_subscription.json", subscription: subscription)
-    json(conn, view)
-  end
-
-  def update_push_subscription(
-        %{assigns: %{user: user, token: token}} = conn,
-        params
-      ) do
-    true = Push.enabled()
-    {:ok, subscription} = Subscription.update(user, token, params)
-    view = PushSubscriptionView.render("push_subscription.json", subscription: subscription)
-    json(conn, view)
-  end
-
-  def delete_push_subscription(%{assigns: %{user: user, token: token}} = conn, _params) do
-    true = Push.enabled()
-    {:ok, _response} = Subscription.delete(user, token)
-    json(conn, %{})
-  end
-
+  # fallback action
+  #
   def errors(conn, _) do
     conn
     |> put_status(500)

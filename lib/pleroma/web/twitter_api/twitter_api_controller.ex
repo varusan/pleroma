@@ -167,6 +167,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
       params
       |> Map.put("type", ["Create", "Announce", "Follow", "Like"])
       |> Map.put("blocking_user", user)
+      |> Map.put(:visibility, ~w[unlisted public private])
 
     activities = ActivityPub.fetch_activities([user.ap_id], params)
 
@@ -176,13 +177,16 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def dm_timeline(%{assigns: %{user: user}} = conn, params) do
-    query =
-      ActivityPub.fetch_activities_query(
-        [user.ap_id],
-        Map.merge(params, %{"type" => "Create", "user" => user, visibility: "direct"})
-      )
+    params =
+      params
+      |> Map.put("type", "Create")
+      |> Map.put("blocking_user", user)
+      |> Map.put("user", user)
+      |> Map.put(:visibility, "direct")
 
-    activities = Repo.all(query)
+    activities =
+      ActivityPub.fetch_activities_query([user.ap_id], params)
+      |> Repo.all()
 
     conn
     |> put_view(ActivityView)
@@ -702,7 +706,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def search_user(%{assigns: %{user: user}} = conn, %{"query" => query}) do
-    users = User.search(query, true, user)
+    users = User.search(query, resolve: true, for_user: user)
 
     conn
     |> put_view(UserView)
