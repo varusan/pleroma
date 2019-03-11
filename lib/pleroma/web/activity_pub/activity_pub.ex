@@ -867,8 +867,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     if _user = User.get_by_ap_id(ap_id) do
       Transmogrifier.upgrade_user_from_ap_id(ap_id)
     else
-      with {:ok, data} <- fetch_and_prepare_user_from_ap_id(ap_id) do
-        {:ok, user} = User.insert_or_update_user(data)
+      with {:ok, data} <- fetch_and_prepare_user_from_ap_id(ap_id),
+           {:ok, user} <- User.insert_or_update_user(data) do
         {:ok, _pid} = Task.start(fn -> pinned_fetch_task(user) end)
         {:ok, user}
       else
