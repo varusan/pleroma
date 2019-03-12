@@ -454,6 +454,22 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert object
       assert object.data["like_count"] == 1
     end
+
+    test "it inserts an incoming question activity into the database" do
+      data =
+        File.read!("test/fixtures/activitypub-client-question-activity.json") |> Poison.decode!()
+
+      user = insert(:user)
+
+      conn =
+        build_conn()
+        |> assign(:user, user)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/users/#{user.nickname}/outbox", data)
+
+      result = json_response(conn, 201)
+      assert Activity.get_by_ap_id(result["id"])
+    end
   end
 
   describe "/users/:nickname/followers" do

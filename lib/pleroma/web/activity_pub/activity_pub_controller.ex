@@ -257,6 +257,20 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     end
   end
 
+  def handle_user_activity(user, %{"type" => "Question"} = params) do
+    with {:ok, activity} <-
+           ActivityPub.question(%{
+             actor: user,
+             name: params["name"],
+             one_of: params["oneOf"],
+             any_of: params["anyOf"]
+           }) do
+      {:ok, activity}
+    else
+      _ -> {:error, "Can't handle question"}
+    end
+  end
+
   def handle_user_activity(_, _) do
     {:error, "Unhandled activity type"}
   end

@@ -640,6 +640,18 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     |> Map.merge(additional)
   end
 
+  #### Question-related helpers
+
+  def make_question_data(params) do
+    %{
+      "type" => "Question",
+      "actor" => params.actor.ap_id,
+      "name" => params.name,
+      "one_of" => params.one_of,
+      "any_of" => params.any_of
+    }
+  end
+
   @doc """
   Fetches the OrderedCollection/OrderedCollectionPage from `from`, limiting the amount of pages fetched after
   the first one to `pages_left` pages.

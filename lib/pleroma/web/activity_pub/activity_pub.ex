@@ -404,6 +404,22 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  def question(%{
+        actor: actor,
+        name: name,
+        one_of: one_of,
+        any_of: any_of
+      }) do
+    %{
+      actor: actor,
+      name: name,
+      one_of: one_of,
+      any_of: any_of
+    }
+    |> make_question_data()
+    |> insert()
+  end
+
   def fetch_activities_for_context(context, opts \\ %{}) do
     public = ["https://www.w3.org/ns/activitystreams#Public"]
 
