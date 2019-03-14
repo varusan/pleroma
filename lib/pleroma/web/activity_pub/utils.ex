@@ -647,8 +647,8 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "type" => "Question",
       "actor" => params.actor.ap_id,
       "name" => params.name,
-      "one_of" => params.one_of,
-      "any_of" => params.any_of
+      "oneOf" => params.one_of,
+      "anyOf" => params.any_of
     }
   end
 
