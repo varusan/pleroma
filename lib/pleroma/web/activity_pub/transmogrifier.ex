@@ -708,6 +708,28 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
+  def handle_incoming(
+        %{
+          "type" => "Question",
+          "name" => name,
+          "actor" => _actor
+        } = data
+      ) do
+    with actor <- get_actor(data),
+         %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
+         {:ok, activity} <-
+           ActivityPub.question(%{
+             actor: actor,
+             name: name,
+             one_of: data["oneOf"],
+             any_of: data["anyOf"]
+           }) do
+      {:ok, activity}
+    else
+      _e -> :error
+    end
+  end
+
   def handle_incoming(_), do: :error
 
   def fetch_obj_helper(id) when is_bitstring(id), do: ActivityPub.fetch_object_from_id(id)
