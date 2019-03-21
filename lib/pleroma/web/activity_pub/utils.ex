@@ -645,6 +645,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   def make_question_data(params) do
     %{
       "type" => "Question",
+      "to" => params.to |> Enum.uniq(),
       "actor" => params.actor.ap_id,
       "name" => params.name,
       "oneOf" => params.one_of,

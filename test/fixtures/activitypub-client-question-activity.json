@@ -11,5 +11,6 @@
       "type": "Note",
       "name": "Not much"
     }
-  ]
+  ],
+  "to": ["https://www.w3.org/ns/activitystreams#Public"]
 }

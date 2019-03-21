@@ -404,20 +404,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def question(%{
-        actor: actor,
-        name: name,
-        one_of: one_of,
-        any_of: any_of
-      }) do
-    %{
-      actor: actor,
-      name: name,
-      one_of: one_of,
-      any_of: any_of
-    }
-    |> make_question_data()
-    |> insert()
+  def question(params) do
+    with question_data <- make_question_data(params),
+         {:ok, activity} <- insert(question_data),
+         maybe_federate(activity) do
+      {:ok, activity}
+    end
   end
 
   def fetch_activities_for_context(context, opts \\ %{}) do

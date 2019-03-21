@@ -263,7 +263,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
              actor: user,
              name: params["name"],
              one_of: params["oneOf"],
-             any_of: params["anyOf"]
+             any_of: params["anyOf"],
+             to: params["to"]
            }) do
       {:ok, activity}
     else
