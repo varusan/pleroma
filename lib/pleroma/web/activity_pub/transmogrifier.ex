@@ -722,7 +722,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
              actor: actor,
              name: name,
              one_of: data["oneOf"],
-             any_of: data["anyOf"]
+             any_of: data["anyOf"],
+             to: data["to"]
            }) do
       {:ok, activity}
     else

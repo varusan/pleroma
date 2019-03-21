@@ -1273,10 +1273,11 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
             "type" => "Note",
             "name" => "Not much"
           }
-        ]
+        ],
+        "to" => ["https://www.w3.org/ns/activitystreams#Public"]
       }
 
-      {:ok, activity} = Transmogrifier.handle_incoming(data)
+      {:ok, _activity} = Transmogrifier.handle_incoming(data)
     end
   end
 end
