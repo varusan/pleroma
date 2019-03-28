@@ -1,0 +1,14 @@
+{
+  "actor": "http://localhost:4001/users/nick0",
+  "data": {
+    "closed": "",
+    "id": "http://localhost:4001/questions/f15139de-f45f-446a-8a38-69183b12e581",
+    "name": "What's up 0?",
+    "oneOf": [
+      {"name": "Yay", "type": "Note"},
+      {"name": "Nay", "type": "Note"}
+    ],
+    "type": "Question"
+  },
+  "id": "9h4wxhn5UHCCd5yCoa"
+}

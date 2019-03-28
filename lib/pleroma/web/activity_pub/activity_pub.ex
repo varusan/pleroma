@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Instances
   alias Pleroma.Notification
   alias Pleroma.Object
+  alias Pleroma.Question
   alias Pleroma.Repo
   alias Pleroma.Upload
   alias Pleroma.User
@@ -158,7 +159,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def create(%{to: to, actor: actor, context: context, object: object} = params) do
+  def create(%{object: %{"inReplyTo" => in_reply_to}} = params) do
+    Activity.get_by_ap_id(in_reply_to)
+    |> Question.is_question()
+    |> case do
+      true -> create_answer(params)
+      false -> create_note(params)
+    end
+  end
+
+  defp create_note(%{to: to, actor: actor, context: context, object: object} = params) do
     additional = params[:additional] || %{}
     # only accept false as false value
     local = !(params[:local] == false)
@@ -174,6 +184,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          # race conditions on updating user.info
          {:ok, _actor} <- increase_note_count_if_public(actor, activity),
          :ok <- maybe_federate(activity) do
+      {:ok, activity}
+    end
+  end
+
+  defp create_answer(%{object: %{"inReplyTo" => in_reply_to, "name" => name}}) do
+    with {:ok, activity} <- Pleroma.Question.add_reply_by_ap_id(in_reply_to, name) do
       {:ok, activity}
     end
   end

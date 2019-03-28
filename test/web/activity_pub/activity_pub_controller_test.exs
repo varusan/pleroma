@@ -470,6 +470,31 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       result = json_response(conn, 201)
       assert Activity.get_by_ap_id(result["id"])
     end
+
+    test "it creates answer activity" do
+      question_activity = insert(:question_activity)
+      user = insert(:user)
+
+      data = %{
+        "type" => "Create",
+        "to" => [question_activity.actor],
+        "object" => %{
+          "type" => "Note",
+          "name" => "Nay",
+          "inReplyTo" => question_activity.data["id"]
+        }
+      }
+
+      build_conn()
+      |> assign(:user, user)
+      |> put_req_header("content-type", "application/activity+json")
+      |> post("/users/#{user.nickname}/outbox", data)
+
+      question = Activity.get_by_ap_id(question_activity.data["id"])
+
+      assert question.data["replies"]["totalItems"] == 1
+      assert hd(question.data["replies"]["items"])["name"] == "Nay"
+    end
   end
 
   describe "/users/:nickname/followers" do

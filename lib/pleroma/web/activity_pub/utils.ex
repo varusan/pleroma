@@ -108,6 +108,10 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     DateTime.utc_now() |> DateTime.to_iso8601()
   end
 
+  def generate_question_id do
+    generate_id("questions")
+  end
+
   def generate_activity_id do
     generate_id("activities")
   end
@@ -613,6 +617,16 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "actor" => params.actor.ap_id,
       "object" => params.object,
       "published" => published,
+      "context" => params.context
+    }
+    |> Map.merge(additional)
+  end
+
+  def make_answer_data(params, additional) do
+    %{
+      "type" => "Create",
+      "to" => params.to |> Enum.uniq(),
+      "actor" => params.actor.ap_id,
       "context" => params.context
     }
     |> Map.merge(additional)

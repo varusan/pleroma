@@ -257,4 +257,38 @@ defmodule Pleroma.Factory do
       user: build(:user)
     }
   end
+
+  def question_activity_factory(attrs \\ %{}) do
+    question = sequence(:text, &"What's up #{&1}?")
+
+    user = insert(:user)
+
+    data = %{
+      "id" => attrs[:id] || Pleroma.Web.ActivityPub.Utils.generate_question_id(),
+      "type" => "Question",
+      "name" => question,
+      "oneOf" => [
+        %{
+          "type" => "Note",
+          "name" => "Yay"
+        },
+        %{
+          "type" => "Note",
+          "name" => "Nay"
+        }
+      ],
+      "replies" => %{
+        "type" => "Collection",
+        "totalItems" => 0,
+        "items" => []
+      },
+      # TODO
+      "closed" => ""
+    }
+
+    %Pleroma.Activity{
+      actor: user.ap_id,
+      data: data
+    }
+  end
 end
