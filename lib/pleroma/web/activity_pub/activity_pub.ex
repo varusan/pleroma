@@ -159,8 +159,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def create(%{object: %{"inReplyTo" => in_reply_to}} = params) do
-    Activity.get_by_ap_id(in_reply_to)
+  def create(params) do
+    Activity.get_by_ap_id(get_in(params, [:object, "inReplyTo"]))
     |> Question.is_question()
     |> case do
       true -> create_answer(params)
