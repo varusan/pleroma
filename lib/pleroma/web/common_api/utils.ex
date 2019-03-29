@@ -5,22 +5,26 @@
 defmodule Pleroma.Web.CommonAPI.Utils do
   alias Calendar.Strftime
   alias Comeonin.Pbkdf2
-  alias Pleroma.{Activity, Formatter, Object, Repo}
+  alias Pleroma.Activity
+  alias Pleroma.Config
+  alias Pleroma.Formatter
+  alias Pleroma.Object
+  alias Pleroma.Repo
   alias Pleroma.User
-  alias Pleroma.Web
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.MediaProxy
 
   # This is a hack for twidere.
   def get_by_id_or_ap_id(id) do
-    activity = Repo.get(Activity, id) || Activity.get_create_by_object_ap_id(id)
+    activity =
+      Activity.get_by_id_with_object(id) || Activity.get_create_by_object_ap_id_with_object(id)
 
     activity &&
       if activity.data["type"] == "Create" do
         activity
       else
-        Activity.get_create_by_object_ap_id(activity.data["object"])
+        Activity.get_create_by_object_ap_id_with_object(activity.data["object"])
       end
   end
 
@@ -32,9 +36,25 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   def get_replied_to_activity(_), do: nil
 
-  def attachments_from_ids(ids) do
+  def attachments_from_ids(data) do
+    if Map.has_key?(data, "descriptions") do
+      attachments_from_ids_descs(data["media_ids"], data["descriptions"])
+    else
+      attachments_from_ids_no_descs(data["media_ids"])
+    end
+  end
+
+  def attachments_from_ids_no_descs(ids) do
     Enum.map(ids || [], fn media_id ->
       Repo.get(Object, media_id).data
+    end)
+  end
+
+  def attachments_from_ids_descs(ids, descs_str) do
+    {_, descs} = Jason.decode(descs_str)
+
+    Enum.map(ids || [], fn media_id ->
+      Map.put(Repo.get(Object, media_id).data, "name", descs[media_id])
     end)
   end
 
@@ -81,24 +101,53 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   def make_content_html(
         status,
-        mentions,
         attachments,
-        tags,
-        content_type,
-        no_attachment_links \\ false
+        data,
+        visibility
       ) do
+    no_attachment_links =
+      data
+      |> Map.get("no_attachment_links", Config.get([:instance, :no_attachment_links]))
+      |> Kernel.in([true, "true"])
+
+    content_type = get_content_type(data["content_type"])
+
+    options =
+      if visibility == "direct" && Config.get([:instance, :safe_dm_mentions]) do
+        [safe_mention: true]
+      else
+        []
+      end
+
     status
-    |> format_input(mentions, tags, content_type)
+    |> format_input(content_type, options)
     |> maybe_add_attachments(attachments, no_attachment_links)
+    |> maybe_add_nsfw_tag(data)
   end
+
+  defp get_content_type(content_type) do
+    if Enum.member?(Config.get([:instance, :allowed_post_formats]), content_type) do
+      content_type
+    else
+      "text/plain"
+    end
+  end
+
+  defp maybe_add_nsfw_tag({text, mentions, tags}, %{"sensitive" => sensitive})
+       when sensitive in [true, "True", "true", "1"] do
+    {text, mentions, [{"#nsfw", "nsfw"} | tags]}
+  end
+
+  defp maybe_add_nsfw_tag(data, _), do: data
 
   def make_context(%Activity{data: %{"context" => context}}), do: context
   def make_context(_), do: Utils.generate_context_id()
 
-  def maybe_add_attachments(text, _attachments, _no_links = true), do: text
+  def maybe_add_attachments(parsed, _attachments, true = _no_links), do: parsed
 
-  def maybe_add_attachments(text, attachments, _no_links) do
-    add_attachments(text, attachments)
+  def maybe_add_attachments({text, mentions, tags}, attachments, _no_links) do
+    text = add_attachments(text, attachments)
+    {text, mentions, tags}
   end
 
   def add_attachments(text, attachments) do
@@ -116,56 +165,39 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     Enum.join([text | attachment_text], "<br>")
   end
 
-  def format_input(text, mentions, tags, format, options \\ [])
+  def format_input(text, format, options \\ [])
 
   @doc """
   Formatting text to plain text.
   """
-  def format_input(text, mentions, tags, "text/plain", options) do
+  def format_input(text, "text/plain", options) do
     text
     |> Formatter.html_escape("text/plain")
-    |> String.replace(~r/\r?\n/, "<br>")
-    |> (&{[], &1}).()
-    |> Formatter.add_links()
-    |> Formatter.add_user_links(mentions, options[:user_links] || [])
-    |> Formatter.add_hashtag_links(tags)
-    |> Formatter.finalize()
+    |> Formatter.linkify(options)
+    |> (fn {text, mentions, tags} ->
+          {String.replace(text, ~r/\r?\n/, "<br>"), mentions, tags}
+        end).()
   end
 
   @doc """
   Formatting text to html.
   """
-  def format_input(text, mentions, _tags, "text/html", options) do
+  def format_input(text, "text/html", options) do
     text
     |> Formatter.html_escape("text/html")
-    |> (&{[], &1}).()
-    |> Formatter.add_user_links(mentions, options[:user_links] || [])
-    |> Formatter.finalize()
+    |> Formatter.linkify(options)
   end
 
   @doc """
   Formatting text to markdown.
   """
-  def format_input(text, mentions, tags, "text/markdown", options) do
+  def format_input(text, "text/markdown", options) do
+    options = Keyword.put(options, :mentions_escape, true)
+
     text
-    |> Formatter.mentions_escape(mentions)
-    |> Earmark.as_html!()
+    |> Formatter.linkify(options)
+    |> (fn {text, mentions, tags} -> {Earmark.as_html!(text), mentions, tags} end).()
     |> Formatter.html_escape("text/html")
-    |> (&{[], &1}).()
-    |> Formatter.add_user_links(mentions, options[:user_links] || [])
-    |> Formatter.add_hashtag_links(tags)
-    |> Formatter.finalize()
-  end
-
-  def add_tag_links(text, tags) do
-    tags =
-      tags
-      |> Enum.sort_by(fn {tag, _} -> -String.length(tag) end)
-
-    Enum.reduce(tags, text, fn {full, tag}, text ->
-      url = "<a href='#{Web.base_url()}/tag/#{tag}' rel='tag'>##{tag}</a>"
-      String.replace(text, full, url)
-    end)
   end
 
   def make_note_data(
@@ -260,5 +292,94 @@ defmodule Pleroma.Web.CommonAPI.Utils do
         "name" => ":#{shortcode}:"
       }
     end)
+  end
+
+  def maybe_notify_to_recipients(
+        recipients,
+        %Activity{data: %{"to" => to, "type" => _type}} = _activity
+      ) do
+    recipients ++ to
+  end
+
+  def maybe_notify_mentioned_recipients(
+        recipients,
+        %Activity{data: %{"to" => _to, "type" => type} = data} = activity
+      )
+      when type == "Create" do
+    object = Object.normalize(activity)
+
+    object_data =
+      cond do
+        !is_nil(object) ->
+          object.data
+
+        is_map(data["object"]) ->
+          data["object"]
+
+        true ->
+          %{}
+      end
+
+    tagged_mentions = maybe_extract_mentions(object_data)
+
+    recipients ++ tagged_mentions
+  end
+
+  def maybe_notify_mentioned_recipients(recipients, _), do: recipients
+
+  def maybe_extract_mentions(%{"tag" => tag}) do
+    tag
+    |> Enum.filter(fn x -> is_map(x) end)
+    |> Enum.filter(fn x -> x["type"] == "Mention" end)
+    |> Enum.map(fn x -> x["href"] end)
+  end
+
+  def maybe_extract_mentions(_), do: []
+
+  def make_report_content_html(nil), do: {:ok, {nil, [], []}}
+
+  def make_report_content_html(comment) do
+    max_size = Pleroma.Config.get([:instance, :max_report_comment_size], 1000)
+
+    if String.length(comment) <= max_size do
+      {:ok, format_input(comment, "text/plain")}
+    else
+      {:error, "Comment must be up to #{max_size} characters"}
+    end
+  end
+
+  def get_report_statuses(%User{ap_id: actor}, %{"status_ids" => status_ids}) do
+    {:ok, Activity.all_by_actor_and_id(actor, status_ids)}
+  end
+
+  def get_report_statuses(_, _), do: {:ok, nil}
+
+  # DEPRECATED mostly, context objects are now created at insertion time.
+  def context_to_conversation_id(context) do
+    with %Object{id: id} <- Object.get_cached_by_ap_id(context) do
+      id
+    else
+      _e ->
+        changeset = Object.context_mapping(context)
+
+        case Repo.insert(changeset) do
+          {:ok, %{id: id}} ->
+            id
+
+          # This should be solved by an upsert, but it seems ecto
+          # has problems accessing the constraint inside the jsonb.
+          {:error, _} ->
+            Object.get_cached_by_ap_id(context).id
+        end
+    end
+  end
+
+  def conversation_id_to_context(id) do
+    with %Object{data: %{"id" => context}} <- Repo.get(Object, id) do
+      context
+    else
+      _e ->
+        {:error, "No such conversation"}
+    end
   end
 end

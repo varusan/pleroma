@@ -4,14 +4,20 @@
 
 defmodule Pleroma.Web.TwitterAPI.UtilController do
   use Pleroma.Web, :controller
+
   require Logger
+
+  alias Comeonin.Pbkdf2
+  alias Pleroma.Emoji
+  alias Pleroma.Notification
+  alias Pleroma.PasswordResetToken
+  alias Pleroma.Repo
+  alias Pleroma.User
   alias Pleroma.Web
+  alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.OStatus
   alias Pleroma.Web.WebFinger
-  alias Pleroma.Web.CommonAPI
-  alias Comeonin.Pbkdf2
-  alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.{Repo, PasswordResetToken, User, Emoji}
 
   def show_password_reset(conn, %{"token" => token}) do
     with %{used: false} = token <- Repo.get_by(PasswordResetToken, %{token: token}),
@@ -137,6 +143,17 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     end
   end
 
+  def notifications_read(%{assigns: %{user: user}} = conn, %{"id" => notification_id}) do
+    with {:ok, _} <- Notification.read_one(user, notification_id) do
+      json(conn, %{status: "success"})
+    else
+      {:error, message} ->
+        conn
+        |> put_resp_content_type("application/json")
+        |> send_resp(403, Jason.encode!(%{"error" => message}))
+    end
+  end
+
   def config(conn, _params) do
     instance = Pleroma.Config.get(:instance)
     instance_fe = Pleroma.Config.get(:fe)
@@ -180,28 +197,36 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
           vapidPublicKey: vapid_public_key,
           accountActivationRequired:
             if(Keyword.get(instance, :account_activation_required, false), do: "1", else: "0"),
-          invitesEnabled: if(Keyword.get(instance, :invites_enabled, false), do: "1", else: "0")
+          invitesEnabled: if(Keyword.get(instance, :invites_enabled, false), do: "1", else: "0"),
+          safeDMMentionsEnabled:
+            if(Pleroma.Config.get([:instance, :safe_dm_mentions]), do: "1", else: "0")
         }
 
-        pleroma_fe = %{
-          theme: Keyword.get(instance_fe, :theme),
-          background: Keyword.get(instance_fe, :background),
-          logo: Keyword.get(instance_fe, :logo),
-          logoMask: Keyword.get(instance_fe, :logo_mask),
-          logoMargin: Keyword.get(instance_fe, :logo_margin),
-          redirectRootNoLogin: Keyword.get(instance_fe, :redirect_root_no_login),
-          redirectRootLogin: Keyword.get(instance_fe, :redirect_root_login),
-          chatDisabled: !Keyword.get(instance_chat, :enabled),
-          showInstanceSpecificPanel: Keyword.get(instance_fe, :show_instance_panel),
-          scopeOptionsEnabled: Keyword.get(instance_fe, :scope_options_enabled),
-          formattingOptionsEnabled: Keyword.get(instance_fe, :formatting_options_enabled),
-          collapseMessageWithSubject: Keyword.get(instance_fe, :collapse_message_with_subject),
-          hidePostStats: Keyword.get(instance_fe, :hide_post_stats),
-          hideUserStats: Keyword.get(instance_fe, :hide_user_stats),
-          scopeCopy: Keyword.get(instance_fe, :scope_copy),
-          subjectLineBehavior: Keyword.get(instance_fe, :subject_line_behavior),
-          alwaysShowSubjectInput: Keyword.get(instance_fe, :always_show_subject_input)
-        }
+        pleroma_fe =
+          if instance_fe do
+            %{
+              theme: Keyword.get(instance_fe, :theme),
+              background: Keyword.get(instance_fe, :background),
+              logo: Keyword.get(instance_fe, :logo),
+              logoMask: Keyword.get(instance_fe, :logo_mask),
+              logoMargin: Keyword.get(instance_fe, :logo_margin),
+              redirectRootNoLogin: Keyword.get(instance_fe, :redirect_root_no_login),
+              redirectRootLogin: Keyword.get(instance_fe, :redirect_root_login),
+              chatDisabled: !Keyword.get(instance_chat, :enabled),
+              showInstanceSpecificPanel: Keyword.get(instance_fe, :show_instance_panel),
+              scopeOptionsEnabled: Keyword.get(instance_fe, :scope_options_enabled),
+              formattingOptionsEnabled: Keyword.get(instance_fe, :formatting_options_enabled),
+              collapseMessageWithSubject:
+                Keyword.get(instance_fe, :collapse_message_with_subject),
+              hidePostStats: Keyword.get(instance_fe, :hide_post_stats),
+              hideUserStats: Keyword.get(instance_fe, :hide_user_stats),
+              scopeCopy: Keyword.get(instance_fe, :scope_copy),
+              subjectLineBehavior: Keyword.get(instance_fe, :subject_line_behavior),
+              alwaysShowSubjectInput: Keyword.get(instance_fe, :always_show_subject_input)
+            }
+          else
+            Pleroma.Config.get([:frontend_configurations, :pleroma_fe])
+          end
 
         managed_config = Keyword.get(instance, :managed_config)
 
@@ -214,6 +239,14 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
 
         json(conn, %{site: data})
     end
+  end
+
+  def frontend_configurations(conn, _params) do
+    config =
+      Pleroma.Config.get(:frontend_configurations, %{})
+      |> Enum.into(%{})
+
+    json(conn, config)
   end
 
   def version(conn, _params) do

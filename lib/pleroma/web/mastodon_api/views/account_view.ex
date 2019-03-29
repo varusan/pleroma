@@ -4,11 +4,12 @@
 
 defmodule Pleroma.Web.MastodonAPI.AccountView do
   use Pleroma.Web, :view
-  alias Pleroma.User
-  alias Pleroma.Web.MastodonAPI.AccountView
-  alias Pleroma.Web.CommonAPI.Utils
-  alias Pleroma.Web.MediaProxy
+
   alias Pleroma.HTML
+  alias Pleroma.User
+  alias Pleroma.Web.CommonAPI.Utils
+  alias Pleroma.Web.MastodonAPI.AccountView
+  alias Pleroma.Web.MediaProxy
 
   def render("accounts.json", %{users: users} = opts) do
     users
@@ -31,7 +32,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     }
   end
 
-  def render("relationship.json", %{user: user, target: target}) do
+  def render("relationship.json", %{user: nil, target: _target}) do
+    %{}
+  end
+
+  def render("relationship.json", %{user: %User{} = user, target: %User{} = target}) do
     follow_activity = Pleroma.Web.ActivityPub.Utils.fetch_latest_follow(user, target)
 
     requested =
@@ -46,11 +51,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       following: User.following?(user, target),
       followed_by: User.following?(target, user),
       blocking: User.blocks?(user, target),
-      muting: false,
+      muting: User.mutes?(user, target),
       muting_notifications: false,
       requested: requested,
       domain_blocking: false,
-      showing_reblogs: false,
+      showing_reblogs: User.showing_reblogs?(user, target),
       endorsed: false
     }
   end
@@ -84,6 +89,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
 
     bio = HTML.filter_tags(user.bio, User.html_filter_policy(opts[:for]))
 
+    relationship = render("relationship.json", %{user: opts[:for], target: user})
+
     %{
       id: to_string(user.id),
       username: username_from_nickname(user.nickname),
@@ -112,7 +119,10 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       # Pleroma extension
       pleroma: %{
         confirmation_pending: user_info.confirmation_pending,
-        tags: user.tags
+        tags: user.tags,
+        is_moderator: user.info.is_moderator,
+        is_admin: user.info.is_admin,
+        relationship: relationship
       }
     }
   end

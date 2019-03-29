@@ -5,9 +5,13 @@
 defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   use Pleroma.Web.ConnCase
   import Pleroma.Factory
-  alias Pleroma.Web.ActivityPub.{UserView, ObjectView}
-  alias Pleroma.{Object, Repo, User}
   alias Pleroma.Activity
+  alias Pleroma.Instances
+  alias Pleroma.Object
+  alias Pleroma.Repo
+  alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ObjectView
+  alias Pleroma.Web.ActivityPub.UserView
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -37,7 +41,24 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   end
 
   describe "/users/:nickname" do
-    test "it returns a json representation of the user", %{conn: conn} do
+    test "it returns a json representation of the user with accept application/json", %{
+      conn: conn
+    } do
+      user = insert(:user)
+
+      conn =
+        conn
+        |> put_req_header("accept", "application/json")
+        |> get("/users/#{user.nickname}")
+
+      user = Repo.get(User, user.id)
+
+      assert json_response(conn, 200) == UserView.render("user.json", %{user: user})
+    end
+
+    test "it returns a json representation of the user with accept application/activity+json", %{
+      conn: conn
+    } do
       user = insert(:user)
 
       conn =
@@ -49,16 +70,66 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       assert json_response(conn, 200) == UserView.render("user.json", %{user: user})
     end
+
+    test "it returns a json representation of the user with accept application/ld+json", %{
+      conn: conn
+    } do
+      user = insert(:user)
+
+      conn =
+        conn
+        |> put_req_header(
+          "accept",
+          "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\""
+        )
+        |> get("/users/#{user.nickname}")
+
+      user = Repo.get(User, user.id)
+
+      assert json_response(conn, 200) == UserView.render("user.json", %{user: user})
+    end
   end
 
   describe "/object/:uuid" do
-    test "it returns a json representation of the object", %{conn: conn} do
+    test "it returns a json representation of the object with accept application/json", %{
+      conn: conn
+    } do
+      note = insert(:note)
+      uuid = String.split(note.data["id"], "/") |> List.last()
+
+      conn =
+        conn
+        |> put_req_header("accept", "application/json")
+        |> get("/objects/#{uuid}")
+
+      assert json_response(conn, 200) == ObjectView.render("object.json", %{object: note})
+    end
+
+    test "it returns a json representation of the object with accept application/activity+json",
+         %{conn: conn} do
       note = insert(:note)
       uuid = String.split(note.data["id"], "/") |> List.last()
 
       conn =
         conn
         |> put_req_header("accept", "application/activity+json")
+        |> get("/objects/#{uuid}")
+
+      assert json_response(conn, 200) == ObjectView.render("object.json", %{object: note})
+    end
+
+    test "it returns a json representation of the object with accept application/ld+json", %{
+      conn: conn
+    } do
+      note = insert(:note)
+      uuid = String.split(note.data["id"], "/") |> List.last()
+
+      conn =
+        conn
+        |> put_req_header(
+          "accept",
+          "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\""
+        )
         |> get("/objects/#{uuid}")
 
       assert json_response(conn, 200) == ObjectView.render("object.json", %{object: note})
@@ -144,6 +215,23 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       :timer.sleep(500)
       assert Activity.get_by_ap_id(data["id"])
     end
+
+    test "it clears `unreachable` federation status of the sender", %{conn: conn} do
+      data = File.read!("test/fixtures/mastodon-post-activity.json") |> Poison.decode!()
+
+      sender_url = data["actor"]
+      Instances.set_consistently_unreachable(sender_url)
+      refute Instances.reachable?(sender_url)
+
+      conn =
+        conn
+        |> assign(:valid_signature, true)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/inbox", data)
+
+      assert "ok" == json_response(conn, 200)
+      assert Instances.reachable?(sender_url)
+    end
   end
 
   describe "/users/:nickname/inbox" do
@@ -191,9 +279,43 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       assert response(conn, 200) =~ note_activity.data["object"]["content"]
     end
+
+    test "it clears `unreachable` federation status of the sender", %{conn: conn} do
+      user = insert(:user)
+
+      data =
+        File.read!("test/fixtures/mastodon-post-activity.json")
+        |> Poison.decode!()
+        |> Map.put("bcc", [user.ap_id])
+
+      sender_host = URI.parse(data["actor"]).host
+      Instances.set_consistently_unreachable(sender_host)
+      refute Instances.reachable?(sender_host)
+
+      conn =
+        conn
+        |> assign(:valid_signature, true)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/users/#{user.nickname}/inbox", data)
+
+      assert "ok" == json_response(conn, 200)
+      assert Instances.reachable?(sender_host)
+    end
   end
 
   describe "/users/:nickname/outbox" do
+    test "it will not bomb when there is no activity", %{conn: conn} do
+      user = insert(:user)
+
+      conn =
+        conn
+        |> put_req_header("accept", "application/activity+json")
+        |> get("/users/#{user.nickname}/outbox")
+
+      result = json_response(conn, 200)
+      assert user.ap_id <> "/outbox" == result["id"]
+    end
+
     test "it returns a note activity in a collection", %{conn: conn} do
       note_activity = insert(:note_activity)
       user = User.get_cached_by_ap_id(note_activity.data["actor"])
@@ -348,9 +470,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert result["first"]["orderedItems"] == [user.ap_id]
     end
 
-    test "it returns returns empty if the user has 'hide_network' set", %{conn: conn} do
+    test "it returns returns empty if the user has 'hide_followers' set", %{conn: conn} do
       user = insert(:user)
-      user_two = insert(:user, %{info: %{hide_network: true}})
+      user_two = insert(:user, %{info: %{hide_followers: true}})
       User.follow(user, user_two)
 
       result =
@@ -359,7 +481,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> json_response(200)
 
       assert result["first"]["orderedItems"] == []
-      assert result["totalItems"] == 1
+      assert result["totalItems"] == 0
     end
 
     test "it works for more than 10 users", %{conn: conn} do
@@ -403,8 +525,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert result["first"]["orderedItems"] == [user_two.ap_id]
     end
 
-    test "it returns returns empty if the user has 'hide_network' set", %{conn: conn} do
-      user = insert(:user, %{info: %{hide_network: true}})
+    test "it returns returns empty if the user has 'hide_follows' set", %{conn: conn} do
+      user = insert(:user, %{info: %{hide_follows: true}})
       user_two = insert(:user)
       User.follow(user, user_two)
 
@@ -414,7 +536,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> json_response(200)
 
       assert result["first"]["orderedItems"] == []
-      assert result["totalItems"] == 1
+      assert result["totalItems"] == 0
     end
 
     test "it works for more than 10 users", %{conn: conn} do

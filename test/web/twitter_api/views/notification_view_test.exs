@@ -5,13 +5,14 @@
 defmodule Pleroma.Web.TwitterAPI.NotificationViewTest do
   use Pleroma.DataCase
 
-  alias Pleroma.{User, Notification}
-  alias Pleroma.Web.TwitterAPI.TwitterAPI
-  alias Pleroma.Web.TwitterAPI.NotificationView
-  alias Pleroma.Web.TwitterAPI.UserView
-  alias Pleroma.Web.TwitterAPI.ActivityView
-  alias Pleroma.Web.CommonAPI.Utils
+  alias Pleroma.Notification
+  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.CommonAPI.Utils
+  alias Pleroma.Web.TwitterAPI.ActivityView
+  alias Pleroma.Web.TwitterAPI.NotificationView
+  alias Pleroma.Web.TwitterAPI.TwitterAPI
+  alias Pleroma.Web.TwitterAPI.UserView
 
   import Pleroma.Factory
 

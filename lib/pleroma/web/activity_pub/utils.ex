@@ -3,11 +3,20 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.Utils do
-  alias Pleroma.{Repo, Web, Object, Activity, User, Notification}
-  alias Pleroma.Web.Router.Helpers
+  alias Ecto.Changeset
+  alias Ecto.UUID
+  alias Pleroma.Activity
+  alias Pleroma.Notification
+  alias Pleroma.Object
+  alias Pleroma.Repo
+  alias Pleroma.User
+  alias Pleroma.Web
+  alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.Endpoint
-  alias Ecto.{Changeset, UUID}
+  alias Pleroma.Web.Router.Helpers
+
   import Ecto.Query
+
   require Logger
 
   @supported_object_types ["Article", "Note", "Video", "Page"]
@@ -156,7 +165,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
         _ -> 5
       end
 
-    Pleroma.Web.Federator.enqueue(:publish, activity, priority)
+    Pleroma.Web.Federator.publish(activity, priority)
     :ok
   end
 
@@ -200,12 +209,12 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   """
   def insert_full_object(%{"object" => %{"type" => type} = object_data})
       when is_map(object_data) and type in @supported_object_types do
-    with {:ok, _} <- Object.create(object_data) do
-      :ok
+    with {:ok, object} <- Object.create(object_data) do
+      {:ok, object}
     end
   end
 
-  def insert_full_object(_), do: :ok
+  def insert_full_object(_), do: {:ok, nil}
 
   def update_object_in_activities(%{data: %{"id" => id}} = object) do
     # TODO
@@ -266,13 +275,31 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     Repo.all(query)
   end
 
-  def make_like_data(%User{ap_id: ap_id} = actor, %{data: %{"id" => id}} = object, activity_id) do
+  def make_like_data(
+        %User{ap_id: ap_id} = actor,
+        %{data: %{"actor" => object_actor_id, "id" => id}} = object,
+        activity_id
+      ) do
+    object_actor = User.get_cached_by_ap_id(object_actor_id)
+
+    to =
+      if Visibility.is_public?(object) do
+        [actor.follower_address, object.data["actor"]]
+      else
+        [object.data["actor"]]
+      end
+
+    cc =
+      (object.data["to"] ++ (object.data["cc"] || []))
+      |> List.delete(actor.ap_id)
+      |> List.delete(object_actor.follower_address)
+
     data = %{
       "type" => "Like",
       "actor" => ap_id,
       "object" => id,
-      "to" => [actor.follower_address, object.data["actor"]],
-      "cc" => ["https://www.w3.org/ns/activitystreams#Public"],
+      "to" => to,
+      "cc" => cc,
       "context" => object.data["context"]
     }
 
@@ -285,7 +312,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
            |> Map.put("#{property}_count", length(element))
            |> Map.put("#{property}s", element),
          changeset <- Changeset.change(object, data: new_data),
-         {:ok, object} <- Repo.update(changeset),
+         {:ok, object} <- Object.update_and_set_cache(changeset),
          _ <- update_object_in_activities(object) do
       {:ok, object}
     end
@@ -316,6 +343,25 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   @doc """
   Updates a follow activity's state (for locked accounts).
   """
+  def update_follow_state(
+        %Activity{data: %{"actor" => actor, "object" => object, "state" => "pending"}} = activity,
+        state
+      ) do
+    try do
+      Ecto.Adapters.SQL.query!(
+        Repo,
+        "UPDATE activities SET data = jsonb_set(data, '{state}', $1) WHERE data->>'type' = 'Follow' AND data->>'actor' = $2 AND data->>'object' = $3 AND data->>'state' = 'pending'",
+        [state, actor, object]
+      )
+
+      activity = Repo.get(Activity, activity.id)
+      {:ok, activity}
+    rescue
+      e ->
+        {:error, e}
+    end
+  end
+
   def update_follow_state(%Activity{} = activity, state) do
     with new_data <-
            activity.data
@@ -570,5 +616,66 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "context" => params.context
     }
     |> Map.merge(additional)
+  end
+
+  #### Flag-related helpers
+
+  def make_flag_data(params, additional) do
+    status_ap_ids =
+      Enum.map(params.statuses || [], fn
+        %Activity{} = act -> act.data["id"]
+        act when is_map(act) -> act["id"]
+        act when is_binary(act) -> act
+      end)
+
+    object = [params.account.ap_id] ++ status_ap_ids
+
+    %{
+      "type" => "Flag",
+      "actor" => params.actor.ap_id,
+      "content" => params.content,
+      "object" => object,
+      "context" => params.context
+    }
+    |> Map.merge(additional)
+  end
+
+  @doc """
+  Fetches the OrderedCollection/OrderedCollectionPage from `from`, limiting the amount of pages fetched after
+  the first one to `pages_left` pages.
+  If the amount of pages is higher than the collection has, it returns whatever was there.
+  """
+  def fetch_ordered_collection(from, pages_left, acc \\ []) do
+    with {:ok, response} <- Tesla.get(from),
+         {:ok, collection} <- Poison.decode(response.body) do
+      case collection["type"] do
+        "OrderedCollection" ->
+          # If we've encountered the OrderedCollection and not the page,
+          # just call the same function on the page address
+          fetch_ordered_collection(collection["first"], pages_left)
+
+        "OrderedCollectionPage" ->
+          if pages_left > 0 do
+            # There are still more pages
+            if Map.has_key?(collection, "next") do
+              # There are still more pages, go deeper saving what we have into the accumulator
+              fetch_ordered_collection(
+                collection["next"],
+                pages_left - 1,
+                acc ++ collection["orderedItems"]
+              )
+            else
+              # No more pages left, just return whatever we already have
+              acc ++ collection["orderedItems"]
+            end
+          else
+            # Got the amount of pages needed, add them all to the accumulator
+            acc ++ collection["orderedItems"]
+          end
+
+        _ ->
+          {:error, "Not an OrderedCollection or OrderedCollectionPage"}
+      end
+    end
   end
 end

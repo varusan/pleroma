@@ -5,24 +5,36 @@
 defmodule Pleroma.Web.OStatus.OStatusController do
   use Pleroma.Web, :controller
 
-  alias Pleroma.{User, Activity, Object}
-  alias Pleroma.Web.OStatus.{FeedRepresenter, ActivityRepresenter}
-  alias Pleroma.Repo
-  alias Pleroma.Web.{OStatus, Federator}
-  alias Pleroma.Web.XML
-  alias Pleroma.Web.ActivityPub.ObjectView
-  alias Pleroma.Web.ActivityPub.ActivityPubController
+  alias Pleroma.Activity
+  alias Pleroma.Object
+  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.ActivityPubController
+  alias Pleroma.Web.ActivityPub.ObjectView
+  alias Pleroma.Web.ActivityPub.Visibility
+  alias Pleroma.Web.Federator
+  alias Pleroma.Web.OStatus
+  alias Pleroma.Web.OStatus.ActivityRepresenter
+  alias Pleroma.Web.OStatus.FeedRepresenter
+  alias Pleroma.Web.XML
 
   plug(Pleroma.Web.FederatingPlug when action in [:salmon_incoming])
+
   action_fallback(:errors)
 
   def feed_redirect(conn, %{"nickname" => nickname}) do
     case get_format(conn) do
       "html" ->
-        Fallback.RedirectController.redirector(conn, nil)
+        with %User{} = user <- User.get_cached_by_nickname_or_id(nickname) do
+          Fallback.RedirectController.redirector_with_meta(conn, %{user: user})
+        else
+          nil -> {:error, :not_found}
+        end
 
       "activity+json" ->
+        ActivityPubController.call(conn, :user)
+
+      "json" ->
         ActivityPubController.call(conn, :user)
 
       _ ->
@@ -79,19 +91,20 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     {:ok, body, _conn} = read_body(conn)
     {:ok, doc} = decode_or_retry(body)
 
-    Federator.enqueue(:incoming_doc, doc)
+    Federator.incoming_doc(doc)
 
     conn
     |> send_resp(200, "")
   end
 
   def object(conn, %{"uuid" => uuid}) do
-    if get_format(conn) == "activity+json" do
+    if get_format(conn) in ["activity+json", "json"] do
       ActivityPubController.call(conn, :object)
     else
       with id <- o_status_url(conn, :object, uuid),
-           {_, %Activity{} = activity} <- {:activity, Activity.get_create_by_object_ap_id(id)},
-           {_, true} <- {:public?, ActivityPub.is_public?(activity)},
+           {_, %Activity{} = activity} <-
+             {:activity, Activity.get_create_by_object_ap_id_with_object(id)},
+           {_, true} <- {:public?, Visibility.is_public?(activity)},
            %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
         case get_format(conn) do
           "html" -> redirect(conn, to: "/notice/#{activity.id}")
@@ -111,12 +124,12 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   end
 
   def activity(conn, %{"uuid" => uuid}) do
-    if get_format(conn) == "activity+json" do
+    if get_format(conn) in ["activity+json", "json"] do
       ActivityPubController.call(conn, :activity)
     else
       with id <- o_status_url(conn, :activity, uuid),
            {_, %Activity{} = activity} <- {:activity, Activity.normalize(id)},
-           {_, true} <- {:public?, ActivityPub.is_public?(activity)},
+           {_, true} <- {:public?, Visibility.is_public?(activity)},
            %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
         case format = get_format(conn) do
           "html" -> redirect(conn, to: "/notice/#{activity.id}")
@@ -136,27 +149,68 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   end
 
   def notice(conn, %{"id" => id}) do
-    with {_, %Activity{} = activity} <- {:activity, Repo.get(Activity, id)},
-         {_, true} <- {:public?, ActivityPub.is_public?(activity)},
+    with {_, %Activity{} = activity} <- {:activity, Activity.get_by_id_with_object(id)},
+         {_, true} <- {:public?, Visibility.is_public?(activity)},
          %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
       case format = get_format(conn) do
         "html" ->
-          conn
-          |> put_resp_content_type("text/html")
-          |> send_file(200, Pleroma.Plugs.InstanceStatic.file_path("index.html"))
+          if activity.data["type"] == "Create" do
+            %Object{} = object = Object.normalize(activity)
+
+            Fallback.RedirectController.redirector_with_meta(conn, %{
+              activity_id: activity.id,
+              object: object,
+              url:
+                Pleroma.Web.Router.Helpers.o_status_url(
+                  Pleroma.Web.Endpoint,
+                  :notice,
+                  activity.id
+                ),
+              user: user
+            })
+          else
+            Fallback.RedirectController.redirector(conn, nil)
+          end
 
         _ ->
           represent_activity(conn, format, activity, user)
       end
     else
       {:public?, false} ->
-        {:error, :not_found}
+        conn
+        |> put_status(404)
+        |> Fallback.RedirectController.redirector(nil, 404)
 
       {:activity, nil} ->
-        {:error, :not_found}
+        conn
+        |> Fallback.RedirectController.redirector(nil, 404)
 
       e ->
         e
+    end
+  end
+
+  # Returns an HTML embedded <audio> or <video> player suitable for embed iframes.
+  def notice_player(conn, %{"id" => id}) do
+    with %Activity{data: %{"type" => "Create"}} = activity <- Activity.get_by_id_with_object(id),
+         true <- Visibility.is_public?(activity),
+         %Object{} = object <- Object.normalize(activity),
+         %{data: %{"attachment" => [%{"url" => [url | _]} | _]}} <- object,
+         true <- String.starts_with?(url["mediaType"], ["audio", "video"]) do
+      conn
+      |> put_layout(:metadata_player)
+      |> put_resp_header("x-frame-options", "ALLOW")
+      |> put_resp_header(
+        "content-security-policy",
+        "default-src 'none';style-src 'self' 'unsafe-inline';img-src 'self' data: https:; media-src 'self' https:;"
+      )
+      |> put_view(Pleroma.Web.Metadata.PlayerView)
+      |> render("player.html", url)
+    else
+      _error ->
+        conn
+        |> put_status(404)
+        |> Fallback.RedirectController.redirector(nil, 404)
     end
   end
 
@@ -166,7 +220,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
          %Activity{data: %{"type" => "Create"}} = activity,
          _user
        ) do
-    object = Object.normalize(activity.data["object"])
+    object = Object.normalize(activity)
 
     conn
     |> put_resp_header("content-type", "application/activity+json")

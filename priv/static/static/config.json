@@ -13,10 +13,13 @@
   "collapseMessageWithSubject": false,
   "scopeCopy": true,
   "subjectLineBehavior": "email",
+  "postContentType": "text/plain",
   "alwaysShowSubjectInput": true,
   "hidePostStats": false,
   "hideUserStats": false,
   "loginMethod": "password",
   "webPushNotifications": false,
-  "noAttachmentLinks": false
+  "noAttachmentLinks": false,
+  "nsfwCensorImage": "",
+  "showFeaturesPanel": true
 }

@@ -6,10 +6,14 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   use Pleroma.Web, :controller
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Relay
+  alias Pleroma.Web.AdminAPI.AccountView
+  alias Pleroma.Web.AdminAPI.Search
 
   import Pleroma.Web.ControllerHelper, only: [json_response: 3]
 
   require Logger
+
+  @users_page_size 50
 
   action_fallback(:errors)
 
@@ -41,6 +45,24 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     |> json(user.nickname)
   end
 
+  def user_show(conn, %{"nickname" => nickname}) do
+    with %User{} = user <- User.get_by_nickname(nickname) do
+      conn
+      |> json(AccountView.render("show.json", %{user: user}))
+    else
+      _ -> {:error, :not_found}
+    end
+  end
+
+  def user_toggle_activation(conn, %{"nickname" => nickname}) do
+    user = User.get_by_nickname(nickname)
+
+    {:ok, updated_user} = User.deactivate(user, !user.info.deactivated)
+
+    conn
+    |> json(AccountView.render("show.json", %{user: updated_user}))
+  end
+
   def tag_users(conn, %{"nicknames" => nicknames, "tags" => tags}) do
     with {:ok, _} <- User.tag(nicknames, tags),
          do: json_response(conn, :no_content, "")
@@ -49,6 +71,41 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   def untag_users(conn, %{"nicknames" => nicknames, "tags" => tags}) do
     with {:ok, _} <- User.untag(nicknames, tags),
          do: json_response(conn, :no_content, "")
+  end
+
+  def list_users(conn, params) do
+    {page, page_size} = page_params(params)
+    filters = maybe_parse_filters(params["filters"])
+
+    search_params = %{
+      query: params["query"],
+      page: page,
+      page_size: page_size
+    }
+
+    with {:ok, users, count} <- Search.user(Map.merge(search_params, filters)),
+         do:
+           conn
+           |> json(
+             AccountView.render("index.json",
+               users: users,
+               count: count,
+               page_size: page_size
+             )
+           )
+  end
+
+  @filters ~w(local external active deactivated)
+
+  defp maybe_parse_filters(filters) when is_nil(filters) or filters == "", do: %{}
+
+  @spec maybe_parse_filters(String.t()) :: %{required(String.t()) => true} | %{}
+  defp maybe_parse_filters(filters) do
+    filters
+    |> String.split(",")
+    |> Enum.filter(&Enum.member?(@filters, &1))
+    |> Enum.map(&String.to_atom(&1))
+    |> Enum.into(%{}, &{&1, true})
   end
 
   def right_add(conn, %{"permission_group" => permission_group, "nickname" => nickname})
@@ -124,6 +181,13 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     |> json(%{error: "No such permission_group"})
   end
 
+  def set_activation_status(conn, %{"nickname" => nickname, "status" => status}) do
+    with {:ok, status} <- Ecto.Type.cast(:boolean, status),
+         %User{} = user <- User.get_by_nickname(nickname),
+         {:ok, _} <- User.deactivate(user, !status),
+         do: json_response(conn, :no_content, "")
+  end
+
   def relay_follow(conn, %{"relay_url" => target}) do
     with {:ok, _message} <- Relay.follow(target) do
       json(conn, target)
@@ -176,6 +240,12 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     |> json(token.token)
   end
 
+  def errors(conn, {:error, :not_found}) do
+    conn
+    |> put_status(404)
+    |> json("Not found")
+  end
+
   def errors(conn, {:param_cast, _}) do
     conn
     |> put_status(400)
@@ -186,5 +256,27 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     conn
     |> put_status(500)
     |> json("Something went wrong")
+  end
+
+  defp page_params(params) do
+    {get_page(params["page"]), get_page_size(params["page_size"])}
+  end
+
+  defp get_page(page_string) when is_nil(page_string), do: 1
+
+  defp get_page(page_string) do
+    case Integer.parse(page_string) do
+      {page, _} -> page
+      :error -> 1
+    end
+  end
+
+  defp get_page_size(page_size_string) when is_nil(page_size_string), do: @users_page_size
+
+  defp get_page_size(page_size_string) do
+    case Integer.parse(page_size_string) do
+      {page_size, _} -> page_size
+      :error -> @users_page_size
+    end
   end
 end

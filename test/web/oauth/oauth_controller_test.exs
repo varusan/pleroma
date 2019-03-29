@@ -7,11 +7,12 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
   import Pleroma.Factory
 
   alias Pleroma.Repo
-  alias Pleroma.Web.OAuth.{Authorization, Token}
+  alias Pleroma.Web.OAuth.Authorization
+  alias Pleroma.Web.OAuth.Token
 
   test "redirects with oauth authorization" do
     user = insert(:user)
-    app = insert(:oauth_app)
+    app = insert(:oauth_app, scopes: ["read", "write", "follow"])
 
     conn =
       build_conn()
@@ -21,6 +22,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
           "password" => "test",
           "client_id" => app.client_id,
           "redirect_uri" => app.redirect_uris,
+          "scope" => "read write",
           "state" => "statepassed"
         }
       })
@@ -31,14 +33,94 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
     query = URI.parse(target).query |> URI.query_decoder() |> Map.new()
 
     assert %{"state" => "statepassed", "code" => code} = query
-    assert Repo.get_by(Authorization, token: code)
+    auth = Repo.get_by(Authorization, token: code)
+    assert auth
+    assert auth.scopes == ["read", "write"]
+  end
+
+  test "returns 401 for wrong credentials", %{conn: conn} do
+    user = insert(:user)
+    app = insert(:oauth_app)
+
+    result =
+      conn
+      |> post("/oauth/authorize", %{
+        "authorization" => %{
+          "name" => user.nickname,
+          "password" => "wrong",
+          "client_id" => app.client_id,
+          "redirect_uri" => app.redirect_uris,
+          "state" => "statepassed",
+          "scope" => Enum.join(app.scopes, " ")
+        }
+      })
+      |> html_response(:unauthorized)
+
+    # Keep the details
+    assert result =~ app.client_id
+    assert result =~ app.redirect_uris
+
+    # Error message
+    assert result =~ "Invalid Username/Password"
+  end
+
+  test "returns 401 for missing scopes", %{conn: conn} do
+    user = insert(:user)
+    app = insert(:oauth_app)
+
+    result =
+      conn
+      |> post("/oauth/authorize", %{
+        "authorization" => %{
+          "name" => user.nickname,
+          "password" => "test",
+          "client_id" => app.client_id,
+          "redirect_uri" => app.redirect_uris,
+          "state" => "statepassed",
+          "scope" => ""
+        }
+      })
+      |> html_response(:unauthorized)
+
+    # Keep the details
+    assert result =~ app.client_id
+    assert result =~ app.redirect_uris
+
+    # Error message
+    assert result =~ "This action is outside the authorized scopes"
+  end
+
+  test "returns 401 for scopes beyond app scopes", %{conn: conn} do
+    user = insert(:user)
+    app = insert(:oauth_app, scopes: ["read", "write"])
+
+    result =
+      conn
+      |> post("/oauth/authorize", %{
+        "authorization" => %{
+          "name" => user.nickname,
+          "password" => "test",
+          "client_id" => app.client_id,
+          "redirect_uri" => app.redirect_uris,
+          "state" => "statepassed",
+          "scope" => "read write follow"
+        }
+      })
+      |> html_response(:unauthorized)
+
+    # Keep the details
+    assert result =~ app.client_id
+    assert result =~ app.redirect_uris
+
+    # Error message
+    assert result =~ "This action is outside the authorized scopes"
   end
 
   test "issues a token for an all-body request" do
     user = insert(:user)
-    app = insert(:oauth_app)
+    app = insert(:oauth_app, scopes: ["read", "write"])
 
-    {:ok, auth} = Authorization.create_authorization(app, user)
+    {:ok, auth} = Authorization.create_authorization(app, user, ["write"])
 
     conn =
       build_conn()
@@ -50,16 +132,21 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
         "client_secret" => app.client_secret
       })
 
-    assert %{"access_token" => token} = json_response(conn, 200)
-    assert Repo.get_by(Token, token: token)
+    assert %{"access_token" => token, "me" => ap_id} = json_response(conn, 200)
+
+    token = Repo.get_by(Token, token: token)
+    assert token
+    assert token.scopes == auth.scopes
+    assert user.ap_id == ap_id
   end
 
-  test "issues a token for `password` grant_type with valid credentials" do
+  test "issues a token for `password` grant_type with valid credentials, with full permissions by default" do
     password = "testpassword"
     user = insert(:user, password_hash: Comeonin.Pbkdf2.hashpwsalt(password))
 
-    app = insert(:oauth_app)
+    app = insert(:oauth_app, scopes: ["read", "write"])
 
+    # Note: "scope" param is intentionally omitted
     conn =
       build_conn()
       |> post("/oauth/token", %{
@@ -71,14 +158,18 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
       })
 
     assert %{"access_token" => token} = json_response(conn, 200)
-    assert Repo.get_by(Token, token: token)
+
+    token = Repo.get_by(Token, token: token)
+    assert token
+    assert token.scopes == app.scopes
   end
 
   test "issues a token for request with HTTP basic auth client credentials" do
     user = insert(:user)
-    app = insert(:oauth_app)
+    app = insert(:oauth_app, scopes: ["scope1", "scope2", "scope3"])
 
-    {:ok, auth} = Authorization.create_authorization(app, user)
+    {:ok, auth} = Authorization.create_authorization(app, user, ["scope1", "scope2"])
+    assert auth.scopes == ["scope1", "scope2"]
 
     app_encoded =
       (URI.encode_www_form(app.client_id) <> ":" <> URI.encode_www_form(app.client_secret))
@@ -93,8 +184,13 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
         "redirect_uri" => app.redirect_uris
       })
 
-    assert %{"access_token" => token} = json_response(conn, 200)
-    assert Repo.get_by(Token, token: token)
+    assert %{"access_token" => token, "scope" => scope} = json_response(conn, 200)
+
+    assert scope == "scope1 scope2"
+
+    token = Repo.get_by(Token, token: token)
+    assert token
+    assert token.scopes == ["scope1", "scope2"]
   end
 
   test "rejects token exchange with invalid client credentials" do

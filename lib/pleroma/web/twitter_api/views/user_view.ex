@@ -4,11 +4,11 @@
 
 defmodule Pleroma.Web.TwitterAPI.UserView do
   use Pleroma.Web, :view
-  alias Pleroma.User
   alias Pleroma.Formatter
+  alias Pleroma.HTML
+  alias Pleroma.User
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MediaProxy
-  alias Pleroma.HTML
 
   def render("show.json", %{user: user = %User{}} = assigns) do
     render_one(user, Pleroma.Web.TwitterAPI.UserView, "user.json", assigns)
@@ -108,14 +108,24 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
       "locked" => user.info.locked,
       "default_scope" => user.info.default_scope,
       "no_rich_text" => user.info.no_rich_text,
+      "hide_followers" => user.info.hide_followers,
+      "hide_follows" => user.info.hide_follows,
       "fields" => fields,
 
       # Pleroma extension
-      "pleroma" => %{
-        "confirmation_pending" => user_info.confirmation_pending,
-        "tags" => user.tags
-      }
+      "pleroma" =>
+        %{
+          "confirmation_pending" => user_info.confirmation_pending,
+          "tags" => user.tags
+        }
+        |> maybe_with_activation_status(user, for_user)
     }
+
+    data =
+      if(user.info.is_admin || user.info.is_moderator,
+        do: maybe_with_role(data, user, for_user),
+        else: data
+      )
 
     if assigns[:token] do
       Map.put(data, "token", token_string(assigns[:token]))
@@ -123,6 +133,26 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
       data
     end
   end
+
+  defp maybe_with_activation_status(data, user, %User{info: %{is_admin: true}}) do
+    Map.put(data, "deactivated", user.info.deactivated)
+  end
+
+  defp maybe_with_activation_status(data, _, _), do: data
+
+  defp maybe_with_role(data, %User{id: id} = user, %User{id: id}) do
+    Map.merge(data, %{"role" => role(user), "show_role" => user.info.show_role})
+  end
+
+  defp maybe_with_role(data, %User{info: %{show_role: true}} = user, _user) do
+    Map.merge(data, %{"role" => role(user)})
+  end
+
+  defp maybe_with_role(data, _, _), do: data
+
+  defp role(%User{info: %{:is_admin => true}}), do: "admin"
+  defp role(%User{info: %{:is_moderator => true}}), do: "moderator"
+  defp role(_), do: "member"
 
   defp image_url(%{"url" => [%{"href" => href} | _]}), do: href
   defp image_url(_), do: nil

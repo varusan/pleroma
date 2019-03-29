@@ -6,8 +6,10 @@ defmodule Pleroma.Web.OStatus.FeedRepresenterTest do
   use Pleroma.DataCase
   import Pleroma.Factory
   alias Pleroma.User
-  alias Pleroma.Web.OStatus.{FeedRepresenter, UserRepresenter, ActivityRepresenter}
   alias Pleroma.Web.OStatus
+  alias Pleroma.Web.OStatus.ActivityRepresenter
+  alias Pleroma.Web.OStatus.FeedRepresenter
+  alias Pleroma.Web.OStatus.UserRepresenter
 
   test "returns a feed of the last 20 items of the user" do
     note_activity = insert(:note_activity)

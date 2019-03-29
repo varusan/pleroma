@@ -6,7 +6,7 @@ defmodule Pleroma.Gopher.Server do
   use GenServer
   require Logger
 
-  def start_link() do
+  def start_link do
     config = Pleroma.Config.get(:gopher, [])
     ip = Keyword.get(config, :ip, {0, 0, 0, 0})
     port = Keyword.get(config, :port, 1234)
@@ -36,18 +36,19 @@ defmodule Pleroma.Gopher.Server do
 end
 
 defmodule Pleroma.Gopher.Server.ProtocolHandler do
-  alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.User
   alias Pleroma.Activity
-  alias Pleroma.Repo
   alias Pleroma.HTML
+  alias Pleroma.Repo
+  alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Visibility
 
   def start_link(ref, socket, transport, opts) do
     pid = spawn_link(__MODULE__, :init, [ref, socket, transport, opts])
     {:ok, pid}
   end
 
-  def init(ref, socket, transport, _Opts = []) do
+  def init(ref, socket, transport, [] = _Opts) do
     :ok = :ranch.accept_ack(ref)
     loop(socket, transport)
   end
@@ -65,7 +66,8 @@ defmodule Pleroma.Gopher.Server.ProtocolHandler do
   def link(name, selector, type \\ 1) do
     address = Pleroma.Web.Endpoint.host()
     port = Pleroma.Config.get([:gopher, :port], 1234)
-    "#{type}#{name}\t#{selector}\t#{address}\t#{port}\r\n"
+    dstport = Pleroma.Config.get([:gopher, :dstport], port)
+    "#{type}#{name}\t#{selector}\t#{address}\t#{dstport}\r\n"
   end
 
   def render_activities(activities) do
@@ -110,7 +112,7 @@ defmodule Pleroma.Gopher.Server.ProtocolHandler do
 
   def response("/notices/" <> id) do
     with %Activity{} = activity <- Repo.get(Activity, id),
-         true <- ActivityPub.is_public?(activity) do
+         true <- Visibility.is_public?(activity) do
       activities =
         ActivityPub.fetch_activities_for_context(activity.data["context"])
         |> render_activities

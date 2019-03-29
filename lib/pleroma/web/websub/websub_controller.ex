@@ -4,9 +4,13 @@
 
 defmodule Pleroma.Web.Websub.WebsubController do
   use Pleroma.Web, :controller
-  alias Pleroma.{Repo, User}
-  alias Pleroma.Web.{Websub, Federator}
+
+  alias Pleroma.Repo
+  alias Pleroma.User
+  alias Pleroma.Web.Federator
+  alias Pleroma.Web.Websub
   alias Pleroma.Web.Websub.WebsubClientSubscription
+
   require Logger
 
   plug(
@@ -80,7 +84,7 @@ defmodule Pleroma.Web.Websub.WebsubController do
          %WebsubClientSubscription{} = websub <- Repo.get(WebsubClientSubscription, id),
          {:ok, body, _conn} = read_body(conn),
          ^signature <- Websub.sign(websub.secret, body) do
-      Federator.enqueue(:incoming_doc, body)
+      Federator.incoming_doc(body)
 
       conn
       |> send_resp(200, "OK")

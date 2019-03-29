@@ -9,7 +9,7 @@ defmodule Pleroma.HTML do
   defp get_scrubbers(scrubbers) when is_list(scrubbers), do: scrubbers
   defp get_scrubbers(_), do: [Pleroma.HTML.Scrubber.Default]
 
-  def get_scrubbers() do
+  def get_scrubbers do
     Pleroma.Config.get([:markup, :scrub_policy])
     |> get_scrubbers
   end
@@ -58,6 +58,22 @@ defmodule Pleroma.HTML do
       "#{signature}#{to_string(scrubber)}"
     end)
   end
+
+  def extract_first_external_url(_, nil), do: {:error, "No content"}
+
+  def extract_first_external_url(object, content) do
+    key = "URL|#{object.id}"
+
+    Cachex.fetch!(:scrubber_cache, key, fn _key ->
+      result =
+        content
+        |> Floki.filter_out("a.mention")
+        |> Floki.attribute("a", "href")
+        |> Enum.at(0)
+
+      {:commit, {:ok, result}}
+    end)
+  end
 end
 
 defmodule Pleroma.HTML.Scrubber.TwitterText do
@@ -67,8 +83,7 @@ defmodule Pleroma.HTML.Scrubber.TwitterText do
   """
 
   @markup Application.get_env(:pleroma, :markup)
-  @uri_schemes Application.get_env(:pleroma, :uri_schemes, [])
-  @valid_schemes Keyword.get(@uri_schemes, :valid_schemes, [])
+  @valid_schemes Pleroma.Config.get([:uri_schemes, :valid_schemes], [])
 
   require HtmlSanitizeEx.Scrubber.Meta
   alias HtmlSanitizeEx.Scrubber.Meta
@@ -79,6 +94,13 @@ defmodule Pleroma.HTML.Scrubber.TwitterText do
   # links
   Meta.allow_tag_with_uri_attributes("a", ["href", "data-user", "data-tag"], @valid_schemes)
   Meta.allow_tag_with_these_attributes("a", ["name", "title", "class"])
+
+  Meta.allow_tag_with_this_attribute_values("a", "rel", [
+    "tag",
+    "nofollow",
+    "noopener",
+    "noreferrer"
+  ])
 
   # paragraphs and linebreaks
   Meta.allow_tag_with_these_attributes("br", [])
@@ -110,16 +132,24 @@ defmodule Pleroma.HTML.Scrubber.Default do
 
   require HtmlSanitizeEx.Scrubber.Meta
   alias HtmlSanitizeEx.Scrubber.Meta
+  # credo:disable-for-previous-line
+  # No idea how to fix this one…
 
   @markup Application.get_env(:pleroma, :markup)
-  @uri_schemes Application.get_env(:pleroma, :uri_schemes, [])
-  @valid_schemes Keyword.get(@uri_schemes, :valid_schemes, [])
+  @valid_schemes Pleroma.Config.get([:uri_schemes, :valid_schemes], [])
 
   Meta.remove_cdata_sections_before_scrub()
   Meta.strip_comments()
 
   Meta.allow_tag_with_uri_attributes("a", ["href", "data-user", "data-tag"], @valid_schemes)
   Meta.allow_tag_with_these_attributes("a", ["name", "title", "class"])
+
+  Meta.allow_tag_with_this_attribute_values("a", "rel", [
+    "tag",
+    "nofollow",
+    "noopener",
+    "noreferrer"
+  ])
 
   Meta.allow_tag_with_these_attributes("abbr", ["title"])
 

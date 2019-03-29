@@ -7,12 +7,22 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   import Pleroma.Web.ControllerHelper, only: [json_response: 3]
 
-  alias Pleroma.Web.TwitterAPI.{TwitterAPI, UserView, ActivityView, NotificationView}
-  alias Pleroma.Web.CommonAPI
-  alias Pleroma.{Repo, Activity, Object, User, Notification}
-  alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Web.ActivityPub.Utils
   alias Ecto.Changeset
+  alias Pleroma.Activity
+  alias Pleroma.Notification
+  alias Pleroma.Object
+  alias Pleroma.Repo
+  alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Visibility
+  alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.CommonAPI.Utils
+  alias Pleroma.Web.OAuth.Token
+  alias Pleroma.Web.TwitterAPI.ActivityView
+  alias Pleroma.Web.TwitterAPI.NotificationView
+  alias Pleroma.Web.TwitterAPI.TokenView
+  alias Pleroma.Web.TwitterAPI.TwitterAPI
+  alias Pleroma.Web.TwitterAPI.UserView
 
   require Logger
 
@@ -24,7 +34,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
     conn
     |> put_view(UserView)
-    |> render("show.json", %{user: user, token: token})
+    |> render("show.json", %{user: user, token: token, for: user})
   end
 
   def status_update(%{assigns: %{user: user}} = conn, %{"status" => _} = status_data) do
@@ -155,6 +165,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
       params
       |> Map.put("type", ["Create", "Announce", "Follow", "Like"])
       |> Map.put("blocking_user", user)
+      |> Map.put(:visibility, ~w[unlisted public private])
 
     activities = ActivityPub.fetch_activities([user.ap_id], params)
 
@@ -164,13 +175,16 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def dm_timeline(%{assigns: %{user: user}} = conn, params) do
-    query =
-      ActivityPub.fetch_activities_query(
-        [user.ap_id],
-        Map.merge(params, %{"type" => "Create", "user" => user, visibility: "direct"})
-      )
+    params =
+      params
+      |> Map.put("type", "Create")
+      |> Map.put("blocking_user", user)
+      |> Map.put("user", user)
+      |> Map.put(:visibility, "direct")
 
-    activities = Repo.all(query)
+    activities =
+      ActivityPub.fetch_activities_query([user.ap_id], params)
+      |> Repo.all()
 
     conn
     |> put_view(ActivityView)
@@ -257,7 +271,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   def fetch_status(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     with %Activity{} = activity <- Repo.get(Activity, id),
-         true <- ActivityPub.visible_for_user?(activity, user) do
+         true <- Visibility.visible_for_user?(activity, user) do
       conn
       |> put_view(ActivityView)
       |> render("activity.json", %{activity: activity, for: user})
@@ -265,9 +279,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def fetch_conversation(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    id = String.to_integer(id)
-
-    with context when is_binary(context) <- TwitterAPI.conversation_id_to_context(id),
+    with context when is_binary(context) <- Utils.conversation_id_to_context(id),
          activities <-
            ActivityPub.fetch_activities_for_context(context, %{
              "blocking_user" => user,
@@ -340,44 +352,47 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def favorite(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with {_, {:ok, id}} <- {:param_cast, Ecto.Type.cast(:integer, id)},
-         {:ok, activity} <- TwitterAPI.fav(user, id) do
+    with {:ok, activity} <- TwitterAPI.fav(user, id) do
       conn
       |> put_view(ActivityView)
       |> render("activity.json", %{activity: activity, for: user})
+    else
+      _ -> json_reply(conn, 400, Jason.encode!(%{}))
     end
   end
 
   def unfavorite(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with {_, {:ok, id}} <- {:param_cast, Ecto.Type.cast(:integer, id)},
-         {:ok, activity} <- TwitterAPI.unfav(user, id) do
+    with {:ok, activity} <- TwitterAPI.unfav(user, id) do
       conn
       |> put_view(ActivityView)
       |> render("activity.json", %{activity: activity, for: user})
+    else
+      _ -> json_reply(conn, 400, Jason.encode!(%{}))
     end
   end
 
   def retweet(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with {_, {:ok, id}} <- {:param_cast, Ecto.Type.cast(:integer, id)},
-         {:ok, activity} <- TwitterAPI.repeat(user, id) do
+    with {:ok, activity} <- TwitterAPI.repeat(user, id) do
       conn
       |> put_view(ActivityView)
       |> render("activity.json", %{activity: activity, for: user})
+    else
+      _ -> json_reply(conn, 400, Jason.encode!(%{}))
     end
   end
 
   def unretweet(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with {_, {:ok, id}} <- {:param_cast, Ecto.Type.cast(:integer, id)},
-         {:ok, activity} <- TwitterAPI.unrepeat(user, id) do
+    with {:ok, activity} <- TwitterAPI.unrepeat(user, id) do
       conn
       |> put_view(ActivityView)
       |> render("activity.json", %{activity: activity, for: user})
+    else
+      _ -> json_reply(conn, 400, Jason.encode!(%{}))
     end
   end
 
   def pin(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with {_, {:ok, id}} <- {:param_cast, Ecto.Type.cast(:integer, id)},
-         {:ok, activity} <- TwitterAPI.pin(user, id) do
+    with {:ok, activity} <- TwitterAPI.pin(user, id) do
       conn
       |> put_view(ActivityView)
       |> render("activity.json", %{activity: activity, for: user})
@@ -388,8 +403,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def unpin(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with {_, {:ok, id}} <- {:param_cast, Ecto.Type.cast(:integer, id)},
-         {:ok, activity} <- TwitterAPI.unpin(user, id) do
+    with {:ok, activity} <- TwitterAPI.unpin(user, id) do
       conn
       |> put_view(ActivityView)
       |> render("activity.json", %{activity: activity, for: user})
@@ -503,7 +517,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
       followers =
         cond do
           for_user && user.id == for_user.id -> followers
-          user.info.hide_network -> []
+          user.info.hide_followers -> []
           true -> followers
         end
 
@@ -517,13 +531,16 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   def friends(%{assigns: %{user: for_user}} = conn, params) do
     {:ok, page} = Ecto.Type.cast(:integer, params["page"] || 1)
+    {:ok, export} = Ecto.Type.cast(:boolean, params["all"] || false)
+
+    page = if export, do: nil, else: page
 
     with {:ok, user} <- TwitterAPI.get_user(conn.assigns[:user], params),
          {:ok, friends} <- User.get_friends(user, page) do
       friends =
         cond do
           for_user && user.id == for_user.id -> friends
-          user.info.hide_network -> []
+          user.info.hide_follows -> []
           true -> friends
         end
 
@@ -533,6 +550,20 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     else
       _e -> bad_request_reply(conn, "Can't get friends")
     end
+  end
+
+  def oauth_tokens(%{assigns: %{user: user}} = conn, _params) do
+    with oauth_tokens <- Token.get_user_tokens(user) do
+      conn
+      |> put_view(TokenView)
+      |> render("index.json", %{tokens: oauth_tokens})
+    end
+  end
+
+  def revoke_token(%{assigns: %{user: user}} = conn, %{"id" => id} = _params) do
+    Token.delete_user_token(user, id)
+
+    json_reply(conn, 201, "")
   end
 
   def blocks(%{assigns: %{user: user}} = conn, _params) do
@@ -556,18 +587,8 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   def approve_friend_request(conn, %{"user_id" => uid} = _params) do
     with followed <- conn.assigns[:user],
-         uid when is_number(uid) <- String.to_integer(uid),
          %User{} = follower <- Repo.get(User, uid),
-         {:ok, follower} <- User.maybe_follow(follower, followed),
-         %Activity{} = follow_activity <- Utils.fetch_latest_follow(follower, followed),
-         {:ok, follow_activity} <- Utils.update_follow_state(follow_activity, "accept"),
-         {:ok, _activity} <-
-           ActivityPub.accept(%{
-             to: [follower.ap_id],
-             actor: followed.ap_id,
-             object: follow_activity.data["id"],
-             type: "Accept"
-           }) do
+         {:ok, follower} <- CommonAPI.accept_follow_request(follower, followed) do
       conn
       |> put_view(UserView)
       |> render("show.json", %{user: follower, for: followed})
@@ -578,17 +599,8 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   def deny_friend_request(conn, %{"user_id" => uid} = _params) do
     with followed <- conn.assigns[:user],
-         uid when is_number(uid) <- String.to_integer(uid),
          %User{} = follower <- Repo.get(User, uid),
-         %Activity{} = follow_activity <- Utils.fetch_latest_follow(follower, followed),
-         {:ok, follow_activity} <- Utils.update_follow_state(follow_activity, "reject"),
-         {:ok, _activity} <-
-           ActivityPub.reject(%{
-             to: [follower.ap_id],
-             actor: followed.ap_id,
-             object: follow_activity.data["id"],
-             type: "Reject"
-           }) do
+         {:ok, follower} <- CommonAPI.reject_follow_request(follower, followed) do
       conn
       |> put_view(UserView)
       |> render("show.json", %{user: follower, for: followed})
@@ -620,7 +632,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   defp build_info_cng(user, params) do
     info_params =
-      ["no_rich_text", "locked", "hide_network"]
+      ["no_rich_text", "locked", "hide_followers", "hide_follows", "show_role"]
       |> Enum.reduce(%{}, fn key, res ->
         if value = params[key] do
           Map.put(res, key, value == "true")
@@ -675,7 +687,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def search_user(%{assigns: %{user: user}} = conn, %{"query" => query}) do
-    users = User.search(query, true, user)
+    users = User.search(query, resolve: true, for_user: user)
 
     conn
     |> put_view(UserView)

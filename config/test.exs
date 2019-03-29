@@ -17,6 +17,8 @@ config :pleroma, Pleroma.Captcha,
 # Print only warnings and errors during test
 config :logger, level: :warn
 
+config :pleroma, Pleroma.Upload, filters: [], link_name: false
+
 config :pleroma, Pleroma.Uploaders.Local, uploads: "test/uploads"
 
 config :pleroma, Pleroma.Mailer, adapter: Swoosh.Adapters.Test
@@ -36,12 +38,17 @@ config :pbkdf2_elixir, rounds: 1
 config :pleroma, :websub, Pleroma.Web.WebsubMock
 config :pleroma, :ostatus, Pleroma.Web.OStatusMock
 config :tesla, adapter: Tesla.Mock
+config :pleroma, :rich_media, enabled: false
 
 config :web_push_encryption, :vapid_details,
   subject: "mailto:administrator@example.com",
   public_key:
     "BLH1qVhJItRGCfxgTtONfsOKDc9VRAraXw-3NsmjMngWSh7NxOizN6bkuRA7iLTMPS82PjwJAr3UoK9EC1IFrz4",
   private_key: "_-XZ0iebPrRfZ_o0-IatTdszYa8VCH1yLN-JauK7HHA"
+
+config :web_push_encryption, :http_client, Pleroma.Web.WebPushHttpClientMock
+
+config :pleroma, Pleroma.Jobs, testing: [max_jobs: 2]
 
 try do
   import_config "test.secret.exs"

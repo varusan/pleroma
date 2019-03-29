@@ -5,8 +5,9 @@
 defmodule Mix.Tasks.Pleroma.User do
   use Mix.Task
   import Ecto.Changeset
-  alias Pleroma.{Repo, User}
   alias Mix.Tasks.Pleroma.Common
+  alias Pleroma.Repo
+  alias Pleroma.User
 
   @shortdoc "Manages Pleroma users"
   @moduledoc """
@@ -52,6 +53,14 @@ defmodule Mix.Tasks.Pleroma.User do
   - `--locked`/`--no-locked` - whether the user's account is locked
   - `--moderator`/`--no-moderator` - whether the user is a moderator
   - `--admin`/`--no-admin` - whether the user is an admin
+
+  ## Add tags to a user.
+
+      mix pleroma.user tag NICKNAME TAGS
+
+  ## Delete tags from a user.
+
+      mix pleroma.user untag NICKNAME TAGS
   """
   def run(["new", nickname, email | rest]) do
     {options, [], []} =
@@ -203,7 +212,7 @@ defmodule Mix.Tasks.Pleroma.User do
 
       user = Repo.get(User, user.id)
 
-      if length(user.following) == 0 do
+      if Enum.empty?(user.following) do
         Mix.shell().info("Successfully unsubscribed all followers from #{user.nickname}")
       end
     else
@@ -246,6 +255,32 @@ defmodule Mix.Tasks.Pleroma.User do
     else
       _ ->
         Mix.shell().error("No local user #{nickname}")
+    end
+  end
+
+  def run(["tag", nickname | tags]) do
+    Common.start_pleroma()
+
+    with %User{} = user <- User.get_by_nickname(nickname) do
+      user = user |> User.tag(tags)
+
+      Mix.shell().info("Tags of #{user.nickname}: #{inspect(tags)}")
+    else
+      _ ->
+        Mix.shell().error("Could not change user tags for #{nickname}")
+    end
+  end
+
+  def run(["untag", nickname | tags]) do
+    Common.start_pleroma()
+
+    with %User{} = user <- User.get_by_nickname(nickname) do
+      user = user |> User.untag(tags)
+
+      Mix.shell().info("Tags of #{user.nickname}: #{inspect(tags)}")
+    else
+      _ ->
+        Mix.shell().error("Could not change user tags for #{nickname}")
     end
   end
 

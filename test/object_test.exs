@@ -5,7 +5,8 @@
 defmodule Pleroma.ObjectTest do
   use Pleroma.DataCase
   import Pleroma.Factory
-  alias Pleroma.{Repo, Object}
+  alias Pleroma.Object
+  alias Pleroma.Repo
 
   test "returns an object by it's AP id" do
     object = insert(:note)

@@ -23,7 +23,19 @@ defmodule Pleroma.Plugs.UploadedMedia do
     %{static_plug_opts: static_plug_opts}
   end
 
-  def call(conn = %{request_path: <<"/", @path, "/", file::binary>>}, opts) do
+  def call(%{request_path: <<"/", @path, "/", file::binary>>} = conn, opts) do
+    conn =
+      case fetch_query_params(conn) do
+        %{query_params: %{"name" => name}} = conn ->
+          name = String.replace(name, "\"", "\\\"")
+
+          conn
+          |> put_resp_header("content-disposition", "filename=\"#{name}\"")
+
+        conn ->
+          conn
+      end
+
     config = Pleroma.Config.get([Pleroma.Upload])
 
     with uploader <- Keyword.fetch!(config, :uploader),

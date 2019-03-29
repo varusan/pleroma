@@ -4,10 +4,13 @@
 
 defmodule Pleroma.Web.WebsubTest do
   use Pleroma.DataCase
-  alias Pleroma.Web.Websub
-  alias Pleroma.Web.Websub.{WebsubServerSubscription, WebsubClientSubscription}
-  import Pleroma.Factory
+
   alias Pleroma.Web.Router.Helpers
+  alias Pleroma.Web.Websub
+  alias Pleroma.Web.Websub.WebsubClientSubscription
+  alias Pleroma.Web.Websub.WebsubServerSubscription
+
+  import Pleroma.Factory
   import Tesla.Mock
 
   setup do

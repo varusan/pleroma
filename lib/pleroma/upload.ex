@@ -70,7 +70,7 @@ defmodule Pleroma.Upload do
            %{
              "type" => "Link",
              "mediaType" => upload.content_type,
-             "href" => url_from_spec(opts.base_url, url_spec)
+             "href" => url_from_spec(upload, opts.base_url, url_spec)
            }
          ],
          "name" => Map.get(opts, :description) || upload.name
@@ -83,6 +83,10 @@ defmodule Pleroma.Upload do
 
         {:error, error}
     end
+  end
+
+  def char_unescaped?(char) do
+    URI.char_unreserved?(char) or char == ?/
   end
 
   defp get_opts(opts) do
@@ -124,10 +128,10 @@ defmodule Pleroma.Upload do
 
           :pleroma, Pleroma.Upload, [filters: [Pleroma.Upload.Filter.Mogrify]]
 
-          :pleroma, Pleroma.Upload.Filter.Mogrify, args: "strip"
+          :pleroma, Pleroma.Upload.Filter.Mogrify, args: ["strip", "auto-orient"]
         """)
 
-        Pleroma.Config.put([Pleroma.Upload.Filter.Mogrify], args: "strip")
+        Pleroma.Config.put([Pleroma.Upload.Filter.Mogrify], args: ["strip", "auto-orient"])
         Map.put(opts, :filters, opts.filters ++ [Pleroma.Upload.Filter.Mogrify])
       else
         opts
@@ -180,7 +184,7 @@ defmodule Pleroma.Upload do
   end
 
   # For Mix.Tasks.MigrateLocalUploads
-  defp prepare_upload(upload = %__MODULE__{tempfile: path}, _opts) do
+  defp prepare_upload(%__MODULE__{tempfile: path} = upload, _opts) do
     with {:ok, content_type} <- Pleroma.MIME.file_mime_type(path) do
       {:ok, %__MODULE__{upload | content_type: content_type}}
     end
@@ -215,16 +219,18 @@ defmodule Pleroma.Upload do
     tmp_path
   end
 
-  defp url_from_spec(base_url, {:file, path}) do
+  defp url_from_spec(%__MODULE__{name: name}, base_url, {:file, path}) do
     path =
-      path
-      |> URI.encode()
-      |> String.replace("?", "%3F")
-      |> String.replace(":", "%3A")
+      URI.encode(path, &char_unescaped?/1) <>
+        if Pleroma.Config.get([__MODULE__, :link_name], false) do
+          "?name=#{URI.encode(name, &char_unescaped?/1)}"
+        else
+          ""
+        end
 
     [base_url, "media", path]
     |> Path.join()
   end
 
-  defp url_from_spec(_base_url, {:url, url}), do: url
+  defp url_from_spec(_upload, _base_url, {:url, url}), do: url
 end
