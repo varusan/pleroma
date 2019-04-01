@@ -1491,6 +1491,35 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
+  def account_register(
+        %{assigns: %{user: user}} = conn,
+        %{"username" => nickname, "email" => _, "password" => _, "agreement" => true} = params
+      ) do
+    params =
+      params
+      |> Map.take([
+        "email",
+        "captcha_solution",
+        "captcha_token",
+        "captcha_answer_data",
+        "token",
+        "password"
+      ])
+      |> Map.put("nickname", nickname)
+      |> Map.put("name", params["name"] || nickname)
+      |> Map.put("bio", params["bio"] || "")
+      |> Map.put("confirm", params["password"])
+
+    # TODO: Move TwitterAPI.register_user to CommonAPI ?
+    with {:ok, user} <- TwitterAPI.register_user(params) do
+      # Return Token
+    else
+      {:error, errors} ->
+        conn
+        |> json_reply(400, Jason.encode!(errors))
+    end
+  end
+
   def try_render(conn, target, params)
       when is_binary(target) do
     res = render(conn, target, params)

@@ -292,6 +292,8 @@ defmodule Pleroma.Web.Router do
       post("/pleroma/flavour/:flavour", MastodonAPIController, :set_flavour)
 
       post("/reports", MastodonAPIController, :reports)
+
+      post("/accounts", MastodonAPIController, :account_register)
     end
 
     scope [] do

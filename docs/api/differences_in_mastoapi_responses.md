@@ -50,3 +50,13 @@ Has these additional fields under the `pleroma` object:
 Additional parameters can be added to the JSON body/Form data:
 
 - `preview`: boolean, if set to `true` the post won't be actually posted, but the status entitiy would still be rendered back. This could be useful for previewing rich text/custom emoji, for example.
+
+## Rest Registeration
+`POST /api/v1/accounts`
+
+Has theses additionnal parameters (which are the same as in Pleroma-API):
+    * `fullname`
+    * `bio`
+    * `captcha_solution`: optional, contains provider-specific captcha solution,
+    * `captcha_token`: optional, contains provider-specific captcha token
+    * `token`: invite token required when the registerations aren't public.
