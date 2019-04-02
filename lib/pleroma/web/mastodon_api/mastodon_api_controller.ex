@@ -1492,7 +1492,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def account_register(
-        %{assigns: %{user: user}} = conn,
+        conn,
         %{"username" => nickname, "email" => _, "password" => _, "agreement" => true} = params
       ) do
     params =
