@@ -8,6 +8,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.Auth.Authenticator
+  alias Pleroma.Web.ControllerHelper
   alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.OAuth.Authorization
   alias Pleroma.Web.OAuth.Token
@@ -19,7 +20,28 @@ defmodule Pleroma.Web.OAuth.OAuthController do
 
   action_fallback(Pleroma.Web.OAuth.FallbackController)
 
-  def authorize(conn, params) do
+  def authorize(%{assigns: %{token: %Token{} = token}} = conn, params) do
+    if ControllerHelper.truthy_param?(params["force_login"]) do
+      do_authorize(conn, params)
+    else
+      redirect_uri =
+        if is_binary(params["redirect_uri"]) do
+          params["redirect_uri"]
+        else
+          app = Repo.preload(token, :app).app
+
+          app.redirect_uris
+          |> String.split()
+          |> Enum.at(0)
+        end
+
+      redirect(conn, external: redirect_uri(conn, redirect_uri))
+    end
+  end
+
+  def authorize(conn, params), do: do_authorize(conn, params)
+
+  defp do_authorize(conn, params) do
     app = Repo.get_by(App, client_id: params["client_id"])
     available_scopes = (app && app.scopes) || []
     scopes = oauth_scopes(params, nil) || available_scopes
@@ -51,13 +73,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
          {:missing_scopes, false} <- {:missing_scopes, scopes == []},
          {:auth_active, true} <- {:auth_active, User.auth_active?(user)},
          {:ok, auth} <- Authorization.create_authorization(app, user, scopes) do
-      redirect_uri =
-        if redirect_uri == "." do
-          # Special case: Local MastodonFE
-          mastodon_api_url(conn, :login)
-        else
-          redirect_uri
-        end
+      redirect_uri = redirect_uri(conn, redirect_uri)
 
       cond do
         redirect_uri == "urn:ietf:wg:oauth:2.0:oob" ->
@@ -83,14 +99,18 @@ defmodule Pleroma.Web.OAuth.OAuthController do
       end
     else
       {scopes_issue, _} when scopes_issue in [:unsupported_scopes, :missing_scopes] ->
+        # Per https://github.com/tootsuite/mastodon/blob/
+        #   51e154f5e87968d6bb115e053689767ab33e80cd/app/controllers/api/base_controller.rb#L39
         conn
-        |> put_flash(:error, "Permissions not specified.")
+        |> put_flash(:error, "This action is outside the authorized scopes")
         |> put_status(:unauthorized)
         |> authorize(auth_params)
 
       {:auth_active, false} ->
+        # Per https://github.com/tootsuite/mastodon/blob/
+        #   51e154f5e87968d6bb115e053689767ab33e80cd/app/controllers/api/base_controller.rb#L76
         conn
-        |> put_flash(:error, "Account confirmation pending.")
+        |> put_flash(:error, "Your login is missing a confirmed e-mail address")
         |> put_status(:forbidden)
         |> authorize(auth_params)
 
@@ -104,7 +124,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
          fixed_token = fix_padding(params["code"]),
          %Authorization{} = auth <-
            Repo.get_by(Authorization, token: fixed_token, app_id: app.id),
-         %User{} = user <- Repo.get(User, auth.user_id),
+         %User{} = user <- User.get_by_id(auth.user_id),
          {:ok, token} <- Token.exchange_token(app, auth),
          {:ok, inserted_at} <- DateTime.from_naive(token.inserted_at, "Etc/UTC") do
       response = %{
@@ -149,9 +169,11 @@ defmodule Pleroma.Web.OAuth.OAuthController do
       json(conn, response)
     else
       {:auth_active, false} ->
+        # Per https://github.com/tootsuite/mastodon/blob/
+        #   51e154f5e87968d6bb115e053689767ab33e80cd/app/controllers/api/base_controller.rb#L76
         conn
         |> put_status(:forbidden)
-        |> json(%{error: "Account confirmation pending"})
+        |> json(%{error: "Your login is missing a confirmed e-mail address"})
 
       _error ->
         put_status(conn, 400)
@@ -215,4 +237,9 @@ defmodule Pleroma.Web.OAuth.OAuthController do
       nil
     end
   end
+
+  # Special case: Local MastodonFE
+  defp redirect_uri(conn, "."), do: mastodon_api_url(conn, :login)
+
+  defp redirect_uri(_conn, redirect_uri), do: redirect_uri
 end

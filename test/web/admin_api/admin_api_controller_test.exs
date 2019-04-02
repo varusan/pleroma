@@ -5,7 +5,6 @@
 defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   use Pleroma.Web.ConnCase
 
-  alias Pleroma.Repo
   alias Pleroma.User
   import Pleroma.Factory
 
@@ -40,6 +39,41 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
   end
 
+  describe "/api/pleroma/admin/users/:nickname" do
+    test "Show", %{conn: conn} do
+      admin = insert(:user, info: %{is_admin: true})
+      user = insert(:user)
+
+      conn =
+        conn
+        |> assign(:user, admin)
+        |> get("/api/pleroma/admin/users/#{user.nickname}")
+
+      expected = %{
+        "deactivated" => false,
+        "id" => to_string(user.id),
+        "local" => true,
+        "nickname" => user.nickname,
+        "roles" => %{"admin" => false, "moderator" => false},
+        "tags" => []
+      }
+
+      assert expected == json_response(conn, 200)
+    end
+
+    test "when the user doesn't exist", %{conn: conn} do
+      admin = insert(:user, info: %{is_admin: true})
+      user = build(:user)
+
+      conn =
+        conn
+        |> assign(:user, admin)
+        |> get("/api/pleroma/admin/users/#{user.nickname}")
+
+      assert "Not found" == json_response(conn, 404)
+    end
+  end
+
   describe "PUT /api/pleroma/admin/users/tag" do
     setup do
       admin = insert(:user, info: %{is_admin: true})
@@ -66,13 +100,13 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       user2: user2
     } do
       assert json_response(conn, :no_content)
-      assert Repo.get(User, user1.id).tags == ["x", "foo", "bar"]
-      assert Repo.get(User, user2.id).tags == ["y", "foo", "bar"]
+      assert User.get_by_id(user1.id).tags == ["x", "foo", "bar"]
+      assert User.get_by_id(user2.id).tags == ["y", "foo", "bar"]
     end
 
     test "it does not modify tags of not specified users", %{conn: conn, user3: user3} do
       assert json_response(conn, :no_content)
-      assert Repo.get(User, user3.id).tags == ["unchanged"]
+      assert User.get_by_id(user3.id).tags == ["unchanged"]
     end
   end
 
@@ -102,13 +136,13 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       user2: user2
     } do
       assert json_response(conn, :no_content)
-      assert Repo.get(User, user1.id).tags == []
-      assert Repo.get(User, user2.id).tags == ["y"]
+      assert User.get_by_id(user1.id).tags == []
+      assert User.get_by_id(user2.id).tags == ["y"]
     end
 
     test "it does not modify tags of not specified users", %{conn: conn, user3: user3} do
       assert json_response(conn, :no_content)
-      assert Repo.get(User, user3.id).tags == ["unchanged"]
+      assert User.get_by_id(user3.id).tags == ["unchanged"]
     end
   end
 
@@ -178,7 +212,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         conn
         |> put("/api/pleroma/admin/activation_status/#{user.nickname}", %{status: false})
 
-      user = Repo.get(User, user.id)
+      user = User.get_by_id(user.id)
       assert user.info.deactivated == true
       assert json_response(conn, :no_content)
     end
@@ -190,7 +224,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         conn
         |> put("/api/pleroma/admin/activation_status/#{user.nickname}", %{status: true})
 
-      user = Repo.get(User, user.id)
+      user = User.get_by_id(user.id)
       assert user.info.deactivated == false
       assert json_response(conn, :no_content)
     end
@@ -408,13 +442,13 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
     test "regular search with page size" do
       admin = insert(:user, info: %{is_admin: true})
-      user = insert(:user, nickname: "bob")
-      user2 = insert(:user, nickname: "bo")
+      user = insert(:user, nickname: "aalice")
+      user2 = insert(:user, nickname: "alice")
 
       conn =
         build_conn()
         |> assign(:user, admin)
-        |> get("/api/pleroma/admin/users?query=bo&page_size=1&page=1")
+        |> get("/api/pleroma/admin/users?query=a&page_size=1&page=1")
 
       assert json_response(conn, 200) == %{
                "count" => 2,
@@ -434,7 +468,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       conn =
         build_conn()
         |> assign(:user, admin)
-        |> get("/api/pleroma/admin/users?query=bo&page_size=1&page=2")
+        |> get("/api/pleroma/admin/users?query=a&page_size=1&page=2")
 
       assert json_response(conn, 200) == %{
                "count" => 2,
@@ -461,7 +495,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       conn =
         build_conn()
         |> assign(:user, admin)
-        |> get("/api/pleroma/admin/users?query=bo&local_only=true")
+        |> get("/api/pleroma/admin/users?query=bo&filters=local")
 
       assert json_response(conn, 200) == %{
                "count" => 1,
@@ -488,7 +522,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       conn =
         build_conn()
         |> assign(:user, admin)
-        |> get("/api/pleroma/admin/users?local_only=true")
+        |> get("/api/pleroma/admin/users?filters=local")
 
       assert json_response(conn, 200) == %{
                "count" => 2,
@@ -508,6 +542,34 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "nickname" => admin.nickname,
                    "roles" => %{"admin" => true, "moderator" => false},
                    "local" => true,
+                   "tags" => []
+                 }
+               ]
+             }
+    end
+
+    test "it works with multiple filters" do
+      admin = insert(:user, nickname: "john", info: %{is_admin: true})
+      user = insert(:user, nickname: "bob", local: false, info: %{deactivated: true})
+
+      insert(:user, nickname: "ken", local: true, info: %{deactivated: true})
+      insert(:user, nickname: "bobb", local: false, info: %{deactivated: false})
+
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> get("/api/pleroma/admin/users?filters=deactivated,external")
+
+      assert json_response(conn, 200) == %{
+               "count" => 1,
+               "page_size" => 50,
+               "users" => [
+                 %{
+                   "deactivated" => user.info.deactivated,
+                   "id" => user.id,
+                   "nickname" => user.nickname,
+                   "roles" => %{"admin" => false, "moderator" => false},
+                   "local" => user.local,
                    "tags" => []
                  }
                ]

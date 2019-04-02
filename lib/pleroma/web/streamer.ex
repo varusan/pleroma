@@ -8,7 +8,6 @@ defmodule Pleroma.Web.Streamer do
   alias Pleroma.Activity
   alias Pleroma.Notification
   alias Pleroma.Object
-  alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Visibility
@@ -82,7 +81,7 @@ defmodule Pleroma.Web.Streamer do
         _ ->
           Pleroma.List.get_lists_from_activity(item)
           |> Enum.filter(fn list ->
-            owner = Repo.get(User, list.user_id)
+            owner = User.get_by_id(list.user_id)
 
             Visibility.visible_for_user?(item, owner)
           end)
@@ -202,7 +201,7 @@ defmodule Pleroma.Web.Streamer do
         mutes = user.info.mutes || []
         reblog_mutes = user.info.muted_reblogs || []
 
-        parent = Object.normalize(item.data["object"])
+        parent = Object.normalize(item)
 
         unless is_nil(parent) or item.actor in blocks or item.actor in mutes or
                  item.actor in reblog_mutes or not ActivityPub.contain_activity(item, user) or

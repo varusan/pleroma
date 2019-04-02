@@ -5,7 +5,6 @@
 defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   alias Pleroma.Activity
   alias Pleroma.Mailer
-  alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.UserEmail
@@ -21,7 +20,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   end
 
   def delete(%User{} = user, id) do
-    with %Activity{data: %{"type" => _type}} <- Repo.get(Activity, id),
+    with %Activity{data: %{"type" => _type}} <- Activity.get_by_id(id),
          {:ok, activity} <- CommonAPI.delete(id, user) do
       {:ok, activity}
     end
@@ -228,12 +227,9 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
         end
 
       %{"screen_name" => nickname} ->
-        case target = Repo.get_by(User, nickname: nickname) do
-          nil ->
-            {:error, "No user with such screen_name"}
-
-          _ ->
-            {:ok, target}
+        case User.get_by_nickname(nickname) do
+          nil -> {:error, "No user with such screen_name"}
+          target -> {:ok, target}
         end
 
       _ ->
@@ -280,35 +276,6 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
       )
 
     _activities = Repo.all(q)
-  end
-
-  # DEPRECATED mostly, context objects are now created at insertion time.
-  def context_to_conversation_id(context) do
-    with %Object{id: id} <- Object.get_cached_by_ap_id(context) do
-      id
-    else
-      _e ->
-        changeset = Object.context_mapping(context)
-
-        case Repo.insert(changeset) do
-          {:ok, %{id: id}} ->
-            id
-
-          # This should be solved by an upsert, but it seems ecto
-          # has problems accessing the constraint inside the jsonb.
-          {:error, _} ->
-            Object.get_cached_by_ap_id(context).id
-        end
-    end
-  end
-
-  def conversation_id_to_context(id) do
-    with %Object{data: %{"id" => context}} <- Repo.get(Object, id) do
-      context
-    else
-      _e ->
-        {:error, "No such conversation"}
-    end
   end
 
   def get_external_profile(for_user, uri) do
