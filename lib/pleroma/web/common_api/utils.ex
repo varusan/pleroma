@@ -60,6 +60,10 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     end)
   end
 
+  def maybe_parse_poll_options(options) do
+    Enum.reject(options, &(&1 == ""))
+  end
+
   def to_for_user_and_mentions(user, mentions, inReplyTo, "public") do
     mentioned_users = Enum.map(mentions, fn {_, %{ap_id: ap_id}} -> ap_id end)
 
@@ -208,7 +212,8 @@ defmodule Pleroma.Web.CommonAPI.Utils do
         context,
         content_html,
         attachments,
-        inReplyTo,
+        poll_options,
+        in_reply_to,
         tags,
         cw \\ nil,
         cc \\ []
@@ -221,14 +226,15 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       "summary" => cw,
       "context" => context,
       "attachment" => attachments,
+      "poll" => %{"votes" => Enum.map(poll_options, &%{"name" => &1, "count" => 0})},
       "actor" => actor,
       "tag" => tags |> Enum.map(fn {_, tag} -> tag end) |> Enum.uniq()
     }
 
-    if inReplyTo do
+    if in_reply_to do
       object
-      |> Map.put("inReplyTo", inReplyTo.data["object"]["id"])
-      |> Map.put("inReplyToStatusId", inReplyTo.id)
+      |> Map.put("inReplyTo", in_reply_to.data["object"]["id"])
+      |> Map.put("inReplyToStatusId", in_reply_to.id)
     else
       object
     end

@@ -196,7 +196,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       pleroma: %{
         local: activity.local,
         conversation_id: get_context_id(activity)
-      }
+      },
+      poll: object["poll"] || %{}
     }
   end
 

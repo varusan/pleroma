@@ -131,6 +131,28 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     refute id == third_id
   end
 
+  test "posting a status with poll" do
+    user = insert(:user)
+
+    conn =
+      build_conn()
+      |> assign(:user, user)
+      |> post("/api/v1/statuses", %{
+        "status" => "cofe",
+        "poll_options" => ["yay", "nay"],
+        "sensitive" => "false"
+      })
+
+    assert %{
+             "content" => "cofe",
+             "id" => id,
+             "sensitive" => false,
+             "poll" => %{"options" => ["yay", "nay"]}
+           } = json_response(conn, 200)
+
+    assert Activity.get_by_id(id)
+  end
+
   test "posting a sensitive status", %{conn: conn} do
     user = insert(:user)
 

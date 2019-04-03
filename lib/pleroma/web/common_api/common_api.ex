@@ -149,6 +149,7 @@ defmodule Pleroma.Web.CommonAPI do
          context <- make_context(in_reply_to),
          cw <- data["spoiler_text"],
          full_payload <- String.trim(status <> (data["spoiler_text"] || "")),
+         poll_options <- maybe_parse_poll_options(data["poll_options"] || []),
          length when length in 1..limit <- String.length(full_payload),
          object <-
            make_note_data(
@@ -157,6 +158,7 @@ defmodule Pleroma.Web.CommonAPI do
              context,
              content_html,
              attachments,
+             poll_options,
              in_reply_to,
              tags,
              cw,
