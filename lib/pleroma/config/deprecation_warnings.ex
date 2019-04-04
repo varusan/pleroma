@@ -23,8 +23,25 @@ defmodule Pleroma.Config.DeprecationWarnings do
     end
   end
 
+  def check_and_fix_keyword_replace do
+    replace = Pleroma.Config.get([:mrf_keyword, :replace])
+
+    if is_list(replace) do
+      Logger.warn("""
+      !!!DEPRECATION WARNING!!!
+      You are using the old configuration mechanism for KeywordPolicy's replace rule. Please check config.md.
+      """)
+
+      new_replace =
+        Enum.reduce(replace, %{}, fn {key, value}, acc -> Map.put(acc, key, value) end)
+
+      Pleroma.Config.put([:mrf_keyword, :replace], new_replace)
+    end
+  end
+
   def warn do
     check_frontend_config_mechanism()
     check_hellthread_threshold()
+    check_and_fix_keyword_replace()
   end
 end
