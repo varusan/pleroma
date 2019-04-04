@@ -6,8 +6,8 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
   use Pleroma.DataCase
 
   alias Pleroma.User
-  alias Pleroma.Web.TwitterAPI.UserView
   alias Pleroma.Web.CommonAPI.Utils
+  alias Pleroma.Web.TwitterAPI.UserView
 
   import Pleroma.Factory
 
@@ -239,6 +239,13 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
     assert represented["role"] == nil
   end
 
+  test "A regular user for the admin", %{user: user} do
+    admin = insert(:user, %{info: %{is_admin: true}})
+    represented = UserView.render("show.json", %{user: user, for: admin})
+
+    assert represented["pleroma"]["deactivated"] == false
+  end
+
   test "A blocked user for the blocker" do
     user = insert(:user)
     blocker = insert(:user)
@@ -285,7 +292,7 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       }
     }
 
-    blocker = Repo.get(User, blocker.id)
+    blocker = User.get_by_id(blocker.id)
     assert represented == UserView.render("show.json", %{user: user, for: blocker})
   end
 

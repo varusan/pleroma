@@ -5,15 +5,14 @@
 defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
   use Pleroma.DataCase
 
+  alias Pleroma.Activity
+  alias Pleroma.Repo
+  alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.TwitterAPI.ActivityView
   alias Pleroma.Web.TwitterAPI.UserView
-  alias Pleroma.Web.TwitterAPI.TwitterAPI
-  alias Pleroma.Repo
-  alias Pleroma.Activity
-  alias Pleroma.User
-  alias Pleroma.Web.ActivityPub.ActivityPub
 
   import Pleroma.Factory
   import Tesla.Mock
@@ -56,6 +55,22 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
     assert result["user"]["id"] == user.id
   end
 
+  test "tells if the message is muted for some reason" do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    {:ok, user} = User.mute(user, other_user)
+
+    {:ok, activity} = CommonAPI.post(other_user, %{"status" => "test"})
+    status = ActivityView.render("activity.json", %{activity: activity})
+
+    assert status["muted"] == false
+
+    status = ActivityView.render("activity.json", %{activity: activity, for: user})
+
+    assert status["muted"] == true
+  end
+
   test "a create activity with a html status" do
     text = """
     #Bike log - Commute Tuesday\nhttps://pla.bike/posts/20181211/\n#cycling #CHScycling #commute\nMVIMG_20181211_054020.jpg
@@ -66,7 +81,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
     result = ActivityView.render("activity.json", activity: activity)
 
     assert result["statusnet_html"] ==
-             "<a class=\"hashtag\" data-tag=\"bike\" href=\"http://localhost:4001/tag/bike\">#Bike</a> log - Commute Tuesday<br /><a href=\"https://pla.bike/posts/20181211/\">https://pla.bike/posts/20181211/</a><br /><a class=\"hashtag\" data-tag=\"cycling\" href=\"http://localhost:4001/tag/cycling\">#cycling</a> <a class=\"hashtag\" data-tag=\"chscycling\" href=\"http://localhost:4001/tag/chscycling\">#CHScycling</a> <a class=\"hashtag\" data-tag=\"commute\" href=\"http://localhost:4001/tag/commute\">#commute</a><br />MVIMG_20181211_054020.jpg"
+             "<a class=\"hashtag\" data-tag=\"bike\" href=\"http://localhost:4001/tag/bike\" rel=\"tag\">#Bike</a> log - Commute Tuesday<br /><a href=\"https://pla.bike/posts/20181211/\">https://pla.bike/posts/20181211/</a><br /><a class=\"hashtag\" data-tag=\"cycling\" href=\"http://localhost:4001/tag/cycling\" rel=\"tag\">#cycling</a> <a class=\"hashtag\" data-tag=\"chscycling\" href=\"http://localhost:4001/tag/chscycling\" rel=\"tag\">#CHScycling</a> <a class=\"hashtag\" data-tag=\"commute\" href=\"http://localhost:4001/tag/commute\" rel=\"tag\">#commute</a><br />MVIMG_20181211_054020.jpg"
 
     assert result["text"] ==
              "#Bike log - Commute Tuesday\nhttps://pla.bike/posts/20181211/\n#cycling #CHScycling #commute\nMVIMG_20181211_054020.jpg"
@@ -113,7 +128,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
 
     result = ActivityView.render("activity.json", activity: activity)
 
-    convo_id = TwitterAPI.context_to_conversation_id(activity.data["object"]["context"])
+    convo_id = Utils.context_to_conversation_id(activity.data["object"]["context"])
 
     expected = %{
       "activity_type" => "post",
@@ -149,7 +164,8 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
       "uri" => activity.data["object"]["id"],
       "user" => UserView.render("show.json", %{user: user}),
       "visibility" => "direct",
-      "card" => nil
+      "card" => nil,
+      "muted" => false
     }
 
     assert result == expected
@@ -160,12 +176,12 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
     other_user = insert(:user, %{nickname: "shp"})
     {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey @shp!"})
 
-    convo_id = TwitterAPI.context_to_conversation_id(activity.data["object"]["context"])
+    convo_id = Utils.context_to_conversation_id(activity.data["object"]["context"])
 
     mocks = [
       {
-        TwitterAPI,
-        [],
+        Utils,
+        [:passthrough],
         [context_to_conversation_id: fn _ -> false end]
       },
       {
@@ -180,7 +196,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
 
       assert result["statusnet_conversation_id"] == convo_id
       assert result["user"]
-      refute called(TwitterAPI.context_to_conversation_id(:_))
+      refute called(Utils.context_to_conversation_id(:_))
       refute called(User.get_cached_by_ap_id(user.ap_id))
       refute called(User.get_cached_by_ap_id(other_user.ap_id))
     end
@@ -263,9 +279,9 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
     {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey @shp!"})
     {:ok, announce, _object} = CommonAPI.repeat(activity.id, other_user)
 
-    convo_id = TwitterAPI.context_to_conversation_id(activity.data["object"]["context"])
+    convo_id = Utils.context_to_conversation_id(activity.data["object"]["context"])
 
-    activity = Repo.get(Activity, activity.id)
+    activity = Activity.get_by_id(activity.id)
 
     result = ActivityView.render("activity.json", activity: announce)
 

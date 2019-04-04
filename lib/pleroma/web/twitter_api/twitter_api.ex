@@ -3,16 +3,15 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
-  alias Pleroma.UserInviteToken
-  alias Pleroma.User
   alias Pleroma.Activity
-  alias Pleroma.Repo
-  alias Pleroma.Object
-  alias Pleroma.UserEmail
   alias Pleroma.Mailer
+  alias Pleroma.Repo
+  alias Pleroma.User
+  alias Pleroma.UserEmail
+  alias Pleroma.UserInviteToken
   alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Web.TwitterAPI.UserView
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.TwitterAPI.UserView
 
   import Ecto.Query
 
@@ -21,35 +20,22 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   end
 
   def delete(%User{} = user, id) do
-    with %Activity{data: %{"type" => _type}} <- Repo.get(Activity, id),
+    with %Activity{data: %{"type" => _type}} <- Activity.get_by_id(id),
          {:ok, activity} <- CommonAPI.delete(id, user) do
       {:ok, activity}
     end
   end
 
   def follow(%User{} = follower, params) do
-    with {:ok, %User{} = followed} <- get_user(params),
-         {:ok, follower} <- User.maybe_direct_follow(follower, followed),
-         {:ok, activity} <- ActivityPub.follow(follower, followed),
-         {:ok, follower, followed} <-
-           User.wait_and_refresh(
-             Pleroma.Config.get([:activitypub, :follow_handshake_timeout]),
-             follower,
-             followed
-           ) do
-      {:ok, follower, followed, activity}
-    else
-      err -> err
+    with {:ok, %User{} = followed} <- get_user(params) do
+      CommonAPI.follow(follower, followed)
     end
   end
 
   def unfollow(%User{} = follower, params) do
     with {:ok, %User{} = unfollowed} <- get_user(params),
-         {:ok, follower, _follow_activity} <- User.unfollow(follower, unfollowed),
-         {:ok, _activity} <- ActivityPub.unfollow(follower, unfollowed) do
+         {:ok, follower} <- CommonAPI.unfollow(follower, unfollowed) do
       {:ok, follower, unfollowed}
-    else
-      err -> err
     end
   end
 
@@ -143,7 +129,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   end
 
   def register_user(params) do
-    tokenString = params["token"]
+    token_string = params["token"]
 
     params = %{
       nickname: params["nickname"],
@@ -180,8 +166,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
       # no need to query DB if registration is open
       token =
-        unless registrations_open || is_nil(tokenString) do
-          Repo.get_by(UserInviteToken, %{token: tokenString})
+        unless registrations_open || is_nil(token_string) do
+          Repo.get_by(UserInviteToken, %{token: token_string})
         end
 
       cond do
@@ -229,18 +215,10 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     end
   end
 
-  def get_by_id_or_nickname(id_or_nickname) do
-    if !is_integer(id_or_nickname) && :error == Integer.parse(id_or_nickname) do
-      Repo.get_by(User, nickname: id_or_nickname)
-    else
-      Repo.get(User, id_or_nickname)
-    end
-  end
-
   def get_user(user \\ nil, params) do
     case params do
       %{"user_id" => user_id} ->
-        case target = get_by_id_or_nickname(user_id) do
+        case target = User.get_cached_by_nickname_or_id(user_id) do
           nil ->
             {:error, "No user with such user_id"}
 
@@ -249,12 +227,9 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
         end
 
       %{"screen_name" => nickname} ->
-        case target = Repo.get_by(User, nickname: nickname) do
-          nil ->
-            {:error, "No user with such screen_name"}
-
-          _ ->
-            {:ok, target}
+        case User.get_by_nickname(nickname) do
+          nil -> {:error, "No user with such screen_name"}
+          target -> {:ok, target}
         end
 
       _ ->
@@ -301,35 +276,6 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
       )
 
     _activities = Repo.all(q)
-  end
-
-  # DEPRECATED mostly, context objects are now created at insertion time.
-  def context_to_conversation_id(context) do
-    with %Object{id: id} <- Object.get_cached_by_ap_id(context) do
-      id
-    else
-      _e ->
-        changeset = Object.context_mapping(context)
-
-        case Repo.insert(changeset) do
-          {:ok, %{id: id}} ->
-            id
-
-          # This should be solved by an upsert, but it seems ecto
-          # has problems accessing the constraint inside the jsonb.
-          {:error, _} ->
-            Object.get_cached_by_ap_id(context).id
-        end
-    end
-  end
-
-  def conversation_id_to_context(id) do
-    with %Object{data: %{"id" => context}} <- Repo.get(Object, id) do
-      context
-    else
-      _e ->
-        {:error, "No such conversation"}
-    end
   end
 
   def get_external_profile(for_user, uri) do

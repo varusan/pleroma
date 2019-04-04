@@ -5,12 +5,13 @@
 defmodule Pleroma.Web.Streamer do
   use GenServer
   require Logger
-  alias Pleroma.User
-  alias Pleroma.Notification
   alias Pleroma.Activity
+  alias Pleroma.Notification
   alias Pleroma.Object
-  alias Pleroma.Repo
+  alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Visibility
+  alias Pleroma.Web.MastodonAPI.NotificationView
 
   @keepalive_interval :timer.seconds(30)
 
@@ -80,7 +81,7 @@ defmodule Pleroma.Web.Streamer do
         _ ->
           Pleroma.List.get_lists_from_activity(item)
           |> Enum.filter(fn list ->
-            owner = Repo.get(User, list.user_id)
+            owner = User.get_by_id(list.user_id)
 
             Visibility.visible_for_user?(item, owner)
           end)
@@ -106,10 +107,10 @@ defmodule Pleroma.Web.Streamer do
         %{
           event: "notification",
           payload:
-            Pleroma.Web.MastodonAPI.MastodonAPIController.render_notification(
-              socket.assigns["user"],
-              item
-            )
+            NotificationView.render("show.json", %{
+              notification: item,
+              for: socket.assigns["user"]
+            })
             |> Jason.encode!()
         }
         |> Jason.encode!()
@@ -197,10 +198,14 @@ defmodule Pleroma.Web.Streamer do
       if socket.assigns[:user] do
         user = User.get_cached_by_ap_id(socket.assigns[:user].ap_id)
         blocks = user.info.blocks || []
+        mutes = user.info.mutes || []
+        reblog_mutes = user.info.muted_reblogs || []
 
-        parent = Object.normalize(item.data["object"])
+        parent = Object.normalize(item)
 
-        unless is_nil(parent) or item.actor in blocks or parent.data["actor"] in blocks do
+        unless is_nil(parent) or item.actor in blocks or item.actor in mutes or
+                 item.actor in reblog_mutes or not ActivityPub.contain_activity(item, user) or
+                 parent.data["actor"] in blocks or parent.data["actor"] in mutes do
           send(socket.transport_pid, {:text, represent_update(item, user)})
         end
       else
@@ -209,14 +214,18 @@ defmodule Pleroma.Web.Streamer do
     end)
   end
 
-  def push_to_socket(topics, topic, %Activity{id: id, data: %{"type" => "Delete"}}) do
+  def push_to_socket(topics, topic, %Activity{
+        data: %{"type" => "Delete", "deleted_activity_id" => deleted_activity_id}
+      }) do
     Enum.each(topics[topic] || [], fn socket ->
       send(
         socket.transport_pid,
-        {:text, %{event: "delete", payload: to_string(id)} |> Jason.encode!()}
+        {:text, %{event: "delete", payload: to_string(deleted_activity_id)} |> Jason.encode!()}
       )
     end)
   end
+
+  def push_to_socket(_topics, _topic, %Activity{data: %{"type" => "Delete"}}), do: :noop
 
   def push_to_socket(topics, topic, item) do
     Enum.each(topics[topic] || [], fn socket ->
@@ -224,8 +233,10 @@ defmodule Pleroma.Web.Streamer do
       if socket.assigns[:user] do
         user = User.get_cached_by_ap_id(socket.assigns[:user].ap_id)
         blocks = user.info.blocks || []
+        mutes = user.info.mutes || []
 
-        unless item.actor in blocks do
+        unless item.actor in blocks or item.actor in mutes or
+                 not ActivityPub.contain_activity(item, user) do
           send(socket.transport_pid, {:text, represent_update(item, user)})
         end
       else

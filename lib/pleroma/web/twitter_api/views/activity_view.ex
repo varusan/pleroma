@@ -10,12 +10,12 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
+  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.TwitterAPI.ActivityView
-  alias Pleroma.Web.TwitterAPI.TwitterAPI
-  alias Pleroma.Web.TwitterAPI.UserView
   alias Pleroma.Web.TwitterAPI.Representers.ObjectRepresenter
+  alias Pleroma.Web.TwitterAPI.UserView
 
   import Ecto.Query
   require Logger
@@ -77,7 +77,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
   defp get_context_id(%{data: %{"context" => context}}, options) do
     cond do
       id = options[:context_ids][context] -> id
-      true -> TwitterAPI.context_to_conversation_id(context)
+      true -> Utils.context_to_conversation_id(context)
     end
   end
 
@@ -266,6 +266,8 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
         content
         |> String.replace(~r/<br\s?\/?>/, "\n")
         |> HTML.get_cached_stripped_html_for_object(activity, __MODULE__)
+      else
+        ""
       end
 
     reply_parent = Activity.get_in_reply_to_activity(activity)
@@ -309,7 +311,8 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
       "visibility" => StatusView.get_visibility(object),
       "summary" => summary,
       "summary_html" => summary |> Formatter.emojify(object["emoji"]),
-      "card" => card
+      "card" => card,
+      "muted" => CommonAPI.thread_muted?(user, activity) || User.mutes?(opts[:for], user)
     }
   end
 

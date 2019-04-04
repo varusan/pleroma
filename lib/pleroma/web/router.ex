@@ -5,6 +5,11 @@
 defmodule Pleroma.Web.Router do
   use Pleroma.Web, :router
 
+  pipeline :oauth do
+    plug(:fetch_session)
+    plug(Pleroma.Plugs.OAuthPlug)
+  end
+
   pipeline :api do
     plug(:accepts, ["json"])
     plug(:fetch_session)
@@ -105,10 +110,6 @@ defmodule Pleroma.Web.Router do
     plug(:accepts, ["json", "xml"])
   end
 
-  pipeline :oauth do
-    plug(:accepts, ["html", "json"])
-  end
-
   pipeline :pleroma_api do
     plug(:accepts, ["html", "json"])
   end
@@ -139,7 +140,10 @@ defmodule Pleroma.Web.Router do
   scope "/api/pleroma/admin", Pleroma.Web.AdminAPI do
     pipe_through([:admin_api, :oauth_write])
 
+    get("/users", AdminAPIController, :list_users)
+    get("/users/:nickname", AdminAPIController, :user_show)
     delete("/user", AdminAPIController, :user_delete)
+    patch("/users/:nickname/toggle_activation", AdminAPIController, :user_toggle_activation)
     post("/user", AdminAPIController, :user_create)
     put("/users/tag", AdminAPIController, :tag_users)
     delete("/users/tag", AdminAPIController, :untag_users)
@@ -192,10 +196,20 @@ defmodule Pleroma.Web.Router do
       post("/blocks_import", UtilController, :blocks_import)
       post("/follow_import", UtilController, :follow_import)
     end
+
+    scope [] do
+      pipe_through(:oauth_read)
+
+      post("/notifications/read", UtilController, :notifications_read)
+    end
   end
 
   scope "/oauth", Pleroma.Web.OAuth do
-    get("/authorize", OAuthController, :authorize)
+    scope [] do
+      pipe_through(:oauth)
+      get("/authorize", OAuthController, :authorize)
+    end
+
     post("/authorize", OAuthController, :create_authorization)
     post("/token", OAuthController, :token_exchange)
     post("/revoke", OAuthController, :token_revoke)
@@ -213,6 +227,7 @@ defmodule Pleroma.Web.Router do
       get("/accounts/search", MastodonAPIController, :account_search)
 
       get("/accounts/:id/lists", MastodonAPIController, :account_lists)
+      get("/accounts/:id/identity_proofs", MastodonAPIController, :empty_array)
 
       get("/follow_requests", MastodonAPIController, :follow_requests)
       get("/blocks", MastodonAPIController, :blocks)
@@ -305,10 +320,10 @@ defmodule Pleroma.Web.Router do
     scope [] do
       pipe_through(:oauth_push)
 
-      post("/push/subscription", MastodonAPIController, :create_push_subscription)
-      get("/push/subscription", MastodonAPIController, :get_push_subscription)
-      put("/push/subscription", MastodonAPIController, :update_push_subscription)
-      delete("/push/subscription", MastodonAPIController, :delete_push_subscription)
+      post("/push/subscription", SubscriptionController, :create)
+      get("/push/subscription", SubscriptionController, :get)
+      put("/push/subscription", SubscriptionController, :update)
+      delete("/push/subscription", SubscriptionController, :delete)
     end
   end
 
@@ -324,6 +339,7 @@ defmodule Pleroma.Web.Router do
     get("/instance", MastodonAPIController, :masto_instance)
     get("/instance/peers", MastodonAPIController, :peers)
     post("/apps", MastodonAPIController, :create_app)
+    get("/apps/verify_credentials", MastodonAPIController, :verify_app_credentials)
     get("/custom_emojis", MastodonAPIController, :custom_emojis)
 
     get("/statuses/:id/card", MastodonAPIController, :status_card)
@@ -633,8 +649,8 @@ end
 
 defmodule Fallback.RedirectController do
   use Pleroma.Web, :controller
-  alias Pleroma.Web.Metadata
   alias Pleroma.User
+  alias Pleroma.Web.Metadata
 
   def redirector(conn, _params, code \\ 200) do
     conn
