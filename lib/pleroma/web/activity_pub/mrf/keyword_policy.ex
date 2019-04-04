@@ -100,9 +100,9 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
     end
   end
 
-  def list_keyword_policy(), do: Pleroma.Config.get(:mrf_keyword)
+  def list_keyword_policy, do: Pleroma.Config.get(:mrf_keyword)
 
-  def nodeinfo_keyword_policy() do
+  def nodeinfo_keyword_policy do
     Pleroma.Config.get(:mrf_keyword, [])
     |> Enum.map(fn {key, value} ->
       {key,
