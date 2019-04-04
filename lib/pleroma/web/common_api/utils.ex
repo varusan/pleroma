@@ -212,7 +212,6 @@ defmodule Pleroma.Web.CommonAPI.Utils do
         context,
         content_html,
         attachments,
-        poll_options,
         in_reply_to,
         tags,
         cw \\ nil,
@@ -226,7 +225,6 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       "summary" => cw,
       "context" => context,
       "attachment" => attachments,
-      "poll" => %{"votes" => Enum.map(poll_options, &%{"name" => &1, "count" => 0})},
       "actor" => actor,
       "tag" => tags |> Enum.map(fn {_, tag} -> tag end) |> Enum.uniq()
     }

@@ -9,6 +9,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   alias Pleroma.HTML
   alias Pleroma.Repo
   alias Pleroma.User
+  alias Pleroma.Question
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MastodonAPI.AccountView
@@ -162,6 +163,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         object["external_url"] || object["id"]
       end
 
+    question = Question.get_by_object_id(object["id"]) |> maybe_build_question()
+
     %{
       id: to_string(activity.id),
       uri: object["id"],
@@ -197,7 +200,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         local: activity.local,
         conversation_id: get_context_id(activity)
       },
-      poll: object["poll"] || %{}
+      poll: question
     }
   end
 
@@ -378,6 +381,25 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
       %{shortcode: name, url: url, static_url: url, visible_in_picker: false}
     end)
+  end
+
+  defp maybe_build_question(nil), do: %{}
+
+  defp maybe_build_question(%{data: %{"oneOf" => options, "replies" => replies}}) do
+    %{
+      votes:
+        options
+        |> Enum.map(fn option ->
+          %{
+            name: option,
+            count: count_votes(replies["items"], option)
+          }
+        end)
+    }
+  end
+
+  defp count_votes(items, option) do
+    Enum.reduce(items, 0, fn item, acc -> if item["name"] == option, do: acc + 1, else: acc end)
   end
 
   defp present?(nil), do: false

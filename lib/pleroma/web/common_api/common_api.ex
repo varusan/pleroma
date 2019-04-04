@@ -158,7 +158,6 @@ defmodule Pleroma.Web.CommonAPI do
              context,
              content_html,
              attachments,
-             poll_options,
              in_reply_to,
              tags,
              cw,
@@ -180,6 +179,7 @@ defmodule Pleroma.Web.CommonAPI do
             actor: user,
             context: context,
             object: object,
+            poll_options: poll_options,
             additional: %{"cc" => cc, "directMessage" => visibility == "direct"}
           },
           data["preview"] || false

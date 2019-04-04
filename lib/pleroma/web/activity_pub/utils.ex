@@ -684,9 +684,13 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "type" => "Question",
       "to" => params.to |> Enum.uniq(),
       "actor" => params.actor.ap_id,
-      "name" => params.name,
       "oneOf" => params.one_of,
-      "anyOf" => params.any_of
+      "attributedTo" => params.object_id,
+      "replies" => %{
+        "type" => "Collection",
+        "totalItems" => 0,
+        "items" => []
+      }
     }
   end
 

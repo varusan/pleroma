@@ -259,14 +259,13 @@ defmodule Pleroma.Factory do
   end
 
   def question_activity_factory(attrs \\ %{}) do
-    question = sequence(:text, &"What's up #{&1}?")
-
     user = insert(:user)
+    note = insert(:note)
 
     data = %{
       "id" => attrs[:id] || Pleroma.Web.ActivityPub.Utils.generate_question_id(),
       "type" => "Question",
-      "name" => question,
+      "attributedTo" => note.data["id"],
       "oneOf" => [
         %{
           "type" => "Note",

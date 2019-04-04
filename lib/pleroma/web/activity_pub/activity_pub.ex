@@ -228,6 +228,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
            ),
          {:ok, activity} <- insert(create_data, local, fake),
          {:fake, false, activity} <- {:fake, fake, activity},
+         {:ok, _question} <- maybe_insert_question(params, activity),
          _ <- increase_replies_count_if_reply(create_data),
          # Changing note count prior to enqueuing federation task in order to avoid
          # race conditions on updating user.info
@@ -238,6 +239,22 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       {:fake, true, activity} ->
         {:ok, activity}
     end
+  end
+
+  defp maybe_insert_question(%{poll_options: poll_options}, _activity)
+       when is_nil(poll_options) or poll_options == [],
+       do: {:ok, :noop}
+
+  defp maybe_insert_question(%{to: to, actor: actor, poll_options: poll_options}, %{
+         data: %{"object" => %{"id" => object_id}}
+       }) do
+    {:ok,
+     question(%{
+       to: to,
+       actor: actor,
+       one_of: poll_options,
+       object_id: object_id
+     })}
   end
 
   defp create_answer(%{object: %{"inReplyTo" => in_reply_to, "name" => name}}) do
