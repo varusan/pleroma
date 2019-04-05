@@ -10,8 +10,8 @@ defmodule Pleroma.Question do
 
   import Ecto.Query
 
-  def add_reply_by_ap_id(ap_id, name) do
-    with {:ok, _activity} <- add_reply(ap_id, name),
+  def add_reply_by_ap_id(ap_id, name, actor) do
+    with {:ok, _activity} <- add_reply(ap_id, name, actor),
          {:ok, activity} <- increment_total(ap_id) do
       {:ok, activity}
     end
@@ -31,7 +31,8 @@ defmodule Pleroma.Question do
     )
   end
 
-  defp add_reply(ap_id, name) do
+  defp add_reply(ap_id, name, actor) do
+    # TODO: Check if actor already voted
     from(
       a in Activity,
       where: fragment("(?)->>'id' = ?", a.data, ^to_string(ap_id))
@@ -43,7 +44,7 @@ defmodule Pleroma.Question do
             "jsonb_set(?, '{replies,items}', (?->'replies'->'items') || ?, true)",
             a.data,
             a.data,
-            ^%{"name" => name}
+            ^%{"name" => name, "attributedTo" => actor}
           )
       ]
     )

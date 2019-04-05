@@ -257,8 +257,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
      })}
   end
 
-  defp create_answer(%{object: %{"inReplyTo" => in_reply_to, "name" => name}}) do
-    with {:ok, activity} <- Pleroma.Question.add_reply_by_ap_id(in_reply_to, name) do
+  defp create_answer(%{
+         object: %{"inReplyTo" => in_reply_to, "name" => name},
+         actor: %{ap_id: ap_id}
+       }) do
+    with {:ok, activity} <- Pleroma.Question.add_reply_by_ap_id(in_reply_to, name, ap_id) do
       {:ok, activity}
     end
   end
