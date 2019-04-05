@@ -14,13 +14,13 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicyTest do
   describe "managing keyword policies" do
     test "save a new valid keyword policy" do
       config = Pleroma.Config.get(:mrf_keyword)
-      result = KeywordPolicy.save_keyword_policy(%{config | replace: %{"toot" => "jort"}})
+      result = KeywordPolicy.save(%{config | replace: %{"toot" => "jort"}})
       assert result == :ok
     end
 
     test "save a new invalid keyword policy" do
       config = Pleroma.Config.get(:mrf_keyword)
-      result = KeywordPolicy.save_keyword_policy(%{config | replace: %{3 => "jort"}})
+      result = KeywordPolicy.save(%{config | replace: %{3 => "jort"}})
       assert {:error, _} = result
     end
   end

@@ -243,7 +243,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
   @doc "List this instance's keyword policy"
   def list_keyword_policy(conn, _params) do
-    mrf_keyword = KeywordPolicy.list_keyword_policy()
+    mrf_keyword = KeywordPolicy.list()
 
     conn
     |> put_status(200)
@@ -255,7 +255,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     result =
       policy
       |> Poison.decode!(keys: :atoms!)
-      |> KeywordPolicy.save_keyword_policy()
+      |> KeywordPolicy.save()
 
     case result do
       :ok ->
@@ -272,7 +272,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
   @doc "Reset the keyword policy"
   def reset_keyword_policy(conn, _params) do
-    KeywordPolicy.save_keyword_policy(%{
+    KeywordPolicy.save(%{
       federated_timeline_removal: [],
       reject: [],
       replace: %{}

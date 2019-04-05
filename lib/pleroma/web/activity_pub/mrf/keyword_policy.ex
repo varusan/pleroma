@@ -79,7 +79,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
      |> put_in(["object", "summary"], summary)}
   end
 
-  def save_keyword_policy(%{
+  def save(%{
         federated_timeline_removal: ftr,
         reject: reject,
         replace: replace
@@ -100,7 +100,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
     end
   end
 
-  def list_keyword_policy do
+  def list do
     config = Pleroma.Config.get(:mrf_keyword, %{})
 
     Enum.reduce(config, %{}, fn {key, value}, acc ->
