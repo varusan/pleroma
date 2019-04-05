@@ -100,33 +100,25 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
     end
   end
 
-  def list_keyword_policy, do: Pleroma.Config.get(:mrf_keyword)
-
-  def nodeinfo_keyword_policy do
+  def list_keyword_policy do
     Pleroma.Config.get(:mrf_keyword, [])
-    |> Enum.map(fn {key, value} ->
-      {key,
-       Enum.map(value, fn
-         {pattern, replacement} ->
-           %{
-             "pattern" =>
-               if not is_binary(pattern) do
-                 inspect(pattern)
-               else
-                 pattern
-               end,
-             "replacement" => replacement
-           }
+    |> Enum.reduce(%{}, fn {key, value}, acc ->
+      base = if is_map(value), do: %{}, else: []
 
-         pattern ->
-           if not is_binary(pattern) do
-             inspect(pattern)
-           else
-             pattern
-           end
-       end)}
+      value =
+        Enum.reduce(value, base, fn
+          {pattern, replacement}, acc ->
+            pattern = unless is_binary(pattern), do: inspect(pattern), else: pattern
+            Map.put(acc, pattern, replacement)
+
+          pattern, acc ->
+            pattern = unless is_binary(pattern), do: inspect(pattern), else: pattern
+
+            acc ++ [pattern]
+        end)
+
+      Map.put(acc, key, value)
     end)
-    |> Enum.into(%{})
   end
 
   @impl true

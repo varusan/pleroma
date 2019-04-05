@@ -596,4 +596,27 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                "tags" => []
              }
   end
+
+  describe "KeywordPolicy" do
+    test "GET /api/pleroma/admin/mrf/keyword_policy/list" do
+      Pleroma.Config.put([:mrf_keyword], %{
+        reject: [~r/(rof)?lmao/, "yikes!"],
+        federated_timeline_removal: ["umm spaghetti", ~r/[OoUu]w[OoUu]/],
+        replace: %{~r/bloat(ed)?/ => "\\0 :rokalife:", "karen" => "kawen"}
+      })
+
+      admin = insert(:user, info: %{is_admin: true})
+
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> get("/api/pleroma/admin/mrf/keyword_policy/list")
+
+      assert json_response(conn, 200) == %{
+               "federated_timeline_removal" => ["umm spaghetti", "~r/[OoUu]w[OoUu]/"],
+               "reject" => ["~r/(rof)?lmao/", "yikes!"],
+               "replace" => %{"karen" => "kawen", "~r/bloat(ed)?/" => "\\0 :rokalife:"}
+             }
+    end
+  end
 end

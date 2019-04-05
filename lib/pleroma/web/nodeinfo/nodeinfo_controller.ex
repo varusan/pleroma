@@ -45,7 +45,7 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
       Application.get_env(:pleroma, :mrf_simple)
       |> Enum.into(%{})
 
-    mrf_keyword = KeywordPolicy.nodeinfo_keyword_policy()
+    mrf_keyword = KeywordPolicy.list_keyword_policy()
 
     mrf_policies =
       MRF.get_policies()
