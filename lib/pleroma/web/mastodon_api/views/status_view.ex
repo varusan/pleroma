@@ -163,7 +163,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         object["external_url"] || object["id"]
       end
 
-    question = Question.get_by_object_id(object["id"]) |> maybe_build_question()
+    question = Question.get_by_object_id(object["id"]) |> render_question(user.ap_id)
 
     %{
       id: to_string(activity.id),
@@ -383,10 +383,21 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     end)
   end
 
-  defp maybe_build_question(nil), do: %{}
+  def render_question(params, user_id) do
+    maybe_render_question(params, user_id)
+  end
 
-  defp maybe_build_question(%{data: %{"oneOf" => options, "replies" => replies}}) do
+  defp maybe_render_question(nil, _user_id), do: %{}
+
+  defp maybe_render_question(
+         %{
+           data: %{"id" => id, "oneOf" => options, "replies" => replies}
+         },
+         user_id
+       ) do
     %{
+      id: id,
+      user_voted: Enum.any?(replies["items"], &(&1["attributedTo"] == user_id)),
       votes:
         options
         |> Enum.map(fn option ->

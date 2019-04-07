@@ -238,6 +238,16 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     end
   end
 
+  def make_vote_data(user, %{
+        "option_name" => option_name,
+        "question_id" => question_id
+      }) do
+    %{
+      object: %{"inReplyTo" => question_id, "name" => option_name},
+      actor: %{ap_id: user.ap_id}
+    }
+  end
+
   def format_naive_asctime(date) do
     date |> DateTime.from_naive!("Etc/UTC") |> format_asctime
   end

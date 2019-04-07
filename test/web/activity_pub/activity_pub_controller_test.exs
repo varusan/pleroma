@@ -490,9 +490,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       |> post("/users/#{user.nickname}/outbox", data)
 
       question = Activity.get_by_ap_id(question_activity.data["id"])
+      reply = hd(question.data["replies"]["items"])
 
       assert question.data["replies"]["totalItems"] == 1
-      assert hd(question.data["replies"]["items"])["name"] == "Nay"
+      assert reply["name"] == "Nay"
+      assert reply["attributedTo"] == user.ap_id
     end
   end
 

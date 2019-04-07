@@ -1249,6 +1249,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     "glitch"
   end
 
+  def vote(%{assigns: %{user: user}} = conn, params) do
+    {:ok, activity} = CommonAPI.vote(user, params)
+
+    conn
+    |> put_status(200)
+    |> json(StatusView.render_question(activity, user.ap_id))
+  end
+
   def login(%{assigns: %{user: %User{}}} = conn, _params) do
     redirect(conn, to: local_mastodon_root_path(conn))
   end

@@ -320,4 +320,8 @@ defmodule Pleroma.Web.CommonAPI do
       User.update_and_set_cache(changeset)
     end
   end
+
+  def vote(user, params) do
+    ActivityPub.create(make_vote_data(user, params))
+  end
 end
