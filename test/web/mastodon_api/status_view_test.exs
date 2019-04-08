@@ -127,7 +127,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       pleroma: %{
         local: true,
         conversation_id: convo_id
-      }
+      },
+      poll: %{}
     }
 
     assert status == expected

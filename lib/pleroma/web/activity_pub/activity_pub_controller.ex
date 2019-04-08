@@ -264,7 +264,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
              name: params["name"],
              one_of: params["oneOf"],
              any_of: params["anyOf"],
-             to: params["to"]
+             to: params["to"],
+             object_id: params["attributedTo"]
            }) do
       {:ok, activity}
     else

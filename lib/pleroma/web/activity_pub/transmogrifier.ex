@@ -723,7 +723,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
              name: name,
              one_of: data["oneOf"],
              any_of: data["anyOf"],
-             to: data["to"]
+             to: data["to"],
+             object_id: data["attributedTo"]
            }) do
       {:ok, activity}
     else

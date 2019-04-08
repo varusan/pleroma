@@ -144,14 +144,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         "sensitive" => "false"
       })
 
-    assert %{
-             "content" => "cofe",
-             "id" => id,
-             "sensitive" => false,
-             "poll" => %{"options" => ["yay", "nay"]}
-           } = json_response(conn, 200)
+    response = json_response(conn, 200)
 
-    assert Activity.get_by_id(id)
+    assert [%{"count" => 0, "name" => "yay"}, %{"count" => 0, "name" => "nay"}] --
+             response["poll"]["votes"] == []
   end
 
   test "posting a sensitive status", %{conn: conn} do
