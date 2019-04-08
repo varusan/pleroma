@@ -85,8 +85,7 @@ defmodule Pleroma.Emoji do
     emojis =
       (load_finmoji(finmoji_enabled) ++
          load_from_file("config/emoji.txt") ++
-         load_from_file("config/custom_emoji.txt") ++
-         load_from_globs(shortcode_globs))
+         load_from_file("config/custom_emoji.txt") ++ load_from_globs(shortcode_globs))
       |> Enum.reject(fn value -> value == nil end)
 
     true = :ets.insert(@ets, emojis)
