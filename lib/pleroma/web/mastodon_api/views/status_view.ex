@@ -391,18 +391,14 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     end)
   end
 
-  def render_question(params, user_id) do
-    maybe_render_question(params, user_id)
-  end
+  def render_question(nil, _user_id), do: %{}
 
-  defp maybe_render_question(nil, _user_id), do: %{}
-
-  defp maybe_render_question(
-         %{
-           data: %{"id" => id, "oneOf" => options, "replies" => replies}
-         },
-         user_id
-       ) do
+  def render_question(
+        %{
+          data: %{"id" => id, "oneOf" => options, "replies" => replies}
+        },
+        user_id
+      ) do
     %{
       id: id,
       user_voted: Enum.any?(replies["items"], &(&1["attributedTo"] == user_id)),
