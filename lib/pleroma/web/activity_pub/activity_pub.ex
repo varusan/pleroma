@@ -241,10 +241,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  defp maybe_insert_question(%{poll_options: poll_options}, _activity)
-       when is_nil(poll_options) or poll_options == [],
-       do: {:ok, :noop}
-
   defp maybe_insert_question(%{to: to, actor: actor, poll_options: poll_options}, %{
          data: %{"object" => %{"id" => object_id}}
        }) do
@@ -256,6 +252,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
        object_id: object_id
      })}
   end
+
+  defp maybe_insert_question(%{poll_options: poll_options}, _activity)
+       when is_nil(poll_options) or poll_options == [],
+       do: {:ok, :noop}
+
+  defp maybe_insert_question(_params, _activity),
+    do: {:ok, :noop}
 
   defp create_answer(%{
          object: %{"inReplyTo" => in_reply_to, "name" => name},
