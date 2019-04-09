@@ -26,6 +26,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Web.MastodonAPI.MastodonAPI
   alias Pleroma.Web.MastodonAPI.MastodonView
   alias Pleroma.Web.MastodonAPI.NotificationView
+  alias Pleroma.Web.MastodonAPI.QuestionView
   alias Pleroma.Web.MastodonAPI.ReportView
   alias Pleroma.Web.MastodonAPI.ScheduledActivityView
   alias Pleroma.Web.MastodonAPI.StatusView
@@ -1322,7 +1323,13 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
     conn
     |> put_status(200)
-    |> json(StatusView.render_question(activity, user.ap_id))
+    |> json(QuestionView.render("show.json", %{activity: activity, user_id: user.ap_id}))
+  end
+
+  def get_vote(%{assigns: %{user: user}} = conn, params) do
+    conn
+    |> put_status(200)
+    |> json(QuestionView.render("show.json", %{question_id: params["id"], user_id: user.ap_id}))
   end
 
   def login(%{assigns: %{user: %User{}}} = conn, _params) do

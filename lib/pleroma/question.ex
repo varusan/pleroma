@@ -17,6 +17,20 @@ defmodule Pleroma.Question do
     end
   end
 
+  # def get_by_activity_id(ap_id) do
+  #   Repo.one(
+  #     from(activity in Activity,
+  #       where:
+  #         fragment(
+  #           "(?)->>'attributedTo' = ? AND (?)->>'type' = 'Question'",
+  #           activity.data,
+  #           ^ap_id,
+  #           activity.data
+  #         )
+  #     )
+  #   )
+  # end
+
   def get_by_object_id(ap_id) do
     Repo.one(
       from(activity in Activity,

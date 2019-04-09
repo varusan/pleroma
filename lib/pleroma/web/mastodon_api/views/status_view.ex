@@ -13,6 +13,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MastodonAPI.AccountView
+  alias Pleroma.Web.MastodonAPI.QuestionView
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.MediaProxy
 
@@ -171,7 +172,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         object["external_url"] || object["id"]
       end
 
-    question = Question.get_by_object_id(object["id"]) |> render_question(user.ap_id)
+    question_activity = Question.get_by_object_id(object["id"])
+
+    question =
+      QuestionView.render("show.json", %{activity: question_activity, user_id: opts[:for].ap_id})
 
     %{
       id: to_string(activity.id),
@@ -389,32 +393,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
       %{shortcode: name, url: url, static_url: url, visible_in_picker: false}
     end)
-  end
-
-  def render_question(nil, _user_id), do: %{}
-
-  def render_question(
-        %{
-          data: %{"id" => id, "oneOf" => options, "replies" => replies}
-        },
-        user_id
-      ) do
-    %{
-      id: id,
-      user_voted: Enum.any?(replies["items"], &(&1["attributedTo"] == user_id)),
-      votes:
-        options
-        |> Enum.map(fn option ->
-          %{
-            name: option,
-            count: count_votes(replies["items"], option)
-          }
-        end)
-    }
-  end
-
-  defp count_votes(items, option) do
-    Enum.reduce(items, 0, fn item, acc -> if item["name"] == option, do: acc + 1, else: acc end)
   end
 
   defp present?(nil), do: false
