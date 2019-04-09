@@ -174,8 +174,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     question_activity = Question.get_by_object_id(object["id"])
 
-    question =
-      QuestionView.render("show.json", %{activity: question_activity, user_id: opts[:for].ap_id})
+    question = QuestionView.render("show.json", %{activity: question_activity, user: opts[:for]})
 
     %{
       id: to_string(activity.id),

@@ -6,10 +6,11 @@ defmodule Pleroma.Web.MastodonAPI.QuestionView do
   use Pleroma.Web, :view
 
   alias Pleroma.Activity
+  alias Pleroma.User
 
-  def render("show.json", %{question_id: question_id, user_id: user_id})
+  def render("show.json", %{question_id: question_id, user: %User{} = user})
       when is_binary(question_id) do
-    render("show.json", %{activity: Activity.get_by_ap_id(question_id), user_id: user_id})
+    render("show.json", %{activity: Activity.get_by_ap_id(question_id), user: user.ap_id})
   end
 
   def render("show.json", %{activity: nil}), do: %{}
@@ -18,13 +19,13 @@ defmodule Pleroma.Web.MastodonAPI.QuestionView do
         "show.json",
         %{
           activity: %{data: %{"id" => id, "oneOf" => options, "replies" => replies}},
-          user_id: user_id
+          user: %User{} = user
         } = activity
       )
       when is_map(activity) do
     %{
       id: id,
-      user_voted: Enum.any?(replies["items"], &(&1["attributedTo"] == user_id)),
+      user_voted: Enum.any?(replies["items"], &(&1["attributedTo"] == user.ap_id)),
       votes:
         options
         |> Enum.map(fn option ->
