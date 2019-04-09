@@ -1319,17 +1319,23 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def vote(%{assigns: %{user: user}} = conn, params) do
-    {:ok, activity} = CommonAPI.vote(user, params)
+    case CommonAPI.vote(user, params) do
+      {:ok, activity} ->
+        conn
+        |> put_status(200)
+        |> json(QuestionView.render("show.json", %{activity: activity, user: user}))
 
-    conn
-    |> put_status(200)
-    |> json(QuestionView.render("show.json", %{activity: activity, user_id: user.ap_id}))
+      _ ->
+        conn
+        |> put_resp_content_type("application/json")
+        |> send_resp(401, "Failed to vote")
+    end
   end
 
   def get_vote(%{assigns: %{user: user}} = conn, params) do
     conn
     |> put_status(200)
-    |> json(QuestionView.render("show.json", %{question_id: params["id"], user_id: user.ap_id}))
+    |> json(QuestionView.render("show.json", %{question_id: params["id"], user: user}))
   end
 
   def login(%{assigns: %{user: %User{}}} = conn, _params) do

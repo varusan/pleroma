@@ -17,20 +17,6 @@ defmodule Pleroma.Question do
     end
   end
 
-  # def get_by_activity_id(ap_id) do
-  #   Repo.one(
-  #     from(activity in Activity,
-  #       where:
-  #         fragment(
-  #           "(?)->>'attributedTo' = ? AND (?)->>'type' = 'Question'",
-  #           activity.data,
-  #           ^ap_id,
-  #           activity.data
-  #         )
-  #     )
-  #   )
-  # end
-
   def get_by_object_id(ap_id) do
     Repo.one(
       from(activity in Activity,
@@ -45,11 +31,21 @@ defmodule Pleroma.Question do
     )
   end
 
-  defp add_reply(ap_id, name, actor) do
-    # TODO: Check if actor already voted
+  defp add_reply(ap_id, name, actor) when is_binary(ap_id) do
+    with question <- Activity.get_by_ap_id(ap_id),
+         true <- valid_option(question, name),
+         false <- actor_already_voted(question, actor) do
+      add_reply(question, name, actor)
+    else
+      _ ->
+        {:noop, ap_id}
+    end
+  end
+
+  defp add_reply(%Activity{} = question, name, actor) do
     from(
       a in Activity,
-      where: fragment("(?)->>'id' = ?", a.data, ^to_string(ap_id))
+      where: fragment("(?)->>'id' = ?", a.data, ^to_string(question.data["id"]))
     )
     |> update([a],
       set: [
@@ -68,6 +64,16 @@ defmodule Pleroma.Question do
       {1, [activity]} -> {:ok, activity}
       _ -> :error
     end
+  end
+
+  defp actor_already_voted(%{data: %{"replies" => %{"items" => []}}}, _actor), do: false
+
+  defp actor_already_voted(%{data: %{"replies" => %{"items" => replies}}}, actor) do
+    Enum.any?(replies, &(&1["attributedTo"] == actor))
+  end
+
+  defp valid_option(%{data: %{"oneOf" => options}}, option) do
+    Enum.member?(options, option)
   end
 
   defp increment_total(ap_id) do
@@ -92,8 +98,6 @@ defmodule Pleroma.Question do
       _ -> :error
     end
   end
-
-  # (?->>'note_count')::int - 1)::varchar::jsonb
 
   def is_question(activity) when is_nil(activity), do: false
   def is_question(%{data: %{"type" => type}}), do: type == "Question"

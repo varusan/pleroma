@@ -132,24 +132,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     refute id == third_id
   end
 
-  test "posting a status with poll" do
-    user = insert(:user)
-
-    conn =
-      build_conn()
-      |> assign(:user, user)
-      |> post("/api/v1/statuses", %{
-        "status" => "cofe",
-        "poll_options" => ["yay", "nay"],
-        "sensitive" => "false"
-      })
-
-    response = json_response(conn, 200)
-
-    assert [%{"count" => 0, "name" => "yay"}, %{"count" => 0, "name" => "nay"}] --
-             response["poll"]["votes"] == []
-  end
-
   test "posting a sensitive status", %{conn: conn} do
     user = insert(:user)
 
@@ -2650,6 +2632,139 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         |> delete("/api/v1/scheduled_statuses/#{scheduled_activity.id}")
 
       assert %{"error" => "Record not found"} = json_response(res_conn, 404)
+    end
+  end
+
+  describe "poll" do
+    test "it inserts status with poll" do
+      user = insert(:user)
+
+      conn =
+        build_conn()
+        |> assign(:user, user)
+        |> post("/api/v1/statuses", %{
+          "status" => "cofe",
+          "poll_options" => ["yay", "nay"],
+          "sensitive" => "false"
+        })
+
+      response = json_response(conn, 200)
+
+      assert [%{"count" => 0, "name" => "yay"}, %{"count" => 0, "name" => "nay"}] --
+               response["poll"]["votes"] == []
+    end
+
+    test "it allows user to vote (own poll)" do
+      user = insert(:user)
+
+      conn =
+        build_conn()
+        |> assign(:user, user)
+        |> post("/api/v1/statuses", %{
+          "status" => "cofe",
+          "poll_options" => ["yay", "nay"],
+          "sensitive" => "false"
+        })
+
+      %{"poll" => %{"id" => activity_id}} = json_response(conn, 200)
+
+      build_conn()
+      |> assign(:user, user)
+      |> patch("/api/v1/polls/vote", %{
+        "option_name" => "nay",
+        "question_id" => activity_id
+      })
+
+      activity = Activity.get_by_ap_id(activity_id)
+
+      assert hd(activity.data["replies"]["items"])["name"] == "nay"
+    end
+
+    test "it allows user to vote (other user's poll)" do
+      user = insert(:user)
+      user2 = insert(:user)
+
+      conn =
+        build_conn()
+        |> assign(:user, user)
+        |> post("/api/v1/statuses", %{
+          "status" => "cofe",
+          "poll_options" => ["yay", "nay"],
+          "sensitive" => "false"
+        })
+
+      %{"poll" => %{"id" => activity_id}} = json_response(conn, 200)
+
+      build_conn()
+      |> assign(:user, user2)
+      |> patch("/api/v1/polls/vote", %{
+        "option_name" => "yay",
+        "question_id" => activity_id
+      })
+
+      activity = Activity.get_by_ap_id(activity_id)
+
+      assert hd(activity.data["replies"]["items"])["name"] == "yay"
+    end
+
+    test "it doesn't allow to vote for non-existent option" do
+      user = insert(:user)
+
+      conn =
+        build_conn()
+        |> assign(:user, user)
+        |> post("/api/v1/statuses", %{
+          "status" => "cofe",
+          "poll_options" => ["yay", "nay"],
+          "sensitive" => "false"
+        })
+
+      %{"poll" => %{"id" => activity_id}} = json_response(conn, 200)
+
+      build_conn()
+      |> assign(:user, user)
+      |> patch("/api/v1/polls/vote", %{
+        "option_name" => "wat",
+        "question_id" => activity_id
+      })
+
+      activity = Activity.get_by_ap_id(activity_id)
+
+      assert activity.data["replies"]["items"] == []
+    end
+
+    test "it doesn't allow user to vote twice" do
+      user = insert(:user)
+
+      conn =
+        build_conn()
+        |> assign(:user, user)
+        |> post("/api/v1/statuses", %{
+          "status" => "cofe",
+          "poll_options" => ["yay", "nay"],
+          "sensitive" => "false"
+        })
+
+      %{"poll" => %{"id" => activity_id}} = json_response(conn, 200)
+
+      build_conn()
+      |> assign(:user, user)
+      |> patch("/api/v1/polls/vote", %{
+        "option_name" => "nay",
+        "question_id" => activity_id
+      })
+
+      build_conn()
+      |> assign(:user, user)
+      |> patch("/api/v1/polls/vote", %{
+        "option_name" => "yay",
+        "question_id" => activity_id
+      })
+
+      activity = Activity.get_by_ap_id(activity_id)
+
+      assert hd(activity.data["replies"]["items"])["name"] == "nay"
+      assert length(activity.data["replies"]["items"]) == 1
     end
   end
 end

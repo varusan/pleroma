@@ -300,16 +300,7 @@ defmodule Pleroma.Factory do
       "id" => attrs[:id] || Pleroma.Web.ActivityPub.Utils.generate_question_id(),
       "type" => "Question",
       "attributedTo" => note.data["id"],
-      "oneOf" => [
-        %{
-          "type" => "Note",
-          "name" => "Yay"
-        },
-        %{
-          "type" => "Note",
-          "name" => "Nay"
-        }
-      ],
+      "oneOf" => ["Yay", "Nay"],
       "replies" => %{
         "type" => "Collection",
         "totalItems" => 0,
