@@ -181,6 +181,9 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     end
   end
 
+  # Is this function even ever used?
+  # def token_exchange(conn, %{"grant_type" => "password"} = params)
+  # should have grabbed it already
   def token_exchange(
         conn,
         %{"grant_type" => "password", "name" => name, "password" => _password} = params
@@ -191,6 +194,27 @@ defmodule Pleroma.Web.OAuth.OAuthController do
       |> Map.put("username", name)
 
     token_exchange(conn, params)
+  end
+
+  def token_exchange(conn, %{"grant_type" => "client_credentials"} = params) do
+    with %App{} = app <- get_app_from_request(conn, params),
+         {:ok, auth} <- Authorization.create_authorization(app, %User{}, scopes),
+         {:ok, token} <- Token.exchange_token(app, auth) do
+      response = %{
+        token_type: "Bearer",
+        access_token: token.token,
+        refresh_token: token.refresh_token,
+        created_at: DateTime.to_unix(inserted_at),
+        expires_in: 60 * 10,
+        scope: Enum.join(token.scopes, " ")
+      }
+
+      json(conn, response)
+    else
+      _error ->
+        put_status(conn, 400)
+        |> json(%{error: "Invalid credentials"})
+    end
   end
 
   def token_revoke(conn, %{"token" => token} = params) do
