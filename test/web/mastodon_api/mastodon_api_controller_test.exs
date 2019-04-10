@@ -2340,4 +2340,31 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     refute acc_one == acc_two
     assert acc_two == acc_three
   end
+
+  test "Account registeration via Application", %{conn: conn} do
+    app = build(:oauth_app)
+
+    conn =
+      conn
+      |> post("/api/v1/apps", %{
+        client_name: app.client_name,
+        redirect_uris: app.redirect_uris
+      })
+
+    conn =
+      conn
+      |> assign(:app, app)
+      |> post("/api/v1/accounts", %{
+        username: "lain",
+        email: "lain@example.org",
+        password: "PlzDontHeckLain",
+        aggreement: true
+      })
+
+    assert response = json_response(conn, 200)
+    assert response.access_token
+    assert response.token_type
+    assert response.scope
+    assert response.created_at
+  end
 end

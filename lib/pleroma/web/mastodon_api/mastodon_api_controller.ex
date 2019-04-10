@@ -30,6 +30,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.OAuth.Authorization
   alias Pleroma.Web.OAuth.Token
+  alias Pleroma.Web.TwitterAPI.TwitterAPI
 
   import Pleroma.Web.ControllerHelper, only: [oauth_scopes: 2]
   import Ecto.Query
@@ -1492,7 +1493,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def account_register(
-        conn,
+        %{assign: %{app: app}} = conn,
         %{"username" => nickname, "email" => _, "password" => _, "agreement" => true} = params
       ) do
     params =
@@ -1510,14 +1511,29 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> Map.put("bio", params["bio"] || "")
       |> Map.put("confirm", params["password"])
 
-    # TODO: Move TwitterAPI.register_user to CommonAPI ?
-    with {:ok, user} <- TwitterAPI.register_user(params) do
-      # Return Token
+    # TODO: Move TwitterAPI.register_user to CommonAPI?
+    # TODO: Fix applications to be able put only "read" scope instead for this token?
+    with {:ok, user} <- TwitterAPI.register_user(params),
+         token <- Token.create_token(app, user, app.scopes) do
+      token
     else
       {:error, errors} ->
         conn
-        |> json_reply(400, Jason.encode!(errors))
+        |> put_status(400)
+        |> json(Jason.encode!(errors))
     end
+  end
+
+  def account_register(%{assign: %{app: _app}} = conn, _) do
+    conn
+    |> put_status(400)
+    |> json(%{error: "Missing parameters"})
+  end
+
+  def account_register(conn, _) do
+    conn
+    |> put_status(403)
+    |> json(%{error: "Invalid credentials"})
   end
 
   def try_render(conn, target, params)

@@ -292,8 +292,6 @@ defmodule Pleroma.Web.Router do
       post("/pleroma/flavour/:flavour", MastodonAPIController, :set_flavour)
 
       post("/reports", MastodonAPIController, :reports)
-
-      post("/accounts", MastodonAPIController, :account_register)
     end
 
     scope [] do
@@ -333,6 +331,9 @@ defmodule Pleroma.Web.Router do
 
   scope "/api/v1", Pleroma.Web.MastodonAPI do
     pipe_through(:api)
+
+    # TODO: Restrain to Applications in the router?
+    post("/accounts", MastodonAPIController, :account_register)
 
     get("/instance", MastodonAPIController, :masto_instance)
     get("/instance/peers", MastodonAPIController, :peers)
