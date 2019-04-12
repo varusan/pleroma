@@ -240,7 +240,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
         "id" => question_id
       }) do
     %{
-      object: %{"inReplyTo" => question_id, "choices" => choices},
+      object: %{"inReplyTo" => question_id, "options" => choices},
       actor: %{ap_id: user.ap_id}
     }
   end

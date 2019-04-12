@@ -478,7 +478,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         "type" => "Create",
         "to" => [question_activity.actor],
         "object" => %{
-          "choices" => ["1"],
+          "options" => ["1"],
           "inReplyTo" => question_activity.data["id"]
         }
       }

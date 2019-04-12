@@ -34,7 +34,11 @@ defmodule Pleroma.Question do
 
   def maybe_check_limits(false, _expires, _options), do: :ok
 
-  def maybe_check_limits(true, expires, options) do
+  def maybe_check_limits(true, expires, options) when is_binary(expires) do
+    maybe_check_limits(true, String.to_integer(expires), options)
+  end
+
+  def maybe_check_limits(true, expires, options) when is_integer(expires) do
     limits = Config.get([:instance, :poll_limits])
     expiration_range = limits[:min_expiration]..limits[:max_expiration]
 
@@ -48,7 +52,7 @@ defmodule Pleroma.Question do
 
       !Enum.member?(expiration_range, expires) ->
         {:error,
-         "`expires_in` must be in range of (#{limits[:min_expiration]}..limits[:max_expiration]) seconds"}
+         "`expires_in` must be in range of (#{limits[:min_expiration]}..#{limits[:max_expiration]}) seconds"}
 
       true ->
         :ok

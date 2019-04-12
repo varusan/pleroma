@@ -1262,7 +1262,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         "type" => "Question",
         "actor" => user.ap_id,
         "attributedTo" => activity.data["object"]["id"],
-        "endTime" => 86_400,
+        "endTime" => "86400",
         "multiple" => false,
         "oneOf" => ["All good", "Not much"],
         "to" => ["https://www.w3.org/ns/activitystreams#Public"]
