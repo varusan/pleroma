@@ -207,11 +207,20 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def create(params, fake \\ false) do
-    Activity.get_by_id(get_in(params, [:object, "inReplyTo"]))
+    Activity.get_by_ap_id(get_in(params, [:object, "inReplyTo"]))
     |> Question.is_question()
     |> case do
       true -> create_answer(params)
       false -> create_note(params, fake)
+    end
+  end
+
+  defp create_answer(%{
+         object: %{"inReplyTo" => in_reply_to, "choices" => choices},
+         actor: %{ap_id: ap_id}
+       }) do
+    with {:ok, activity} <- Pleroma.Question.add_reply_by_ap_id(in_reply_to, choices, ap_id) do
+      {:ok, activity}
     end
   end
 
@@ -267,15 +276,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp maybe_insert_question(_params, _activity), do: {:ok, :noop}
-
-  defp create_answer(%{
-         object: %{"inReplyTo" => in_reply_to, "choices" => choices},
-         actor: %{ap_id: ap_id}
-       }) do
-    with {:ok, activity} <- Pleroma.Question.add_reply_by_id(in_reply_to, choices, ap_id) do
-      {:ok, activity}
-    end
-  end
 
   def accept(%{to: to, actor: actor, object: object} = params) do
     # only accept false as false value

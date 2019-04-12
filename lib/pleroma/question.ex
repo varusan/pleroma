@@ -10,35 +10,35 @@ defmodule Pleroma.Question do
 
   import Ecto.Query
 
-  def add_reply_by_id(id, choices, actor) do
-    with {:ok, _activity} <- add_reply(id, choices, actor),
-         {:ok, activity} <- increment_total(id, choices) do
+  def add_reply_by_ap_id(ap_id, choices, actor) do
+    with {:ok, _activity} <- add_reply(ap_id, choices, actor),
+         {:ok, activity} <- increment_total(ap_id, choices) do
       {:ok, activity}
     end
   end
 
-  def get_by_object_id(id) do
+  def get_by_object_id(ap_id) do
     Repo.one(
       from(activity in Activity,
         where:
           fragment(
             "(?)->>'attributedTo' = ? AND (?)->>'type' = 'Question'",
             activity.data,
-            ^id,
+            ^ap_id,
             activity.data
           )
       )
     )
   end
 
-  defp add_reply(id, choices, actor) when is_binary(id) do
-    with question <- Activity.get_by_id(id),
+  defp add_reply(ap_id, choices, actor) when is_binary(ap_id) do
+    with question <- Activity.get_by_ap_id(ap_id),
          true <- valid_choice_indices(question, choices),
          false <- actor_already_voted(question, actor) do
       add_reply(question, choices, actor)
     else
       _ ->
-        {:noop, id}
+        {:noop, ap_id}
     end
   end
 
@@ -52,9 +52,10 @@ defmodule Pleroma.Question do
     {:ok, question}
   end
 
-  defp add_reply(%Activity{} = question, name, actor) when is_binary(name) do
-    from(activity in Activity,
-      where: activity.id == ^question.id
+  defp add_reply(question, name, actor) when is_binary(name) do
+    from(
+      a in Activity,
+      where: fragment("(?)->>'id' = ?", a.data, ^to_string(question.data["id"]))
     )
     |> update([a],
       set: [
@@ -103,11 +104,11 @@ defmodule Pleroma.Question do
     |> Enum.all?(&(length(options) > &1))
   end
 
-  defp increment_total(id, choices) do
+  defp increment_total(ap_id, choices) do
     count = length(choices)
 
-    from(activity in Activity,
-      where: activity.id == ^id
+    from(a in Activity,
+      where: fragment("(?)->>'id' = ?", a.data, ^to_string(ap_id))
     )
     |> update([a],
       set: [

@@ -1260,19 +1260,11 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       data = %{
         "@context" => ["https://www.w3.org/ns/activitystreams"],
         "type" => "Question",
-        "name" => "What's up?",
         "actor" => user.ap_id,
-        "oneOf" => [
-          %{
-            "type" => "Note",
-            "name" => "All good"
-          },
-          %{
-            "type" => "Note",
-            "name" => "Not much"
-          }
-        ],
         "attributedTo" => activity.data["object"]["id"],
+        "endTime" => 86_400,
+        "multiple" => false,
+        "oneOf" => ["All good", "Not much"],
         "to" => ["https://www.w3.org/ns/activitystreams#Public"]
       }
 

@@ -711,7 +711,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def handle_incoming(
         %{
           "type" => "Question",
-          "name" => name,
           "actor" => _actor
         } = data
       ) do
@@ -719,12 +718,12 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
          %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
          {:ok, activity} <-
            ActivityPub.question(%{
-             actor: actor,
-             name: name,
-             one_of: data["oneOf"],
-             any_of: data["anyOf"],
              to: data["to"],
-             object_id: data["attributedTo"]
+             actor: actor,
+             object_id: data["attributedTo"],
+             expires: data["expires"],
+             multiple: data["multiple"],
+             options: data["oneOf"] || data["anyOf"]
            }) do
       {:ok, activity}
     else

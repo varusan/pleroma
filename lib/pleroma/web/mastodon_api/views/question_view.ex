@@ -10,7 +10,7 @@ defmodule Pleroma.Web.MastodonAPI.QuestionView do
 
   def render("show.json", %{question_id: question_id, user: %User{} = user})
       when is_binary(question_id) do
-    render("show.json", %{activity: Activity.get_by_id(question_id), user: user.ap_id})
+    render("show.json", %{activity: Activity.get_by_ap_id(question_id), user: user.ap_id})
   end
 
   def render("show.json", %{activity: nil}), do: %{}

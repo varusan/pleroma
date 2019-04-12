@@ -2645,7 +2645,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         |> post("/api/v1/statuses", %{
           "status" => "cofe",
           "poll" => %{
-            "expires_in" => 86400,
+            "expires_in" => 86_400,
             "multiple" => false,
             "options" => ["yay", "nay"]
           },
@@ -2674,7 +2674,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         |> post("/api/v1/statuses", %{
           "status" => "cofe",
           "poll" => %{
-            "expires_in" => 86400,
+            "expires_in" => 86_400,
             "multiple" => true,
             "options" => ["yay", "nay"]
           },
@@ -2720,7 +2720,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         |> post("/api/v1/statuses", %{
           "status" => "cofe",
           "poll" => %{
-            "expires_in" => 86400,
+            "expires_in" => 86_400,
             "multiple" => true,
             "options" => ["yay", "nay"]
           },
@@ -2741,7 +2741,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         |> post("/api/v1/statuses", %{
           "status" => "cofe",
           "poll" => %{
-            "expires_in" => 86400,
+            "expires_in" => 86_400,
             "multiple" => true,
             "options" => ["yay", "nay"]
           },
@@ -2770,7 +2770,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         |> post("/api/v1/statuses", %{
           "status" => "cofe",
           "poll" => %{
-            "expires_in" => 86400,
+            "expires_in" => 86_400,
             "multiple" => false,
             "options" => ["yay", "nay"]
           },
@@ -2798,7 +2798,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         |> post("/api/v1/statuses", %{
           "status" => "cofe",
           "poll" => %{
-            "expires_in" => 86400,
+            "expires_in" => 86_400,
             "multiple" => true,
             "options" => ["yay", "nay"]
           },
@@ -2826,7 +2826,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         |> post("/api/v1/statuses", %{
           "status" => "cofe",
           "poll" => %{
-            "expires_in" => 86400,
+            "expires_in" => 86_400,
             "multiple" => false,
             "options" => ["yay", "nay"]
           },
@@ -2853,7 +2853,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         |> post("/api/v1/statuses", %{
           "status" => "cofe",
           "poll" => %{
-            "expires_in" => 86400,
+            "expires_in" => 86_400,
             "multiple" => true,
             "options" => ["yay", "nay"]
           },

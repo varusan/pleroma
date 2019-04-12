@@ -2,15 +2,8 @@
   "@context": ["https://www.w3.org/ns/activitystreams", {"@language": "en-GB"}],
   "type": "Question",
   "name": "What's up?",
-  "oneOf": [
-    {
-      "type": "Note",
-      "name": "All good"
-    },
-    {
-      "type": "Note",
-      "name": "Not much"
-    }
-  ],
+  "expires_in": 86400,
+  "multiple": false,
+  "oneOf": ["All good", "Not much"],
   "to": ["https://www.w3.org/ns/activitystreams#Public"]
 }

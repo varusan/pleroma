@@ -260,12 +260,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   def handle_user_activity(user, %{"type" => "Question"} = params) do
     with {:ok, activity} <-
            ActivityPub.question(%{
-             actor: user,
-             name: params["name"],
-             one_of: params["oneOf"],
-             any_of: params["anyOf"],
              to: params["to"],
-             object_id: params["attributedTo"]
+             actor: user,
+             object_id: params["attributedTo"],
+             expires: params["expires"],
+             multiple: params["multiple"],
+             options: params["oneOf"] || params["anyOf"]
            }) do
       {:ok, activity}
     else

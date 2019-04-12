@@ -1195,7 +1195,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
             max_options: 10,
             max_option_chars: 120,
             min_expiration: 0,
-            max_expiration: 86400 * 30
+            max_expiration: 86_400 * 30
           },
           rights: %{
             delete_others_notice: present?(user.info.is_moderator),
@@ -1325,7 +1325,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def vote(%{assigns: %{user: user}} = conn, params) do
-    case CommonAPI.vote(user, params) do
+    %Activity{data: %{"id" => ap_id}} = Activity.get_by_id(params["id"])
+
+    case CommonAPI.vote(user, %{params | "id" => ap_id}) do
       {:ok, activity} ->
         conn
         |> put_status(200)
@@ -1339,9 +1341,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def get_vote(%{assigns: %{user: user}} = conn, params) do
+    %Activity{data: %{"id" => ap_id}} = Activity.get_by_id(params["id"])
+
     conn
     |> put_status(200)
-    |> json(QuestionView.render("show.json", %{question_id: params["id"], user: user}))
+    |> json(QuestionView.render("show.json", %{question_id: ap_id, user: user}))
   end
 
   def login(%{assigns: %{user: %User{}}} = conn, _params) do
