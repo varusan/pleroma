@@ -118,7 +118,7 @@ Request parameters can be passed via [query strings](https://en.wikipedia.org/wi
 See [Admin-API](Admin-API.md)
 
 ## `/api/v1/pleroma/flavour/:flavour`
-* Method `POST`
+* Method `POST`, `GET`
 * Authentication: required
 * Response: JSON string. Returns the user flavour or the default one on success, otherwise returns `{"error": "error_msg"}`
 * Example response: "glitch"
