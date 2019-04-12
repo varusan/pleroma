@@ -248,6 +248,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     else
       {:fake, true, activity} ->
         {:ok, activity}
+
+      {:error, message} ->
+        {:error, message}
     end
   end
 
@@ -265,15 +268,19 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
            data: %{"object" => %{"id" => object_id}}
          }
        ) do
-    {:ok,
-     question(%{
-       to: to,
-       actor: actor,
-       object_id: object_id,
-       expires: expires,
-       multiple: multiple,
-       options: options
-     })}
+    question_params = %{
+      to: to,
+      actor: actor,
+      object_id: object_id,
+      expires: expires,
+      multiple: multiple,
+      options: options
+    }
+
+    with :ok <- Question.maybe_check_limits(actor.local, expires, options),
+         {:ok, activity} <- question(question_params) do
+      {:ok, activity}
+    end
   end
 
   defp maybe_insert_question(_params, _activity), do: {:ok, :noop}

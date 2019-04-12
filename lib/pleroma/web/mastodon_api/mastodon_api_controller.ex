@@ -447,12 +447,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       params
       |> Map.put("in_reply_to_status_id", params["in_reply_to_id"])
 
-    idempotency_key =
-      case get_req_header(conn, "idempotency-key") do
-        [key] -> key
-        _ -> Ecto.UUID.generate()
-      end
-
     scheduled_at = params["scheduled_at"]
 
     if scheduled_at && ScheduledActivity.far_enough?(scheduled_at) do
@@ -465,15 +459,33 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     else
       params = Map.drop(params, ["scheduled_at"])
 
-      {:ok, activity} =
-        Cachex.fetch!(:idempotency_cache, idempotency_key, fn _ ->
-          CommonAPI.post(user, params)
-        end)
+      case maybe_get_cached_status(conn, params) do
+        {:ignore, message} ->
+          conn
+          |> put_status(401)
+          |> json(%{error: message})
 
-      conn
-      |> put_view(StatusView)
-      |> try_render("status.json", %{activity: activity, for: user, as: :activity})
+        {_, activity} ->
+          conn
+          |> put_view(StatusView)
+          |> try_render("status.json", %{activity: activity, for: user, as: :activity})
+      end
     end
+  end
+
+  defp maybe_get_cached_status(%{assigns: %{user: user}} = conn, params) do
+    idempotency_key =
+      case get_req_header(conn, "idempotency-key") do
+        [key] -> key
+        _ -> Ecto.UUID.generate()
+      end
+
+    Cachex.fetch(:idempotency_cache, idempotency_key, fn _ ->
+      case CommonAPI.post(user, params) do
+        {:ok, activity} -> activity
+        {:error, message} -> {:ignore, message}
+      end
+    end)
   end
 
   def delete_status(%{assigns: %{user: user}} = conn, %{"id" => id}) do
@@ -1239,12 +1251,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
             max_toot_chars: limit,
             mascot: "/images/pleroma-fox-tan-smol.png"
           },
-          poll_limits: %{
-            max_options: 10,
-            max_option_chars: 120,
-            min_expiration: 0,
-            max_expiration: 86_400 * 30
-          },
+          poll_limits: Config.get([:instance, :poll_limits]),
           rights: %{
             delete_others_notice: present?(user.info.is_moderator),
             admin: present?(user.info.is_admin)

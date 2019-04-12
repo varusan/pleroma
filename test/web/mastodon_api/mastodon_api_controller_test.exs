@@ -7,6 +7,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
   alias Ecto.Changeset
   alias Pleroma.Activity
+  alias Pleroma.Config
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
@@ -2990,6 +2991,84 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       assert hd(activity.data["replies"]["items"])["name"] == "nay"
       assert activity.data["replies"]["totalItems"] == 1
+    end
+
+    test "it respects limits" do
+      user = insert(:user)
+      limits = Config.get([:instance, :poll_limits])
+
+      conn =
+        build_conn()
+        |> assign(:user, user)
+        |> post("/api/v1/statuses", %{
+          "status" => "cofe",
+          "poll" => %{
+            "expires_in" => 86_400,
+            "multiple" => false,
+            "options" => [
+              "Really long option, ridiculously long. Who would ever create such long and boring option? It's so long I would probably need to repeat it. Nope, it's fine",
+              "nay"
+            ]
+          },
+          "sensitive" => "false"
+        })
+
+      %{"error" => error} = json_response(conn, 401)
+
+      assert error ==
+               "The number of option's characters exceed the maximum of #{
+                 limits[:max_option_chars]
+               }"
+
+      conn =
+        build_conn()
+        |> assign(:user, user)
+        |> post("/api/v1/statuses", %{
+          "status" => "cofe",
+          "poll" => %{
+            "expires_in" => 86_400,
+            "multiple" => false,
+            "options" => [
+              "one",
+              "two",
+              "three",
+              "four",
+              "five",
+              "six",
+              "seven",
+              "eight",
+              "nine",
+              "ten",
+              "eleven"
+            ]
+          },
+          "sensitive" => "false"
+        })
+
+      %{"error" => error} = json_response(conn, 401)
+
+      assert error == "The number of options exceed the maximum of #{limits[:max_options]}"
+
+      conn =
+        build_conn()
+        |> assign(:user, user)
+        |> post("/api/v1/statuses", %{
+          "status" => "cofe",
+          "poll" => %{
+            "expires_in" => 86_400 * 31,
+            "multiple" => false,
+            "options" => [
+              "yay",
+              "nay"
+            ]
+          },
+          "sensitive" => "false"
+        })
+
+      %{"error" => error} = json_response(conn, 401)
+
+      assert error ==
+               "`expires_in` must be in range of (#{limits[:min_expiration]}..limits[:max_expiration]) seconds"
     end
   end
 end

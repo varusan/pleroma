@@ -6,6 +6,7 @@ defmodule Pleroma.Question do
   use Ecto.Schema
 
   alias Pleroma.Activity
+  alias Pleroma.Config
   alias Pleroma.Repo
 
   import Ecto.Query
@@ -29,6 +30,29 @@ defmodule Pleroma.Question do
           )
       )
     )
+  end
+
+  def maybe_check_limits(false, _expires, _options), do: :ok
+
+  def maybe_check_limits(true, expires, options) do
+    limits = Config.get([:instance, :poll_limits])
+    expiration_range = limits[:min_expiration]..limits[:max_expiration]
+
+    cond do
+      length(options) > limits[:max_options] ->
+        {:error, "The number of options exceed the maximum of #{limits[:max_options]}"}
+
+      Enum.any?(options, &(String.length(&1) > limits[:max_option_chars])) ->
+        {:error,
+         "The number of option's characters exceed the maximum of #{limits[:max_option_chars]}"}
+
+      !Enum.member?(expiration_range, expires) ->
+        {:error,
+         "`expires_in` must be in range of (#{limits[:min_expiration]}..limits[:max_expiration]) seconds"}
+
+      true ->
+        :ok
+    end
   end
 
   defp add_reply(ap_id, choices, actor) when is_binary(ap_id) do

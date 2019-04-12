@@ -189,7 +189,14 @@ config :pleroma, :instance,
   welcome_user_nickname: nil,
   welcome_message: nil,
   max_report_comment_size: 1000,
-  safe_dm_mentions: false
+  safe_dm_mentions: false,
+  poll_limits: %{
+    max_options: 10,
+    max_option_chars: 120,
+    min_expiration: 0,
+    # 30 days
+    max_expiration: 86_400 * 30
+  }
 
 config :pleroma, :markup,
   # XXX - unfortunately, inline images must be enabled by default right now, because
