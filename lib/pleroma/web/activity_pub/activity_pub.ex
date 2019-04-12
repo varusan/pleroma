@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Instances
   alias Pleroma.Notification
   alias Pleroma.Object
+  alias Pleroma.Pagination
   alias Pleroma.Question
   alias Pleroma.Repo
   alias Pleroma.Upload
@@ -496,8 +497,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          :ok <- maybe_federate(activity) do
       Enum.each(User.all_superusers(), fn superuser ->
         superuser
-        |> Pleroma.AdminEmail.report(actor, account, statuses, content)
-        |> Pleroma.Mailer.deliver_async()
+        |> Pleroma.Emails.AdminEmail.report(actor, account, statuses, content)
+        |> Pleroma.Emails.Mailer.deliver_async()
       end)
 
       {:ok, activity}
@@ -548,7 +549,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
     q
     |> restrict_unlisted()
-    |> Repo.all()
+    |> Pagination.fetch_paginated(opts)
     |> Enum.reverse()
   end
 
@@ -691,25 +692,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     )
   end
 
-  defp restrict_limit(query, %{"limit" => limit}) do
-    from(activity in query, limit: ^limit)
-  end
-
-  defp restrict_limit(query, _), do: query
-
   defp restrict_local(query, %{"local_only" => true}) do
     from(activity in query, where: activity.local == true)
   end
 
   defp restrict_local(query, _), do: query
-
-  defp restrict_max(query, %{"max_id" => ""}), do: query
-
-  defp restrict_max(query, %{"max_id" => max_id}) do
-    from(activity in query, where: activity.id < ^max_id)
-  end
-
-  defp restrict_max(query, _), do: query
 
   defp restrict_actor(query, %{"actor_id" => actor_id}) do
     from(activity in query, where: activity.actor == ^actor_id)
@@ -831,12 +818,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def fetch_activities_query(recipients, opts \\ %{}) do
-    base_query =
-      from(
-        activity in Activity,
-        limit: 20,
-        order_by: [fragment("? desc nulls last", activity.id)]
-      )
+    base_query = from(activity in Activity)
 
     base_query
     |> maybe_preload_objects(opts)
@@ -846,8 +828,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_tag_all(opts)
     |> restrict_since(opts)
     |> restrict_local(opts)
-    |> restrict_limit(opts)
-    |> restrict_max(opts)
     |> restrict_actor(opts)
     |> restrict_type(opts)
     |> restrict_favorited_by(opts)
@@ -863,14 +843,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   def fetch_activities(recipients, opts \\ %{}) do
     fetch_activities_query(recipients, opts)
-    |> Repo.all()
+    |> Pagination.fetch_paginated(opts)
     |> Enum.reverse()
   end
 
   def fetch_activities_bounded(recipients_to, recipients_cc, opts \\ %{}) do
     fetch_activities_query([], opts)
     |> restrict_to_cc(recipients_to, recipients_cc)
-    |> Repo.all()
+    |> Pagination.fetch_paginated(opts)
     |> Enum.reverse()
   end
 
