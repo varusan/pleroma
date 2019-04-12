@@ -687,15 +687,19 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "type" => "Question",
       "to" => params.to |> Enum.uniq(),
       "actor" => params.actor.ap_id,
-      "oneOf" => params.one_of,
       "attributedTo" => params.object_id,
+      "endTime" => params.expires,
       "replies" => %{
         "type" => "Collection",
         "totalItems" => 0,
         "items" => []
       }
     }
+    |> Map.merge(maybe_multiple_answers(params.multiple, params.options))
   end
+
+  defp maybe_multiple_answers(true, choices), do: %{"anyOf" => choices}
+  defp maybe_multiple_answers(false, choices), do: %{"oneOf" => choices}
 
   @doc """
   Fetches the OrderedCollection/OrderedCollectionPage from `from`, limiting the amount of pages fetched after

@@ -1191,6 +1191,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
             max_toot_chars: limit,
             mascot: "/images/pleroma-fox-tan-smol.png"
           },
+          poll_limits: %{
+            max_options: 10,
+            max_option_chars: 120,
+            min_expiration: 0,
+            max_expiration: 86400 * 30
+          },
           rights: %{
             delete_others_notice: present?(user.info.is_moderator),
             admin: present?(user.info.is_admin)

@@ -207,7 +207,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def create(params, fake \\ false) do
-    Activity.get_by_ap_id(get_in(params, [:object, "inReplyTo"]))
+    Activity.get_by_id(get_in(params, [:object, "inReplyTo"]))
     |> Question.is_question()
     |> case do
       true -> create_answer(params)
@@ -241,30 +241,38 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  defp maybe_insert_question(%{poll_options: poll_options}, _activity)
-       when is_nil(poll_options) or poll_options == [],
+  defp maybe_insert_question(%{poll: poll}, _activity)
+       when is_nil(poll) or poll == %{},
        do: {:ok, :noop}
 
-  defp maybe_insert_question(%{to: to, actor: actor, poll_options: poll_options}, %{
-         data: %{"object" => %{"id" => object_id}}
-       }) do
+  defp maybe_insert_question(
+         %{
+           to: to,
+           actor: actor,
+           poll: %{"expires_in" => expires, "multiple" => multiple, "options" => options}
+         },
+         %{
+           data: %{"object" => %{"id" => object_id}}
+         }
+       ) do
     {:ok,
      question(%{
        to: to,
        actor: actor,
-       one_of: poll_options,
-       object_id: object_id
+       object_id: object_id,
+       expires: expires,
+       multiple: multiple,
+       options: options
      })}
   end
 
-  defp maybe_insert_question(_params, _activity),
-    do: {:ok, :noop}
+  defp maybe_insert_question(_params, _activity), do: {:ok, :noop}
 
   defp create_answer(%{
-         object: %{"inReplyTo" => in_reply_to, "name" => name},
+         object: %{"inReplyTo" => in_reply_to, "choices" => choices},
          actor: %{ap_id: ap_id}
        }) do
-    with {:ok, activity} <- Pleroma.Question.add_reply_by_ap_id(in_reply_to, name, ap_id) do
+    with {:ok, activity} <- Pleroma.Question.add_reply_by_id(in_reply_to, choices, ap_id) do
       {:ok, activity}
     end
   end

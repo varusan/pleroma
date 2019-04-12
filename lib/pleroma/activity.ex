@@ -97,6 +97,8 @@ defmodule Pleroma.Activity do
     )
   end
 
+  def get_by_id(nil), do: nil
+
   def get_by_id(id) do
     Repo.get(Activity, id)
   end

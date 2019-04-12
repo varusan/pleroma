@@ -60,10 +60,6 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     end)
   end
 
-  def maybe_parse_poll_options(options) do
-    Enum.reject(options, &(&1 == ""))
-  end
-
   def to_for_user_and_mentions(user, mentions, inReplyTo, "public") do
     mentioned_users = Enum.map(mentions, fn {_, %{ap_id: ap_id}} -> ap_id end)
 
@@ -239,11 +235,11 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   end
 
   def make_vote_data(user, %{
-        "option_name" => option_name,
-        "question_id" => question_id
+        "choices" => choices,
+        "id" => question_id
       }) do
     %{
-      object: %{"inReplyTo" => question_id, "name" => option_name},
+      object: %{"inReplyTo" => question_id, "choices" => choices},
       actor: %{ap_id: user.ap_id}
     }
   end

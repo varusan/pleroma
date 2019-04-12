@@ -149,7 +149,7 @@ defmodule Pleroma.Web.CommonAPI do
          context <- make_context(in_reply_to),
          cw <- data["spoiler_text"],
          full_payload <- String.trim(status <> (data["spoiler_text"] || "")),
-         poll_options <- maybe_parse_poll_options(data["poll_options"] || []),
+         poll <- data["poll"] || %{},
          length when length in 1..limit <- String.length(full_payload),
          object <-
            make_note_data(
@@ -179,7 +179,7 @@ defmodule Pleroma.Web.CommonAPI do
             actor: user,
             context: context,
             object: object,
-            poll_options: poll_options,
+            poll: poll,
             additional: %{"cc" => cc, "directMessage" => visibility == "direct"}
           },
           Pleroma.Web.ControllerHelper.truthy_param?(data["preview"]) || false
@@ -322,6 +322,6 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   def vote(user, params) do
-    ActivityPub.create(make_vote_data(user, params))
+    make_vote_data(user, params) |> ActivityPub.create()
   end
 end

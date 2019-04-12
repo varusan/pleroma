@@ -10,42 +10,51 @@ defmodule Pleroma.Question do
 
   import Ecto.Query
 
-  def add_reply_by_ap_id(ap_id, name, actor) do
-    with {:ok, _activity} <- add_reply(ap_id, name, actor),
-         {:ok, activity} <- increment_total(ap_id) do
+  def add_reply_by_id(id, choices, actor) do
+    with {:ok, _activity} <- add_reply(id, choices, actor),
+         {:ok, activity} <- increment_total(id, choices) do
       {:ok, activity}
     end
   end
 
-  def get_by_object_id(ap_id) do
+  def get_by_object_id(id) do
     Repo.one(
       from(activity in Activity,
         where:
           fragment(
             "(?)->>'attributedTo' = ? AND (?)->>'type' = 'Question'",
             activity.data,
-            ^ap_id,
+            ^id,
             activity.data
           )
       )
     )
   end
 
-  defp add_reply(ap_id, name, actor) when is_binary(ap_id) do
-    with question <- Activity.get_by_ap_id(ap_id),
-         true <- valid_option(question, name),
+  defp add_reply(id, choices, actor) when is_binary(id) do
+    with question <- Activity.get_by_id(id),
+         true <- valid_choice_indices(question, choices),
          false <- actor_already_voted(question, actor) do
-      add_reply(question, name, actor)
+      add_reply(question, choices, actor)
     else
       _ ->
-        {:noop, ap_id}
+        {:noop, id}
     end
   end
 
-  defp add_reply(%Activity{} = question, name, actor) do
-    from(
-      a in Activity,
-      where: fragment("(?)->>'id' = ?", a.data, ^to_string(question.data["id"]))
+  defp add_reply(question, choices, actor) when is_list(choices) do
+    choices
+    |> Enum.map(&String.to_integer/1)
+    |> Enum.map(fn choice ->
+      add_reply(question, choice_name_by_index(question, choice), actor)
+    end)
+
+    {:ok, question}
+  end
+
+  defp add_reply(%Activity{} = question, name, actor) when is_binary(name) do
+    from(activity in Activity,
+      where: activity.id == ^question.id
     )
     |> update([a],
       set: [
@@ -66,28 +75,48 @@ defmodule Pleroma.Question do
     end
   end
 
+  defp get_options(question) do
+    question.data["anyOf"] || question.data["oneOf"]
+  end
+
+  def choice_name_by_index(question, index) do
+    Enum.at(get_options(question), index)
+  end
+
   defp actor_already_voted(%{data: %{"replies" => %{"items" => []}}}, _actor), do: false
 
   defp actor_already_voted(%{data: %{"replies" => %{"items" => replies}}}, actor) do
     Enum.any?(replies, &(&1["attributedTo"] == actor))
   end
 
-  defp valid_option(%{data: %{"oneOf" => options}}, option) do
-    Enum.member?(options, option)
+  defp valid_choice_indices(%{data: %{"anyOf" => options}}, choices) do
+    valid_choice_indices(options, choices)
   end
 
-  defp increment_total(ap_id) do
-    from(
-      a in Activity,
-      where: fragment("(?)->>'id' = ?", a.data, ^to_string(ap_id))
+  defp valid_choice_indices(%{data: %{"oneOf" => options}}, choices) do
+    valid_choice_indices(options, choices)
+  end
+
+  defp valid_choice_indices(options, choices) do
+    choices
+    |> Enum.map(&String.to_integer/1)
+    |> Enum.all?(&(length(options) > &1))
+  end
+
+  defp increment_total(id, choices) do
+    count = length(choices)
+
+    from(activity in Activity,
+      where: activity.id == ^id
     )
     |> update([a],
       set: [
         data:
           fragment(
-            "jsonb_set(?, '{replies,totalItems}', ((?->'replies'->>'totalItems')::int + 1)::varchar::jsonb, true)",
+            "jsonb_set(?, '{replies,totalItems}', ((?->'replies'->>'totalItems')::int + ?)::varchar::jsonb, true)",
             a.data,
-            a.data
+            a.data,
+            ^count
           )
       ]
     )

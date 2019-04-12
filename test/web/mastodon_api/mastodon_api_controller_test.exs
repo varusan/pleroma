@@ -2644,14 +2644,92 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         |> assign(:user, user)
         |> post("/api/v1/statuses", %{
           "status" => "cofe",
-          "poll_options" => ["yay", "nay"],
+          "poll" => %{
+            "expires_in" => 86400,
+            "multiple" => false,
+            "options" => ["yay", "nay"]
+          },
           "sensitive" => "false"
         })
 
-      response = json_response(conn, 200)
+      %{"poll" => %{"id" => activity_id, "options" => options}} = json_response(conn, 200)
 
-      assert [%{"count" => 0, "name" => "yay"}, %{"count" => 0, "name" => "nay"}] --
-               response["poll"]["votes"] == []
+      asserted = [
+        %{"votes_count" => 0, "title" => "yay"},
+        %{"votes_count" => 0, "title" => "nay"}
+      ]
+
+      activity = Activity.get_by_id(activity_id)
+
+      assert asserted -- options
+      assert length(activity.data["oneOf"]) == 2
+    end
+
+    test "it inserts status with poll (multiple)" do
+      user = insert(:user)
+
+      conn =
+        build_conn()
+        |> assign(:user, user)
+        |> post("/api/v1/statuses", %{
+          "status" => "cofe",
+          "poll" => %{
+            "expires_in" => 86400,
+            "multiple" => true,
+            "options" => ["yay", "nay"]
+          },
+          "sensitive" => "false"
+        })
+
+      %{"poll" => %{"id" => activity_id, "options" => options}} = json_response(conn, 200)
+
+      asserted = [
+        %{"votes_count" => 0, "title" => "yay"},
+        %{"votes_count" => 0, "title" => "nay"}
+      ]
+
+      activity = Activity.get_by_id(activity_id)
+
+      assert asserted -- options
+      assert length(activity.data["anyOf"]) == 2
+    end
+
+    test "expired poll" do
+      user = insert(:user)
+
+      conn =
+        build_conn()
+        |> assign(:user, user)
+        |> post("/api/v1/statuses", %{
+          "status" => "cofe",
+          "poll" => %{
+            "expires_in" => 0,
+            "multiple" => true,
+            "options" => ["yay", "nay"]
+          },
+          "sensitive" => "false"
+        })
+
+      %{"poll" => %{"expired" => expired}} = json_response(conn, 200)
+
+      assert expired == true
+
+      conn =
+        build_conn()
+        |> assign(:user, user)
+        |> post("/api/v1/statuses", %{
+          "status" => "cofe",
+          "poll" => %{
+            "expires_in" => 86400,
+            "multiple" => true,
+            "options" => ["yay", "nay"]
+          },
+          "sensitive" => "false"
+        })
+
+      %{"poll" => %{"expired" => expired}} = json_response(conn, 200)
+
+      assert expired == false
     end
 
     test "it allows user to vote (own poll)" do
@@ -2662,7 +2740,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         |> assign(:user, user)
         |> post("/api/v1/statuses", %{
           "status" => "cofe",
-          "poll_options" => ["yay", "nay"],
+          "poll" => %{
+            "expires_in" => 86400,
+            "multiple" => true,
+            "options" => ["yay", "nay"]
+          },
           "sensitive" => "false"
         })
 
@@ -2670,14 +2752,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       build_conn()
       |> assign(:user, user)
-      |> patch("/api/v1/polls/vote", %{
-        "option_name" => "nay",
-        "question_id" => activity_id
-      })
+      |> post("/api/v1/polls/#{activity_id}/votes", %{"choices" => ["1"]})
 
-      activity = Activity.get_by_ap_id(activity_id)
+      activity = Activity.get_by_id(activity_id)
 
       assert hd(activity.data["replies"]["items"])["name"] == "nay"
+      assert activity.data["replies"]["totalItems"] == 1
     end
 
     test "it allows user to vote (other user's poll)" do
@@ -2689,7 +2769,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         |> assign(:user, user)
         |> post("/api/v1/statuses", %{
           "status" => "cofe",
-          "poll_options" => ["yay", "nay"],
+          "poll" => %{
+            "expires_in" => 86400,
+            "multiple" => false,
+            "options" => ["yay", "nay"]
+          },
           "sensitive" => "false"
         })
 
@@ -2697,17 +2781,15 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       build_conn()
       |> assign(:user, user2)
-      |> patch("/api/v1/polls/vote", %{
-        "option_name" => "yay",
-        "question_id" => activity_id
-      })
+      |> post("/api/v1/polls/#{activity_id}/votes", %{"choices" => ["0"]})
 
-      activity = Activity.get_by_ap_id(activity_id)
+      activity = Activity.get_by_id(activity_id)
 
       assert hd(activity.data["replies"]["items"])["name"] == "yay"
+      assert activity.data["replies"]["totalItems"] == 1
     end
 
-    test "it doesn't allow to vote for non-existent option" do
+    test "multiple choices" do
       user = insert(:user)
 
       conn =
@@ -2715,7 +2797,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         |> assign(:user, user)
         |> post("/api/v1/statuses", %{
           "status" => "cofe",
-          "poll_options" => ["yay", "nay"],
+          "poll" => %{
+            "expires_in" => 86400,
+            "multiple" => true,
+            "options" => ["yay", "nay"]
+          },
           "sensitive" => "false"
         })
 
@@ -2723,12 +2809,37 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       build_conn()
       |> assign(:user, user)
-      |> patch("/api/v1/polls/vote", %{
-        "option_name" => "wat",
-        "question_id" => activity_id
-      })
+      |> post("/api/v1/polls/#{activity_id}/votes", %{"choices" => ["0", "1"]})
 
-      activity = Activity.get_by_ap_id(activity_id)
+      activity = Activity.get_by_id(activity_id)
+
+      assert Enum.map(activity.data["replies"]["items"], & &1["name"]) -- ["yay", "nay"] == []
+      assert activity.data["replies"]["totalItems"] == 2
+    end
+
+    test "it doesn't allow to vote for an option, which has out of bound index" do
+      user = insert(:user)
+
+      conn =
+        build_conn()
+        |> assign(:user, user)
+        |> post("/api/v1/statuses", %{
+          "status" => "cofe",
+          "poll" => %{
+            "expires_in" => 86400,
+            "multiple" => false,
+            "options" => ["yay", "nay"]
+          },
+          "sensitive" => "false"
+        })
+
+      %{"poll" => %{"id" => activity_id}} = json_response(conn, 200)
+
+      build_conn()
+      |> assign(:user, user)
+      |> post("/api/v1/polls/#{activity_id}/votes", %{"choices" => ["3"]})
+
+      activity = Activity.get_by_id(activity_id)
 
       assert activity.data["replies"]["items"] == []
     end
@@ -2741,7 +2852,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         |> assign(:user, user)
         |> post("/api/v1/statuses", %{
           "status" => "cofe",
-          "poll_options" => ["yay", "nay"],
+          "poll" => %{
+            "expires_in" => 86400,
+            "multiple" => true,
+            "options" => ["yay", "nay"]
+          },
           "sensitive" => "false"
         })
 
@@ -2749,22 +2864,16 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       build_conn()
       |> assign(:user, user)
-      |> patch("/api/v1/polls/vote", %{
-        "option_name" => "nay",
-        "question_id" => activity_id
-      })
+      |> post("/api/v1/polls/#{activity_id}/votes", %{"choices" => ["1"]})
 
       build_conn()
       |> assign(:user, user)
-      |> patch("/api/v1/polls/vote", %{
-        "option_name" => "yay",
-        "question_id" => activity_id
-      })
+      |> post("/api/v1/polls/#{activity_id}/votes", %{"choices" => ["0"]})
 
-      activity = Activity.get_by_ap_id(activity_id)
+      activity = Activity.get_by_id(activity_id)
 
       assert hd(activity.data["replies"]["items"])["name"] == "nay"
-      assert length(activity.data["replies"]["items"]) == 1
+      assert activity.data["replies"]["totalItems"] == 1
     end
   end
 end
