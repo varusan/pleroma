@@ -724,12 +724,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
-  def handle_incoming(
-        %{
-          "type" => "Question",
-          "actor" => _actor
-        } = data
-      ) do
+  def handle_incoming(%{"type" => "Question", "actor" => _actor} = data) do
     with actor <- get_actor(data),
          %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
          {:ok, activity} <-

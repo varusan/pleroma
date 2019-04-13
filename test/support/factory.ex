@@ -296,7 +296,7 @@ defmodule Pleroma.Factory do
     user = insert(:user)
     note = insert(:note)
 
-    data = %{
+    object = %{
       "id" => attrs[:id] || Pleroma.Web.ActivityPub.Utils.generate_question_id(),
       "type" => "Question",
       "attributedTo" => note.data["id"],
@@ -305,14 +305,15 @@ defmodule Pleroma.Factory do
         "type" => "Collection",
         "totalItems" => 0,
         "items" => []
-      },
-      # TODO
-      "closed" => ""
+      }
     }
 
     %Pleroma.Activity{
       actor: user.ap_id,
-      data: data
+      data: %{
+        id: Pleroma.Web.ActivityPub.Utils.generate_activity_id(),
+        object: object
+      }
     }
   end
 end

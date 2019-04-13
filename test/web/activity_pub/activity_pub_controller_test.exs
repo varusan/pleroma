@@ -479,7 +479,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         "to" => [question_activity.actor],
         "object" => %{
           "options" => ["1"],
-          "inReplyTo" => question_activity.data["id"]
+          "inReplyTo" => question_activity.data[:id]
         }
       }
 
@@ -488,10 +488,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       |> put_req_header("content-type", "application/activity+json")
       |> post("/users/#{user.nickname}/outbox", data)
 
-      question = Activity.get_by_ap_id(question_activity.data["id"])
-      reply = hd(question.data["replies"]["items"])
+      question = Activity.get_by_ap_id(question_activity.data[:id])
+      reply = hd(question.data["object"]["replies"]["items"])
 
-      assert question.data["replies"]["totalItems"] == 1
+      assert question.data["object"]["replies"]["totalItems"] == 1
       assert reply["name"] == "Nay"
       assert reply["attributedTo"] == user.ap_id
     end

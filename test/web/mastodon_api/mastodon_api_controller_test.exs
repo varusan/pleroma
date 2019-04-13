@@ -2769,17 +2769,15 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
           "sensitive" => "false"
         })
 
-      %{"poll" => %{"id" => activity_id, "options" => options}} = json_response(conn, 200)
+      %{"poll" => %{"options" => options}} = json_response(conn, 200)
 
       asserted = [
         %{"votes_count" => 0, "title" => "yay"},
         %{"votes_count" => 0, "title" => "nay"}
       ]
 
-      activity = Activity.get_by_id(activity_id)
-
       assert asserted -- options
-      assert length(activity.data["oneOf"]) == 2
+      assert length(options) == 2
     end
 
     test "it inserts status with poll (multiple)" do
@@ -2798,17 +2796,15 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
           "sensitive" => "false"
         })
 
-      %{"poll" => %{"id" => activity_id, "options" => options}} = json_response(conn, 200)
+      %{"poll" => %{"options" => options}} = json_response(conn, 200)
 
       asserted = [
         %{"votes_count" => 0, "title" => "yay"},
         %{"votes_count" => 0, "title" => "nay"}
       ]
 
-      activity = Activity.get_by_id(activity_id)
-
       assert asserted -- options
-      assert length(activity.data["anyOf"]) == 2
+      assert length(options) == 2
     end
 
     test "expired poll" do
@@ -2867,14 +2863,15 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       %{"poll" => %{"id" => activity_id}} = json_response(conn, 200)
 
-      build_conn()
-      |> assign(:user, user)
-      |> post("/api/v1/polls/#{activity_id}/votes", %{"choices" => ["1"]})
+      conn =
+        build_conn()
+        |> assign(:user, user)
+        |> post("/api/v1/polls/#{activity_id}/votes", %{"choices" => ["1"]})
 
-      activity = Activity.get_by_id(activity_id)
+      %{"options" => options, "votes_count" => votes_count} = json_response(conn, 200)
 
-      assert hd(activity.data["replies"]["items"])["name"] == "nay"
-      assert activity.data["replies"]["totalItems"] == 1
+      assert Enum.find(options, &(&1["title"] == "nay"))["votes_count"] == 1
+      assert votes_count == 1
     end
 
     test "it allows user to vote (other user's poll)" do
@@ -2888,7 +2885,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
           "status" => "cofe",
           "poll" => %{
             "expires_in" => "86400",
-            "multiple" => false,
+            "multiple" => true,
             "options" => ["yay", "nay"]
           },
           "sensitive" => "false"
@@ -2896,14 +2893,15 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       %{"poll" => %{"id" => activity_id}} = json_response(conn, 200)
 
-      build_conn()
-      |> assign(:user, user2)
-      |> post("/api/v1/polls/#{activity_id}/votes", %{"choices" => ["0"]})
+      conn =
+        build_conn()
+        |> assign(:user, user2)
+        |> post("/api/v1/polls/#{activity_id}/votes", %{"choices" => ["1"]})
 
-      activity = Activity.get_by_id(activity_id)
+      %{"options" => options, "votes_count" => votes_count} = json_response(conn, 200)
 
-      assert hd(activity.data["replies"]["items"])["name"] == "yay"
-      assert activity.data["replies"]["totalItems"] == 1
+      assert Enum.find(options, &(&1["title"] == "nay"))["votes_count"] == 1
+      assert votes_count == 1
     end
 
     test "multiple choices" do
@@ -2924,14 +2922,44 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       %{"poll" => %{"id" => activity_id}} = json_response(conn, 200)
 
-      build_conn()
-      |> assign(:user, user)
-      |> post("/api/v1/polls/#{activity_id}/votes", %{"choices" => ["0", "1"]})
+      conn =
+        build_conn()
+        |> assign(:user, user)
+        |> post("/api/v1/polls/#{activity_id}/votes", %{"choices" => ["0", "1"]})
 
-      activity = Activity.get_by_id(activity_id)
+      %{"options" => options, "votes_count" => votes_count} = json_response(conn, 200)
 
-      assert Enum.map(activity.data["replies"]["items"], & &1["name"]) -- ["yay", "nay"] == []
-      assert activity.data["replies"]["totalItems"] == 2
+      assert Enum.find(options, &(&1["title"] == "yay"))["votes_count"] == 1
+      assert Enum.find(options, &(&1["title"] == "nay"))["votes_count"] == 1
+      assert votes_count == 2
+    end
+
+    test "it doesn't allow multiple votes for a non-multiple poll" do
+      user = insert(:user)
+
+      conn =
+        build_conn()
+        |> assign(:user, user)
+        |> post("/api/v1/statuses", %{
+          "status" => "cofe",
+          "poll" => %{
+            "expires_in" => "86400",
+            "multiple" => false,
+            "options" => ["yay", "nay"]
+          },
+          "sensitive" => "false"
+        })
+
+      %{"poll" => %{"id" => activity_id}} = json_response(conn, 200)
+
+      conn =
+        build_conn()
+        |> assign(:user, user)
+        |> post("/api/v1/polls/#{activity_id}/votes", %{"choices" => ["0", "1"]})
+
+      %{"error" => error} = json_response(conn, 401)
+
+      assert error == "Failed to vote"
     end
 
     test "it doesn't allow to vote for an option, which has out of bound index" do
@@ -2952,13 +2980,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       %{"poll" => %{"id" => activity_id}} = json_response(conn, 200)
 
-      build_conn()
-      |> assign(:user, user)
-      |> post("/api/v1/polls/#{activity_id}/votes", %{"choices" => ["3"]})
+      conn =
+        build_conn()
+        |> assign(:user, user)
+        |> post("/api/v1/polls/#{activity_id}/votes", %{"choices" => ["3"]})
 
-      activity = Activity.get_by_id(activity_id)
+      %{"error" => error} = json_response(conn, 401)
 
-      assert activity.data["replies"]["items"] == []
+      assert error == "Failed to vote"
     end
 
     test "it doesn't allow user to vote twice" do
@@ -2989,8 +3018,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       activity = Activity.get_by_id(activity_id)
 
-      assert hd(activity.data["replies"]["items"])["name"] == "nay"
-      assert activity.data["replies"]["totalItems"] == 1
+      assert hd(activity.data["object"]["replies"]["items"])["name"] == "nay"
+      assert activity.data["object"]["replies"]["totalItems"] == 1
     end
 
     test "it respects limits" do

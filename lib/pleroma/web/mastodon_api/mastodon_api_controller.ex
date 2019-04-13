@@ -465,6 +465,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
           |> put_status(401)
           |> json(%{error: message})
 
+        {:error, message} ->
+          conn
+          |> put_status(401)
+          |> json(%{error: message})
+
         {_, activity} ->
           conn
           |> put_view(StatusView)
@@ -1391,7 +1396,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       _ ->
         conn
         |> put_resp_content_type("application/json")
-        |> send_resp(401, "Failed to vote")
+        |> send_resp(401, Jason.encode!(%{"error" => "Failed to vote"}))
     end
   end
 

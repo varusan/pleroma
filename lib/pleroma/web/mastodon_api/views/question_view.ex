@@ -20,14 +20,16 @@ defmodule Pleroma.Web.MastodonAPI.QuestionView do
         %{
           activity: %{
             id: id,
-            data:
-              %{
-                "replies" => %{
-                  "items" => replies,
-                  "totalItems" => total_votes
-                },
-                "endTime" => expires_in
-              } = data
+            data: %{
+              "object" =>
+                %{
+                  "replies" => %{
+                    "items" => replies,
+                    "totalItems" => total_votes
+                  },
+                  "endTime" => expires_in
+                } = object
+            }
           },
           user: %User{} = user
         }
@@ -35,12 +37,12 @@ defmodule Pleroma.Web.MastodonAPI.QuestionView do
     do_render("show.json", %{
       id: id,
       expires_in: expires_in,
-      multiple: Map.has_key?(data, "anyOf"),
-      poll_options: data["anyOf"] || data["oneOf"],
+      multiple: Map.has_key?(object, "anyOf"),
+      poll_options: object["anyOf"] || object["oneOf"],
       replies: replies,
       total_votes: total_votes,
       user_id: user.ap_id,
-      published: data["published"]
+      published: object["published"]
     })
   end
 
