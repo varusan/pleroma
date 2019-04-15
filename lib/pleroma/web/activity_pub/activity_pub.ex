@@ -144,7 +144,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       end)
 
       Notification.create_notifications(activity)
-      stream_out(activity)
+      maybe_stream_out(activity)
       {:ok, activity}
     else
       %Activity{} = activity ->
@@ -167,42 +167,58 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def stream_out(activity) do
+  def maybe_stream_out(%{data: %{"type" => type}})
+      when type not in ["Announce", "Delete", "Create"],
+      do: :noop
+
+  def maybe_stream_out(%{data: %{"type" => type}} = activity)
+      when type in ["Announce", "Delete"] do
+    stream_out(activity)
+  end
+
+  def maybe_stream_out(%{data: %{"type" => type} = data} = activity) when type == "Create" do
+    case get_in(data, ["object", "type"]) do
+      "Question" -> :noop
+      _ -> stream_out(activity)
+    end
+  end
+
+  def maybe_stream_out(_), do: :noop
+
+  defp stream_out(activity) do
     public = "https://www.w3.org/ns/activitystreams#Public"
 
-    if activity.data["type"] in ["Create", "Announce", "Delete"] do
-      Pleroma.Web.Streamer.stream("user", activity)
-      Pleroma.Web.Streamer.stream("list", activity)
+    Pleroma.Web.Streamer.stream("user", activity)
+    Pleroma.Web.Streamer.stream("list", activity)
 
-      if Enum.member?(activity.data["to"], public) do
-        Pleroma.Web.Streamer.stream("public", activity)
+    if Enum.member?(activity.data["to"], public) do
+      Pleroma.Web.Streamer.stream("public", activity)
 
-        if activity.local do
-          Pleroma.Web.Streamer.stream("public:local", activity)
-        end
+      if activity.local do
+        Pleroma.Web.Streamer.stream("public:local", activity)
+      end
 
-        if activity.data["type"] in ["Create"] do
-          activity.data["object"]
-          |> Map.get("tag", [])
-          |> Enum.filter(fn tag -> is_bitstring(tag) end)
-          |> Enum.each(fn tag -> Pleroma.Web.Streamer.stream("hashtag:" <> tag, activity) end)
+      if activity.data["type"] in ["Create"] do
+        activity.data["object"]
+        |> Map.get("tag", [])
+        |> Enum.filter(fn tag -> is_bitstring(tag) end)
+        |> Enum.each(fn tag -> Pleroma.Web.Streamer.stream("hashtag:" <> tag, activity) end)
 
-          if activity.data["object"]["attachment"] != [] do
-            Pleroma.Web.Streamer.stream("public:media", activity)
+        if activity.data["object"]["attachment"] != [] do
+          Pleroma.Web.Streamer.stream("public:media", activity)
 
-            if activity.local do
-              Pleroma.Web.Streamer.stream("public:local:media", activity)
-            end
+          if activity.local do
+            Pleroma.Web.Streamer.stream("public:local:media", activity)
           end
         end
-      else
-        if !Enum.member?(activity.data["cc"] || [], public) &&
-             !Enum.member?(
-               activity.data["to"],
-               User.get_by_ap_id(activity.data["actor"]).follower_address
-             ),
-           do: Pleroma.Web.Streamer.stream("direct", activity)
       end
+    else
+      if !Enum.member?(activity.data["cc"] || [], public) &&
+           !Enum.member?(
+             activity.data["to"],
+             User.get_by_ap_id(activity.data["actor"]).follower_address
+           ),
+         do: Pleroma.Web.Streamer.stream("direct", activity)
     end
   end
 
