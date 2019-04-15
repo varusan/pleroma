@@ -705,8 +705,18 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     }
   end
 
-  defp maybe_multiple_answers(true, choices), do: %{"anyOf" => choices}
-  defp maybe_multiple_answers(false, choices), do: %{"oneOf" => choices}
+  defp make_choices_data(choices) do
+    choices
+    |> Enum.map(
+      &%{
+        "type" => "Note",
+        "name" => &1
+      }
+    )
+  end
+
+  defp maybe_multiple_answers(true, choices), do: %{"anyOf" => make_choices_data(choices)}
+  defp maybe_multiple_answers(false, choices), do: %{"oneOf" => make_choices_data(choices)}
 
   @doc """
   Fetches the OrderedCollection/OrderedCollectionPage from `from`, limiting the amount of pages fetched after

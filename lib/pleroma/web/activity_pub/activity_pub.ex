@@ -219,7 +219,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          object: %{"inReplyTo" => in_reply_to, "options" => choices},
          actor: %{ap_id: ap_id}
        }) do
-    with {:ok, activity} <- Pleroma.Question.add_reply_by_ap_id(in_reply_to, choices, ap_id) do
+    with {:ok, activity} <- Question.add_reply_by_ap_id(in_reply_to, choices, ap_id) do
       {:ok, activity}
     end
   end

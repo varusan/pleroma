@@ -59,6 +59,10 @@ defmodule Pleroma.Question do
     end
   end
 
+  def options_to_array(options) do
+    options |> Enum.map(& &1["name"])
+  end
+
   defp add_reply(ap_id, choices, actor) when is_binary(ap_id) do
     with question <- Activity.get_by_ap_id(ap_id),
          true <- maybe_ensure_multipe(question, choices),
@@ -93,7 +97,7 @@ defmodule Pleroma.Question do
             "jsonb_set(?, '{object,replies,items}', (?->'object'->'replies'->'items') || ?, true)",
             a.data,
             a.data,
-            ^%{"name" => name, "attributedTo" => actor}
+            ^%{"type" => "Note", "name" => name, "attributedTo" => actor}
           )
       ]
     )
@@ -105,12 +109,10 @@ defmodule Pleroma.Question do
     end
   end
 
-  defp get_options(question) do
-    question.data["object"]["anyOf"] || question.data["object"]["oneOf"]
-  end
-
   def choice_name_by_index(question, index) do
-    Enum.at(get_options(question), index)
+    (question.data["object"]["anyOf"] || question.data["object"]["oneOf"])
+    |> options_to_array()
+    |> Enum.at(index)
   end
 
   defp maybe_ensure_multipe(_question, choices) when length(choices) == 1, do: true

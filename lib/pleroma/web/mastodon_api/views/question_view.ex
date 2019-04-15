@@ -6,6 +6,7 @@ defmodule Pleroma.Web.MastodonAPI.QuestionView do
   use Pleroma.Web, :view
 
   alias Pleroma.Activity
+  alias Pleroma.Question
   alias Pleroma.User
 
   def render("show.json", %{question_id: question_id, user: %User{} = user})
@@ -38,7 +39,7 @@ defmodule Pleroma.Web.MastodonAPI.QuestionView do
       id: id,
       expires_in: expires_in,
       multiple: Map.has_key?(object, "anyOf"),
-      poll_options: object["anyOf"] || object["oneOf"],
+      poll_options: Question.options_to_array(object["anyOf"] || object["oneOf"]),
       replies: replies,
       total_votes: total_votes,
       user_id: user.ap_id,
