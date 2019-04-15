@@ -816,6 +816,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_muted_reblogs(query, _), do: query
 
+  defp restrict_questions(query, _) do
+    from(
+      activity in query,
+      where:
+        fragment(
+          "((?)#>>'{object,type}' != 'Question' or (?)#>>'{object,type}' is null)",
+          activity.data,
+          activity.data
+        )
+    )
+  end
+
   defp maybe_preload_objects(query, %{"skip_preload" => true}), do: query
 
   defp maybe_preload_objects(query, _) do
@@ -845,6 +857,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_reblogs(opts)
     |> restrict_pinned(opts)
     |> restrict_muted_reblogs(opts)
+    |> restrict_questions(opts)
   end
 
   def fetch_activities(recipients, opts \\ %{}) do
