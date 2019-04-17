@@ -17,7 +17,7 @@ To install them, run the following command (with doas or as root):
 Pleroma requires a reverse proxy, OpenBSD has relayd in base (and is used in this guide) and packages/ports are available for nginx (www/nginx) and apache (www/apache-httpd). Independently of the reverse proxy, [acme-client(1)](https://man.openbsd.org/acme-client) can be used to get a certificate from Let's Encrypt.
 
 #### Creating the pleroma user
-Pleroma will be run by a dedicated user, \_pleroma. Before creating it, insert the following lines in login.conf:
+Pleroma will be run by a dedicated user, `pleroma`. Before creating it, insert the following lines in login.conf:
 ```
 pleroma:\
 	:datasize-max=1536M:\
@@ -26,13 +26,13 @@ pleroma:\
 ```
 This creates a "pleroma" login class and sets higher values than default for datasize and openfiles (see [login.conf(5)](https://man.openbsd.org/login.conf)), this is required to avoid having pleroma crash some time after starting.
 
-Create the \_pleroma user, assign it the pleroma login class and create its home directory (/home/\_pleroma/): `useradd -m -L pleroma _pleroma`
+Create the `pleroma` user, assign it the pleroma login class and create its home directory (`/home/pleroma/`): `useradd -m -L pleroma pleroma`
 
 #### Clone pleroma's directory
-Enter a shell as the \_pleroma user. As root, run `su _pleroma -;cd`. Then clone the repository with `git clone https://git.pleroma.social/pleroma/pleroma.git`. Pleroma is now installed in /home/\_pleroma/pleroma/, it will be configured and started at the end of this guide.
+Enter a shell as the `pleroma` user. As root, run `su pleroma -;cd`. Then clone the repository with `git clone https://git.pleroma.social/pleroma/pleroma.git`. Pleroma is now installed in `/home/pleroma/pleroma/`, it will be configured and started at the end of this guide.
 
 #### Postgresql
-Start a shell as the \_postgresql user (as root run `su _postgresql -` then run the `initdb` command to initialize postgresql:  
+Start a shell as the `_postgresql` user (as root run `su _postgresql -` then run the `initdb` command to initialize postgresql:  
 If you wish to not use the default location for postgresql's data (/var/postgresql/data), add the following switch at the end of the command: `-D <path>` and modify the `datadir` variable in the /etc/rc.d/postgresql script.
 
 When this is done, enable postgresql so that it starts on boot and start it. As root, run:
@@ -206,17 +206,9 @@ Replace *\<network interface\>* by your server's network interface name (which y
 
 Check pf's configuration by running `pfctl -nf /etc/pf.conf`, load it with `pfctl -f /etc/pf.conf` and enable pf at boot with `rcctl enable pf`.
 
-#### Configure and start pleroma
-Enter a shell as \_pleroma (as root `su _pleroma -`) and enter pleroma's installation directory (`cd ~/pleroma/`).  
-Then follow the main installation guide:
-  * run `mix deps.get`
-  * run `mix pleroma.instance gen` and enter your instance's information when asked
-  * copy config/generated\_config.exs to config/prod.secret.exs. The default values should be sufficient but you should edit it and check that everything seems OK.
-  * exit your current shell back to a root one and run `psql -U postgres -f /home/_pleroma/config/setup_db.psql` to setup the database.
-  * return to a \_pleroma shell into pleroma's installation directory (`su _pleroma -;cd ~/pleroma`) and run `MIX_ENV=prod mix ecto.migrate`
-
-As \_pleroma in /home/\_pleroma/pleroma, you can now run `LC_ALL=en_US.UTF-8 MIX_ENV=prod mix phx.server` to start your instance.  
-In another SSH session/tmux window, check that it is working properly by running `ftp -MVo - http://127.0.0.1:4000/api/v1/instance`, you should get json output. Double-check that *uri*'s value is your instance's domain name.
-
 ##### Starting pleroma at boot
 An rc script to automatically start pleroma at boot hasn't been written yet, it can be run in a tmux session (tmux is in base).
+FIXME: AFAIK it has been done.
+
+### Install and Configure Pleroma
+Log into to pleroma user, with `su -l pleroma -s $SHELL`. And follow [installation/generic_pleroma_en.md](Generic Pleroma Installation).
