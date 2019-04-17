@@ -6,12 +6,14 @@ This guide is a step-by-step installation guide for Alpine Linux. It also assume
 ### Required packages
 
 * `postgresql`
+* `postgresql-contrib`
 * `elixir`
 * `erlang`
 * `erlang-parsetools`
 * `erlang-xmerl`
+* `erlang-eldap`: *optionnal*, used if you want LDAP
 * `git`
-* Development Tools
+* `build-base`
 
 #### Optional packages used in this guide
 
@@ -63,7 +65,7 @@ sudo apk add postgresql postgresql-contrib
 * Initialize database:
 
 ```shell
-sudo /etc/init.d/postgresql start
+sudo service postgresql start
 ```
 
 * Enable and start postgresql server:
