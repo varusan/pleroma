@@ -39,11 +39,7 @@ nginx=YES
 pgsql=YES
 ```
 
-## Configuring postgres
-
-First, run `# /etc/rc.d/pgsql start`. Then, `$ sudo -Hu pgsql -g pgsql createdb`.
-
-## Configuring Pleroma
+## Configuring the system
 
 Create a user for Pleroma:
 
@@ -51,45 +47,20 @@ Create a user for Pleroma:
 # groupadd pleroma
 # useradd -d /home/pleroma -m -g pleroma -s /usr/pkg/bin/mksh pleroma
 # echo 'export LC_ALL="en_GB.UTF-8"' >> /home/pleroma/.profile
-# su -l pleroma -c $SHELL
 ```
 
-Clone the repository:
+Also make sure your time is in sync, or other instances will receive your posts with
+incorrect timestamps. You should have ntpd running.
 
-```
-$ cd /home/pleroma
-$ git clone https://git.pleroma.social/pleroma/pleroma.git
-```
+## Configuring postgres
 
-Configure Pleroma. Note that you need a domain name at this point:
-
-```
-$ cd /home/pleroma/pleroma
-$ mix deps.get
-$ mix pleroma.instance gen # You will be asked a few questions here.
-```
-
-Since Postgres is configured, we can now initialize the database. There should
-now be a file in `config/setup_db.psql` that makes this easier. Edit it, and
-*change the password* to a password of your choice. Make sure it is secure, since
-it'll be protecting your database. Now initialize the database:
-
-```
-$ sudo -Hu pgsql -g pgsql psql -f config/setup_db.psql
-```
+First, run `# /etc/rc.d/pgsql start`. Then, `$ sudo -Hu pgsql -g pgsql createdb`.
 
 Postgres allows connections from all users without a password by default. To
 fix this, edit `/usr/pkg/pgsql/data/pg_hba.conf`. Change every `trust` to
 `password`.
 
 Once this is done, restart Postgres with `# /etc/rc.d/pgsql restart`.
-
-Run the database migrations.
-You will need to do this whenever you update with `git pull`:
-
-```
-$ MIX_ENV=prod mix ecto.migrate
-```
 
 ## Configuring nginx
 
@@ -182,16 +153,11 @@ pleroma_home="/home/pleroma"
 pleroma_user="pleroma"
 ```
 
-Run `# /etc/rc.d/pleroma start` to start Pleroma.
-
 ## Conclusion
 
 Restart nginx with `# /etc/rc.d/nginx restart` and you should be up and running.
 
 If you need further help, contact niaa on freenode.
-
-Make sure your time is in sync, or other instances will receive your posts with
-incorrect timestamps. You should have ntpd running.
 
 ## Instances running NetBSD
 
