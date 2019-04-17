@@ -29,6 +29,14 @@ sudo pacman -Syu
 sudo pacman -S git base-devel elixir
 ```
 
+* Add a new system user for the Pleroma service:
+
+```shell
+sudo useradd -r -s /bin/false -m -d /var/lib/pleroma -U pleroma
+```
+
+**Note**: To execute a single command as the Pleroma system user, use `sudo -Hu pleroma command`. You can also switch to a shell by using `sudo -Hu pleroma $SHELL`. If you don’t have and want `sudo` on your system, you can use `su` as root user (UID 0) for a single command by using `su -l pleroma -s $SHELL -c 'command'` and `su -l pleroma -s $SHELL` for starting a shell.
+
 ### Install PostgreSQL
 
 [Arch Wiki article](https://wiki.archlinux.org/index.php/PostgreSQL)
@@ -50,69 +58,6 @@ sudo -iu postgres initdb -D /var/lib/postgres/data
 ```shell
 sudo systemctl enable --now postgresql.service
 ```
-
-### Install PleromaBE
-
-* Add a new system user for the Pleroma service:
-
-```shell
-sudo useradd -r -s /bin/false -m -d /var/lib/pleroma -U pleroma
-```
-
-**Note**: To execute a single command as the Pleroma system user, use `sudo -Hu pleroma command`. You can also switch to a shell by using `sudo -Hu pleroma $SHELL`. If you don’t have and want `sudo` on your system, you can use `su` as root user (UID 0) for a single command by using `su -l pleroma -s $SHELL -c 'command'` and `su -l pleroma -s $SHELL` for starting a shell.
-
-* Git clone the PleromaBE repository and make the Pleroma user the owner of the directory:
-
-```shell
-sudo mkdir -p /opt/pleroma
-sudo chown -R pleroma:pleroma /opt/pleroma
-sudo -Hu pleroma git clone https://git.pleroma.social/pleroma/pleroma /opt/pleroma
-```
-
-* Change to the new directory:
-
-```shell
-cd /opt/pleroma
-```
-
-* Install the dependencies for Pleroma and answer with `yes` if it asks you to install `Hex`:
-
-```shell
-sudo -Hu pleroma mix deps.get
-```
-
-* Generate the configuration: `sudo -Hu pleroma mix pleroma.instance gen`
-  * Answer with `yes` if it asks you to install `rebar3`.
-  * This may take some time, because parts of pleroma get compiled first.
-  * After that it will ask you a few questions about your instance and generates a configuration file in `config/generated_config.exs`.
-
-* Check the configuration and if all looks right, rename it, so Pleroma will load it (`prod.secret.exs` for productive instance, `dev.secret.exs` for development instances):
-
-```shell
-mv config/{generated_config.exs,prod.secret.exs}
-```
-
-* The previous command creates also the file `config/setup_db.psql`, with which you can create the database:
-
-```shell
-sudo -Hu postgres psql -f config/setup_db.psql
-```
-
-* Now run the database migration:
-
-```shell
-sudo -Hu pleroma MIX_ENV=prod mix ecto.migrate
-```
-
-* Now you can start Pleroma already
-
-```shell
-sudo -Hu pleroma MIX_ENV=prod mix phx.server
-```
-
-### Finalize installation
-
-If you want to open your newly installed instance to the world, you should run nginx or some other webserver/proxy in front of Pleroma and you should consider to create a systemd service file for Pleroma.
 
 #### Nginx
 
@@ -190,24 +135,5 @@ sudo cp /opt/pleroma/installation/pleroma.service /etc/systemd/system/pleroma.se
 sudo systemctl enable --now pleroma.service
 ```
 
-#### Create your first user
-
-If your instance is up and running, you can create your first user with administrative rights with the following task:
-
-```shell
-sudo -Hu pleroma MIX_ENV=prod mix pleroma.user new <username> <your@emailaddress> --admin
-```
-
-#### Further reading
-
-* [Admin tasks](Admin tasks)
-* [Backup your instance](Backup-your-instance)
-* [Configuration tips](General tips for customizing pleroma fe)
-* [Hardening your instance](Hardening-your-instance)
-* [How to activate mediaproxy](How-to-activate-mediaproxy)
-* [Small Pleroma-FE customizations](Small customizations)
-* [Updating your instance](Updating-your-instance)
-
-## Questions
-
-Questions about the installation or didn’t it work as it should be, ask in [#pleroma:matrix.org](https://matrix.heldscal.la/#/room/#freenode_#pleroma:matrix.org) or IRC Channel **#pleroma** on **Freenode**.
+### Install and Configure Pleroma
+Log into to pleroma user, with `sudo -Hu pleroma $SHELL` or `su -l pleroma -s $SHELL` if you do not have `sudo`. And follow [installation/generic_pleroma_en.md](Generic Pleroma Installation).
