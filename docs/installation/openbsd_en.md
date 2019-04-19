@@ -1,22 +1,24 @@
 # Installing on OpenBSD
-This guide describes the installation and configuration of pleroma (and the required software to run it) on a single OpenBSD 6.4 server.
-For any additional information regarding commands and configuration files mentioned here, check the man pages [online](https://man.openbsd.org/) or directly on your server with the man command.
+## Installation
 
-#### Required software
+This guide is a step-by-step installation guide for OpenBSD.
+Commands starting with `#` should be launched as root, with `$` they should be launched as the `pleroma` user, with `%` they can be launched with any user on the machine, in case they need a specific user they’ll be prefixed with `username $`. It is recommended to keep the session until it changes of user or tells you to exit. See [[unix session management]] if you do not know how to do it.
+
+### Required packages
 The following packages need to be installed:
-  * elixir
-  * gmake
-  * ImageMagick
-  * git
-  * postgresql-server
-  * postgresql-contrib
+* `elixir`
+* `gmake`
+* `ImageMagick`
+* `git`
+* `postgresql-server`
+* `postgresql-contrib`
 
 To install them, run the following command (with doas or as root):  
 `pkg_add elixir gmake ImageMagick git postgresql-server postgresql-contrib`
 
 Pleroma requires a reverse proxy, OpenBSD has relayd in base (and is used in this guide) and packages/ports are available for nginx (www/nginx) and apache (www/apache-httpd). Independently of the reverse proxy, [acme-client(1)](https://man.openbsd.org/acme-client) can be used to get a certificate from Let's Encrypt.
 
-#### Creating the pleroma user
+### Prepare the system
 Pleroma will be run by a dedicated user, `pleroma`. Before creating it, insert the following lines in login.conf:
 ```
 pleroma:\
@@ -28,7 +30,6 @@ This creates a "pleroma" login class and sets higher values than default for dat
 
 Create the `pleroma` user, assign it the pleroma login class and create its home directory (`/home/pleroma/`): `useradd -m -L pleroma pleroma`
 
-#### Clone pleroma's directory
 Enter a shell as the `pleroma` user. As root, run `su pleroma -;cd`. Then clone the repository with `git clone https://git.pleroma.social/pleroma/pleroma.git`. Pleroma is now installed in `/home/pleroma/pleroma/`, it will be configured and started at the end of this guide.
 
 #### Postgresql
@@ -211,4 +212,4 @@ An rc script to automatically start pleroma at boot hasn't been written yet, it 
 FIXME: AFAIK it has been done.
 
 ### Install and Configure Pleroma
-Log into to pleroma user, with `su -l pleroma -s $SHELL`. And follow [installation/generic_pleroma_en.md](Generic Pleroma Installation).
+You can now follow [installation/generic_pleroma_en.md](Generic Pleroma Installation).

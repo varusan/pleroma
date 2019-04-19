@@ -1,5 +1,8 @@
 # Installing on NetBSD
 
+This guide is a step-by-step installation guide for NetBSD.
+Commands starting with `#` should be launched as root, with `$` they should be launched as the `pleroma` user, with `%` they can be launched with any user on the machine, in case they need a specific user they’ll be prefixed with `username $`. It is recommended to keep the session until it changes of user or tells you to exit. See [[unix session management]] if you do not know how to do it.
+
 ## Required software 
 
 pkgin should have been installed by the NetBSD installer if you selected
