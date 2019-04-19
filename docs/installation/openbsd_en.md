@@ -7,20 +7,22 @@ Commands starting with `#` should be launched as root, with `$` they should be l
 ### Required packages
 The following packages need to be installed:
 * `elixir`
+* `git`
 * `gmake`
 * `ImageMagick`
-* `git`
-* `postgresql-server`
 * `postgresql-contrib`
+* `postgresql-server`
 
-To install them, run the following command (with doas or as root):  
-`pkg_add elixir gmake ImageMagick git postgresql-server postgresql-contrib`
+To install them run the following command:
+```shell
+# pkg_add elixir git gmake ImageMagick postgresql-contrib postgresql-server
+```
 
-Pleroma requires a reverse proxy, OpenBSD has relayd in base (and is used in this guide) and packages/ports are available for nginx (www/nginx) and apache (www/apache-httpd). Independently of the reverse proxy, [acme-client(1)](https://man.openbsd.org/acme-client) can be used to get a certificate from Let's Encrypt.
+Pleroma requires a reverse proxy, OpenBSD has relayd in base (and is used in this guide), ports are available for nginx (`www/nginx`) and apache (`www/apache-httpd`). Independently of the reverse proxy, [acme-client(1)](https://man.openbsd.org/acme-client) can be used to get a certificate from Let's Encrypt.
 
 ### Prepare the system
-Pleroma will be run by a dedicated user, `pleroma`. Before creating it, insert the following lines in login.conf:
-```
+Pleroma will be run by a dedicated user, `pleroma`. Before creating it, insert the following lines in `login.conf`:
+```plain
 pleroma:\
 	:datasize-max=1536M:\
 	:datasize-cur=1536M:\
@@ -28,29 +30,33 @@ pleroma:\
 ```
 This creates a "pleroma" login class and sets higher values than default for datasize and openfiles (see [login.conf(5)](https://man.openbsd.org/login.conf)), this is required to avoid having pleroma crash some time after starting.
 
-Create the `pleroma` user, assign it the pleroma login class and create its home directory (`/home/pleroma/`): `useradd -m -L pleroma pleroma`
-
-Enter a shell as the `pleroma` user. As root, run `su pleroma -;cd`. Then clone the repository with `git clone https://git.pleroma.social/pleroma/pleroma.git`. Pleroma is now installed in `/home/pleroma/pleroma/`, it will be configured and started at the end of this guide.
-
-#### Postgresql
-Start a shell as the `_postgresql` user (as root run `su _postgresql -` then run the `initdb` command to initialize postgresql:  
-If you wish to not use the default location for postgresql's data (/var/postgresql/data), add the following switch at the end of the command: `-D <path>` and modify the `datadir` variable in the /etc/rc.d/postgresql script.
-
-When this is done, enable postgresql so that it starts on boot and start it. As root, run:
+* Add a new system user for the Pleroma service:
+```shell
+# useradd -d /opt/pleroma -s /bin/false -m -L pleroma pleroma
 ```
-rcctl enable postgresql
-rcctl start postgresql
+
+### Install PostgreSQL
+
+* Initialize database:
+
+```shell
+_postgresql $ initdb
+```
+
+* Enable and start postgresql server:
+```shell
+# rcctl enable postgresql
+# rcctl start postgresql
 ```
 To check that it started properly and didn't fail right after starting, you can run `ps aux | grep postgres`, there should be multiple lines of output.
 
-#### httpd
+#### Install httpd
 httpd will have three fuctions:
-  * redirect requests trying to reach the instance over http to the https URL
-  * serve a robots.txt file
-  * get Let's Encrypt certificates, with acme-client
+* redirect requests trying to reach the instance over http to the https URL
+* get Let's Encrypt certificates, with acme-client
 
-Insert the following config in httpd.conf:
-```
+Insert the following config in `httpd.conf`:
+```plain
 # $OpenBSD: httpd.conf,v 1.17 2017/04/16 08:50:49 ajacoutot Exp $
 
 ext_inet="<IPv4 address>"
@@ -69,7 +75,6 @@ server "default" {
 		request strip 2
 	}
 
-	location "/robots.txt" { root "/htdocs/local/" }
 	location "/*" { block return 302 "https://$HTTP_HOST$REQUEST_URI" }
 }
 
@@ -77,19 +82,18 @@ types {
 	include "/usr/share/misc/mime.types"
 }
 ```
-Do not forget to change *\<IPv4/6 address\>* to your server's address(es). If httpd should only listen on one protocol family, comment one of the two first *listen* options.
+Do not forget to change `<IPv4/6 address>` to your server's addresses. If httpd should only listen on one protocol family, comment one of the two first `listen` options.
 
-Create the /var/www/htdocs/local/ folder and write the content of your robots.txt in /var/www/htdocs/local/robots.txt.  
 Check the configuration with `httpd -n`, if it is OK enable and start httpd (as root):
-```
-rcctl enable httpd
-rcctl start httpd
+```shell
+# rcctl enable httpd
+# rcctl start httpd
 ```
 
 #### acme-client
 acme-client is used to get SSL/TLS certificates from Let's Encrypt. 
-Insert the following configuration in /etc/acme-client.conf:
-```
+Insert the following configuration in `/etc/acme-client.conf`:
+```plain
 #
 # $OpenBSD: acme-client.conf,v 1.4 2017/03/22 11:14:14 benno Exp $
 #
@@ -111,16 +115,16 @@ domain <domain name> {
 Replace *\<domain name\>* by the domain name you'll use for your instance. As root, run `acme-client -n` to check the config, then `acme-client -ADv <domain name>` to create account and domain keys, and request a certificate for the first time.  
 Make acme-client run everyday by adding it in /etc/daily.local. As root, run the following command: `echo "acme-client <domain name>" >> /etc/daily.local`.
 
-Relayd will look for certificates and keys based on the address it listens on (see next part), the easiest way to make them available to relayd is to create a link, as root run:
-```
-ln -s /etc/ssl/<domain name>.fullchain.pem /etc/ssl/<IP address>.crt
-ln -s /etc/ssl/private/<domain name>.key /etc/ssl/private/<IP address>.key
+Relayd will look for certificates and keys based on the address it listens on (see relayd section), the easiest way to make them available to relayd is to create a link:
+```shell
+# ln -s /etc/ssl/<domain name>.fullchain.pem /etc/ssl/<IP address>.crt
+# ln -s /etc/ssl/private/<domain name>.key /etc/ssl/private/<IP address>.key
 ```
 This will have to be done for each IPv4 and IPv6 address relayd listens on.
 
 #### relayd
 relayd will be used as the reverse proxy sitting in front of pleroma. 
-Insert the following configuration in /etc/relayd.conf:
+Insert the following configuration in `/etc/relayd.conf`:
 ```
 # $OpenBSD: relayd.conf,v 1.4 2018/03/23 09:55:06 claudio Exp $
 
@@ -134,9 +138,6 @@ http protocol plerup { # Protocol for upstream pleroma server
 	#tcp { nodelay, sack, socket buffer 65536, backlog 128 } # Uncomment and adjust as you see fit
 	tls ciphers "ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305"
 	tls ecdhe secp384r1
-
-	# Forward some paths to the local server (as pleroma won't respond to them as you might want)
-	pass request quick path "/robots.txt" forward to <httpd_server>
 
 	# Append a bunch of headers
 	match request header append "X-Forwarded-For" value "$REMOTE_ADDR" # This two header and the next one are not strictly required by pleroma but adding them won't hurt
@@ -167,14 +168,13 @@ relay wwwtls {
 	protocol plerup
 
 	forward to <pleroma_server> port 4000 check http "/" code 200
-	forward to <httpd_server> port 80 check http "/robots.txt" code 200
 }
 ```
 Again, change *\<IPv4/6 address\>* to your server's address(es) and comment one of the two *listen* options if needed. Also change *wss://CHANGEME.tld* to *wss://\<your instance's domain name\>*.  
 Check the configuration with `relayd -n`, if it is OK enable and start relayd (as root):
-```
-rcctl enable relayd
-rcctl start relayd
+```shell
+# rcctl enable relayd
+# rcctl start relayd
 ```
 
 #### pf
@@ -203,7 +203,7 @@ pass in quick on $if inet6 proto icmp6 to ($if) icmp6-type { echoreq unreach par
 pass in quick on $if proto tcp to ($if) port { http https } # relayd/httpd
 pass in quick on $if proto tcp from $authorized_ssh_clients to ($if) port ssh
 ```
-Replace *\<network interface\>* by your server's network interface name (which you can get with ifconfig). Consider replacing the content of the authorized\_ssh\_clients macro by, for exemple, your home IP address, to avoid SSH connection attempts from bots.
+Replace `<network interface>` by your server's network interface name (which you can get with ifconfig). Consider replacing the content of the authorized\_ssh\_clients macro by, for exemple, your home IP address, to avoid SSH connection attempts from bots.
 
 Check pf's configuration by running `pfctl -nf /etc/pf.conf`, load it with `pfctl -f /etc/pf.conf` and enable pf at boot with `rcctl enable pf`.
 
