@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Configuration: `safe_dm_mentions` option
 - Configuration: `link_name` option
 - Configuration: `fetch_initial_posts` option
+- Configuration: `notify_email` option
 - Pleroma API: User subscribtions
 - Admin API: Endpoints for listing/revoking invite tokens
 - Admin API: Endpoints for making users follow/unfollow each other
@@ -21,6 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: `/api/v1/notifications/destroy_multiple` (glitch-soc extension)
 - Mastodon API: [Reports](https://docs.joinmastodon.org/api/rest/reports/)
 - ActivityPub C2S: OAuth endpoints
+- Metadata RelMe provider
 
 ### Changed
 - **Breaking:** Configuration: move from Pleroma.Mailer to Pleroma.Emails.Mailer
@@ -32,6 +34,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Federation: Expand the audience of delete activities to all recipients of the deleted object
 - Federation: Removed `inReplyToStatusId` from objects
 - Configuration: Dedupe enabled by default
+- Configuration: Added `extra_cookie_attrs` for setting non-standard cookie attributes. Defaults to ["SameSite=Lax"] so that remote follows work.
 - Pleroma API: Support for emoji tags in `/api/pleroma/emoji` resulting in a breaking API change
 - Mastodon API: Support for `exclude_types`, `limit` and `min_id` in `/api/v1/notifications`
 - Mastodon API: Add `languages` and `registrations` to `/api/v1/instance`
