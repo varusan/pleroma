@@ -5,16 +5,15 @@ This guide is a step-by-step installation guide for Alpine Linux.
 Commands starting with `#` should be launched as root, with `$` they should be launched as the `pleroma` user, with `%` they can be launched with any user on the machine, in case they need a specific user they’ll be prefixed with `username $`. It is recommended to keep the session until it changes of user or tells you to exit. See [[unix session management]] if you do not know how to do it.
 
 ### Required packages
-
-* `postgresql`
-* `postgresql-contrib`
+* `build-base`
 * `elixir`
 * `erlang`
+* `erlang-eldap`: *optionnal*, used if you want LDAP
 * `erlang-parsetools`
 * `erlang-xmerl`
-* `erlang-eldap`: *optionnal*, used if you want LDAP
 * `git`
-* `build-base`
+* `postgresql`
+* `postgresql-contrib`
 
 #### Optional packages used in this guide
 
@@ -73,13 +72,14 @@ FIXME: Verify that tee(1) is in Alpine’s base, check if there is a mirror-agno
 * Initialize database:
 
 ```shell
-# service postgresql start
+FIXME
 ```
 
 * Enable and start postgresql server:
 
 ```shell
 # rc-update add postgresql
+# service postgresql start
 ```
 
 ### Finalize installation
@@ -130,6 +130,8 @@ If you need to renew the certificate in the future, uncomment the relevant locat
 ```
 
 #### OpenRC service
+
+FIXME: Pleroma has not been cloned yet, make a file with section for each init system.
 
 * Copy example service file:
 
