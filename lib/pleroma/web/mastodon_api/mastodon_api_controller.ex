@@ -470,6 +470,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
           |> put_status(401)
           |> json(%{error: message})
 
+        {:reject, message} ->
+          conn
+          |> put_status(500)
+          |> json(%{error: message})
+
         {_, activity} ->
           conn
           |> put_view(StatusView)

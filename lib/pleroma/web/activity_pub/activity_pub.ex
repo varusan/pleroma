@@ -162,6 +162,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
         {:ok, activity}
 
+      {:reject, nil} ->
+        {:reject, "Unspecified MRF error"}
+
+      {:reject, message} ->
+        {:reject, message}
+
       error ->
         {:error, error}
     end
@@ -308,6 +314,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
       {:error, message} ->
         {:error, message}
+
+      {:reject, message} ->
+        {:reject, message}
     end
   end
 
