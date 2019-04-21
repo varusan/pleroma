@@ -1253,17 +1253,17 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   describe "questions" do
     test "it handles question activity" do
       user = insert(:user)
-      activity = insert(:note_activity)
 
       data = %{
         "@context" => ["https://www.w3.org/ns/activitystreams"],
         "type" => "Question",
         "actor" => user.ap_id,
-        "attributedTo" => activity.data["object"]["id"],
+        "name" => "what's up?",
         "endTime" => "86400",
         "multiple" => false,
         "oneOf" => ["All good", "Not much"],
-        "to" => ["https://www.w3.org/ns/activitystreams#Public"]
+        "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+        "cc" => ["https://localhost/users/max/followers"]
       }
 
       {:ok, _activity} = Transmogrifier.handle_incoming(data)

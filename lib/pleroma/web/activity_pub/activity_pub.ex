@@ -172,15 +172,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       do: :noop
 
   def maybe_stream_out(%{data: %{"type" => type}} = activity)
-      when type in ["Announce", "Delete"] do
+      when type in ["Announce", "Delete", "Create"] do
     stream_out(activity)
-  end
-
-  def maybe_stream_out(%{data: %{"type" => type} = data} = activity) when type == "Create" do
-    case get_in(data, ["object", "type"]) do
-      "Question" -> :noop
-      _ -> stream_out(activity)
-    end
   end
 
   def maybe_stream_out(_), do: :noop
@@ -223,18 +216,68 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def create(params, fake \\ false) do
-    Activity.get_by_ap_id(get_in(params, [:object, "inReplyTo"]))
-    |> Question.is_question()
-    |> case do
-      true -> create_answer(params)
-      false -> create_note(params, fake)
+    activity_handler(params).(params, fake)
+  end
+
+  defp activity_handler(params) do
+    cond do
+      is_question_activity(params) ->
+        &create_question/2
+
+      is_answer_activity(params) ->
+        &create_answer/2
+
+      true ->
+        &create_note/2
     end
   end
 
-  defp create_answer(%{
-         object: %{"inReplyTo" => in_reply_to, "options" => choices},
-         actor: %{ap_id: ap_id}
-       }) do
+  defp is_question_activity(params) do
+    (get_in(params, [:poll, "options"]) || [])
+    |> length() > 0
+  end
+
+  defp is_answer_activity(params) do
+    Activity.get_by_ap_id(get_in(params, [:object, "inReplyTo"]))
+    |> Question.is_question()
+  end
+
+  defp create_question(
+         %{
+           to: to,
+           actor: actor,
+           object: %{"content" => name},
+           poll: %{"expires_in" => expires, "multiple" => multiple, "options" => options}
+         } = params,
+         fake
+       ) do
+    additional = params[:additional] || %{}
+    local = !(params[:local] == false)
+
+    with question_data <-
+           make_question_data(%{
+             actor: actor,
+             expires: expires,
+             name: name,
+             cc: additional["cc"],
+             to: to,
+             multiple: multiple,
+             options: options
+           }),
+         :ok <- Question.maybe_check_limits(actor.local, expires, options),
+         {:ok, activity} <- insert(question_data, local, fake),
+         :ok <- maybe_federate(activity) do
+      {:ok, activity}
+    end
+  end
+
+  defp create_answer(
+         %{
+           object: %{"inReplyTo" => in_reply_to, "options" => choices},
+           actor: %{ap_id: ap_id}
+         },
+         _fake
+       ) do
     with {:ok, activity} <- Question.add_reply_by_ap_id(in_reply_to, choices, ap_id) do
       {:ok, activity}
     end
@@ -253,7 +296,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
            ),
          {:ok, activity} <- insert(create_data, local, fake),
          {:fake, false, activity} <- {:fake, fake, activity},
-         {:ok, _question} <- maybe_insert_question(params, activity),
          _ <- increase_replies_count_if_reply(create_data),
          # Changing note count prior to enqueuing federation task in order to avoid
          # race conditions on updating user.info
@@ -268,37 +310,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         {:error, message}
     end
   end
-
-  defp maybe_insert_question(%{poll: poll}, _activity)
-       when is_nil(poll) or poll == %{},
-       do: {:ok, :noop}
-
-  defp maybe_insert_question(
-         %{
-           to: to,
-           actor: actor,
-           poll: %{"expires_in" => expires, "multiple" => multiple, "options" => options}
-         },
-         %{
-           data: %{"object" => %{"id" => object_id}}
-         }
-       ) do
-    question_params = %{
-      to: to,
-      actor: actor,
-      object_id: object_id,
-      expires: expires,
-      multiple: multiple,
-      options: options
-    }
-
-    with :ok <- Question.maybe_check_limits(actor.local, expires, options),
-         {:ok, activity} <- question(question_params) do
-      {:ok, activity}
-    end
-  end
-
-  defp maybe_insert_question(_params, _activity), do: {:ok, :noop}
 
   def accept(%{to: to, actor: actor, object: object} = params) do
     # only accept false as false value
@@ -839,18 +850,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_muted_reblogs(query, _), do: query
 
-  defp restrict_questions(query, _) do
-    from(
-      activity in query,
-      where:
-        fragment(
-          "((?)#>>'{object,type}' != 'Question' or (?)#>>'{object,type}' is null)",
-          activity.data,
-          activity.data
-        )
-    )
-  end
-
   defp maybe_preload_objects(query, %{"skip_preload" => true}), do: query
 
   defp maybe_preload_objects(query, _) do
@@ -880,7 +879,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_reblogs(opts)
     |> restrict_pinned(opts)
     |> restrict_muted_reblogs(opts)
-    |> restrict_questions(opts)
   end
 
   def fetch_activities(recipients, opts \\ %{}) do

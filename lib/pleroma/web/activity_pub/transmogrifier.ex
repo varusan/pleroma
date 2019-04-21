@@ -730,10 +730,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
            ActivityPub.question(%{
              to: data["to"],
              actor: actor,
-             object_id: data["attributedTo"],
-             expires: data["expires"],
+             name: data["name"],
+             expires: data["endTime"],
              multiple: data["multiple"],
-             options: data["oneOf"] || data["anyOf"]
+             options: data["oneOf"] || data["anyOf"],
+             cc: data["cc"]
            }) do
       {:ok, activity}
     else

@@ -263,10 +263,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
            ActivityPub.question(%{
              to: params["to"],
              actor: user,
-             object_id: params["attributedTo"],
-             expires: params["expires"],
+             name: params["name"],
+             expires: params["endTime"],
              multiple: params["multiple"],
-             options: params["oneOf"] || params["anyOf"]
+             options: params["oneOf"] || params["anyOf"],
+             cc: Map.take(params, ["cc"])
            }) do
       {:ok, activity}
     else

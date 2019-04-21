@@ -7,7 +7,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
   alias Pleroma.Activity
   alias Pleroma.HTML
-  alias Pleroma.Question
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
@@ -195,9 +194,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         object["external_url"] || object["id"]
       end
 
-    question_activity = Question.get_by_object_id(object["id"])
+    question = QuestionView.render("show.json", %{activity: activity, user: opts[:for]})
+    question_text = get_in(activity.data, ["object", "name"]) || ""
 
-    question = QuestionView.render("show.json", %{activity: question_activity, user: opts[:for]})
+    status_content = if content_html == "", do: question_text, else: content_html
 
     %{
       id: to_string(activity.id),
@@ -208,7 +208,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       in_reply_to_account_id: reply_to_user && to_string(reply_to_user.id),
       reblog: nil,
       card: card,
-      content: content_html,
+      content: status_content,
       created_at: created_at,
       reblogs_count: announcement_count,
       replies_count: object["repliesCount"] || 0,

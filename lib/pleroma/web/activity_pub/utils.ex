@@ -691,9 +691,11 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     object =
       %{
         "type" => "Question",
-        "attributedTo" => params.object_id,
-        "endTime" => params.expires,
+        "name" => params.name,
+        "attributedTo" => params.actor.ap_id,
+        "endTime" => seconds_to_date(params.expires),
         "to" => params.to,
+        "cc" => params.cc,
         "replies" => %{
           "type" => "Collection",
           "totalItems" => 0,
@@ -708,6 +710,17 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "actor" => params.actor.ap_id,
       "object" => object
     }
+  end
+
+  defp seconds_to_date(seconds) when is_binary(seconds) do
+    String.to_integer(seconds)
+    |> seconds_to_date()
+  end
+
+  defp seconds_to_date(seconds) when is_integer(seconds) do
+    {:ok, date} = DateTime.utc_now() |> Calendar.DateTime.add(seconds)
+
+    date
   end
 
   defp make_choices_data(choices) do

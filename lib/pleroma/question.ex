@@ -18,20 +18,6 @@ defmodule Pleroma.Question do
     end
   end
 
-  def get_by_object_id(ap_id) do
-    Repo.one(
-      from(activity in Activity,
-        where:
-          fragment(
-            "(?)#>>'{object,attributedTo}' = ? AND (?)#>>'{object,type}' = 'Question'",
-            activity.data,
-            ^ap_id,
-            activity.data
-          )
-      )
-    )
-  end
-
   def maybe_check_limits(false, _expires, _options), do: :ok
 
   def maybe_check_limits(true, expires, options) when is_binary(expires) do
