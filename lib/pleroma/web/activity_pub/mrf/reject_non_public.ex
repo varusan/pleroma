@@ -33,14 +33,14 @@ defmodule Pleroma.Web.ActivityPub.MRF.RejectNonPublic do
         with true <- Keyword.get(policy, :allow_followersonly) do
           {:ok, object}
         else
-          _e -> {:reject, nil}
+          _e -> {:reject, "Follower only messages not allowed by server"}
         end
 
       "direct" ->
         with true <- Keyword.get(policy, :allow_direct) do
           {:ok, object}
         else
-          _e -> {:reject, nil}
+          _e -> {:reject, "Direct messages not allowed by server"}
         end
     end
   end

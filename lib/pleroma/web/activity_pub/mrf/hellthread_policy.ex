@@ -36,7 +36,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.HellthreadPolicy do
   defp reject_message(message, threshold) when threshold > 0 do
     with {_, recipients} <- get_recipient_count(message) do
       if recipients > threshold do
-        {:reject, nil}
+        {:reject, "Message recipient count above MRF policy threshold"}
       else
         {:ok, message}
       end

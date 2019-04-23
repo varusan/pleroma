@@ -163,7 +163,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         {:ok, activity}
 
       {:reject, nil} ->
-        {:reject, "Unspecified MRF error"}
+        {:reject, "Unspecified MRF rejection"}
 
       {:reject, message} ->
         {:reject, message}
