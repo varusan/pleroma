@@ -6,6 +6,7 @@ defmodule Pleroma.Activity do
   use Ecto.Schema
 
   alias Pleroma.Activity
+  alias Pleroma.Bookmark
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
@@ -34,6 +35,7 @@ defmodule Pleroma.Activity do
     field(:actor, :string)
     field(:recipients, {:array, :string}, default: [])
     has_many(:notifications, Notification, on_delete: :delete_all)
+    has_many(:bookmarks, Bookmark, on_delete: :delete_all)
 
     # Attention: this is a fake relation, don't try to preload it blindly and expect it to work!
     # The foreign key is embedded in a jsonb field.
@@ -69,6 +71,7 @@ defmodule Pleroma.Activity do
         )
     )
     |> preload([activity, object], object: object)
+    |> preload(:bookmarks)
   end
 
   def get_by_ap_id(ap_id) do
@@ -100,7 +103,8 @@ defmodule Pleroma.Activity do
             activity.data,
             activity.data
           ),
-        preload: [object: o]
+        preload: [object: o],
+        preload: :bookmarks
       )
     )
   end
@@ -120,7 +124,8 @@ defmodule Pleroma.Activity do
           activity.data,
           activity.data
         ),
-      preload: [object: o]
+      preload: [object: o],
+      preload: :bookmarks
     )
     |> Repo.one()
   end
@@ -198,7 +203,8 @@ defmodule Pleroma.Activity do
           activity.data,
           activity.data
         ),
-      preload: [object: o]
+      preload: [object: o],
+      preload: :bookmarks
     )
   end
 
