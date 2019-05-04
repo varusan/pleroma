@@ -71,6 +71,11 @@ defmodule Pleroma.Activity do
         )
     )
     |> preload([activity, object], object: object)
+    |> with_preloaded_bookmarks()
+  end
+
+  def with_preloaded_bookmarks(query) do
+    query
     |> preload(:bookmarks)
   end
 
@@ -103,9 +108,9 @@ defmodule Pleroma.Activity do
             activity.data,
             activity.data
           ),
-        preload: [object: o],
-        preload: :bookmarks
+        preload: [object: o]
       )
+      |> with_preloaded_bookmarks()
     )
   end
 
@@ -124,9 +129,9 @@ defmodule Pleroma.Activity do
           activity.data,
           activity.data
         ),
-      preload: [object: o],
-      preload: :bookmarks
+      preload: [object: o]
     )
+    |> with_preloaded_bookmarks()
     |> Repo.one()
   end
 
