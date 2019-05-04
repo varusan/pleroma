@@ -695,7 +695,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-  def favourited_by(conn, %{"id" => id}) do
+  def favourited_by(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     with %Activity{data: %{"object" => object}} <- Repo.get(Activity, id),
          %Object{data: %{"likes" => likes}} <- Object.normalize(object) do
       q = from(u in User, where: u.ap_id in ^likes)
@@ -703,13 +703,13 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
       conn
       |> put_view(AccountView)
-      |> render(AccountView, "accounts.json", %{users: users, as: :user})
+      |> render(AccountView, "accounts.json", %{for: user, users: users, as: :user})
     else
       _ -> json(conn, [])
     end
   end
 
-  def reblogged_by(conn, %{"id" => id}) do
+  def reblogged_by(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     with %Activity{data: %{"object" => object}} <- Repo.get(Activity, id),
          %Object{data: %{"announcements" => announces}} <- Object.normalize(object) do
       q = from(u in User, where: u.ap_id in ^announces)
@@ -717,7 +717,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
       conn
       |> put_view(AccountView)
-      |> render("accounts.json", %{users: users, as: :user})
+      |> render("accounts.json", %{for: user, users: users, as: :user})
     else
       _ -> json(conn, [])
     end
@@ -774,7 +774,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       conn
       |> add_link_headers(:followers, followers, user)
       |> put_view(AccountView)
-      |> render("accounts.json", %{users: followers, as: :user})
+      |> render("accounts.json", %{for: for_user, users: followers, as: :user})
     end
   end
 
@@ -791,7 +791,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       conn
       |> add_link_headers(:following, followers, user)
       |> put_view(AccountView)
-      |> render("accounts.json", %{users: followers, as: :user})
+      |> render("accounts.json", %{for: for_user, users: followers, as: :user})
     end
   end
 
@@ -799,7 +799,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     with {:ok, follow_requests} <- User.get_follow_requests(followed) do
       conn
       |> put_view(AccountView)
-      |> render("accounts.json", %{users: follow_requests, as: :user})
+      |> render("accounts.json", %{for: followed, users: follow_requests, as: :user})
     end
   end
 
@@ -1223,7 +1223,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
          {:ok, users} = Pleroma.List.get_following(list) do
       conn
       |> put_view(AccountView)
-      |> render("accounts.json", %{users: users, as: :user})
+      |> render("accounts.json", %{for: user, users: users, as: :user})
     end
   end
 
