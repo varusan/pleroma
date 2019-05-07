@@ -561,9 +561,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     with %Activity{} = activity <- Activity.get_by_id_with_object(id),
          %User{} = user <- User.get_cached_by_nickname(user.nickname),
          true <- Visibility.visible_for_user?(activity, user),
-         {:ok, bookmark} <- Bookmark.create(user.id, activity.id) do
-      activity = %{activity | bookmarks: [bookmark | activity.bookmarks]}
-
+         {:ok, _bookmark} <- Bookmark.create(user.id, activity.id) do
       conn
       |> put_view(StatusView)
       |> try_render("status.json", %{activity: activity, for: user, as: :activity})
@@ -575,11 +573,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
          %User{} = user <- User.get_cached_by_nickname(user.nickname),
          true <- Visibility.visible_for_user?(activity, user),
          {:ok, _bookmark} <- Bookmark.destroy(user.id, activity.id) do
-      bookmarks =
-        Enum.filter(activity.bookmarks, fn %{user_id: user_id} -> user_id != user.id end)
-
-      activity = %{activity | bookmarks: bookmarks}
-
       conn
       |> put_view(StatusView)
       |> try_render("status.json", %{activity: activity, for: user, as: :activity})
@@ -1152,7 +1145,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
     activities =
       bookmarks
-      |> Enum.map(fn b -> b.activity end)
+      |> Enum.map(fn b -> Map.put(b.activity, :bookmark, Map.delete(b, :activity)) end)
 
     conn
     |> add_link_headers(:bookmarks, bookmarks)
