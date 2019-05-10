@@ -4,8 +4,9 @@
 
 defmodule Pleroma.Backup do
   alias Pleroma.Activity
+  alias Pleroma.Config
   alias Pleroma.Object
-  alias Pleroma.Repo
+  alias Pleroma.RepoStreamer
   alias Pleroma.User
 
   require Logger
@@ -21,47 +22,21 @@ defmodule Pleroma.Backup do
    - objects
    - uploads
   """
-  def write_one_user(writer, %User{} = user) do
-    Logger.debug("Writing user #{inspect(user.nickname)}")
-
-    filename =
-      "users/#{user.id}.json"
-      |> String.to_charlist()
-
-    {:ok, blob} = user |> Jason.encode()
-
-    writer |> :erl_tar.add(blob, filename, [])
-
-    writer
-  end
-
   defp dump_users(writer) do
     Logger.info("Writing user list")
 
-    user_stream =
-      Pleroma.User.Query.build(%{})
-      |> Repo.stream()
+    Pleroma.User.Query.build(%{})
+    |> RepoStreamer.chunk_stream(1)
+    |> Stream.each(fn [%User{} = u] ->
+      filename =
+        "users/#{u.id}.json"
+        |> String.to_charlist()
 
-    Repo.transaction(
-      fn ->
-        Enum.each(user_stream, fn u -> write_one_user(writer, u) end)
-      end,
-      timeout: :infinity
-    )
+      {:ok, blob} = u |> Jason.encode()
 
-    writer
-  end
-
-  defp write_one_object(writer, %Object{} = object) do
-    Logger.debug("Writing object #{object.id}")
-
-    filename =
-      "objects/#{object.id}.json"
-      |> String.to_charlist()
-
-    {:ok, blob} = object |> Jason.encode()
-
-    writer |> :erl_tar.add(blob, filename, [])
+      writer |> :erl_tar.add(blob, filename, [])
+    end)
+    |> Stream.run()
 
     writer
   end
@@ -69,30 +44,18 @@ defmodule Pleroma.Backup do
   defp dump_objects(writer) do
     Logger.info("Writing objects")
 
-    object_stream =
-      Object.base_query()
-      |> Repo.stream()
+    Object.base_query()
+    |> RepoStreamer.chunk_stream(1)
+    |> Stream.each(fn [%Object{} = o] ->
+      filename =
+        "objects/#{o.id}.json"
+        |> String.to_charlist()
 
-    Repo.transaction(
-      fn ->
-        Enum.each(object_stream, fn o -> write_one_object(writer, o) end)
-      end,
-      timeout: :infinity
-    )
+      {:ok, blob} = o |> Jason.encode()
 
-    writer
-  end
-
-  defp write_one_activity(writer, %Activity{} = activity) do
-    Logger.debug("Writing activity #{activity.id}")
-
-    filename =
-      "activities/#{activity.id}.json"
-      |> String.to_charlist()
-
-    {:ok, blob} = activity |> Jason.encode()
-
-    writer |> :erl_tar.add(blob, filename, [])
+      writer |> :erl_tar.add(blob, filename, [])
+    end)
+    |> Stream.run()
 
     writer
   end
@@ -100,22 +63,28 @@ defmodule Pleroma.Backup do
   defp dump_activities(writer) do
     Logger.info("Writing activities")
 
-    activity_stream =
-      Activity.base_query()
-      |> Repo.stream()
+    Activity.base_query()
+    |> RepoStreamer.chunk_stream(1)
+    |> Stream.each(fn [%Activity{} = a] ->
+      filename =
+        "activities/#{a.id}.json"
+        |> String.to_charlist()
 
-    Repo.transaction(
-      fn ->
-        Enum.each(activity_stream, fn a -> write_one_activity(writer, a) end)
-      end,
-      timeout: :infinity
-    )
+      {:ok, blob} = a |> Jason.encode()
+
+      writer |> :erl_tar.add(blob, filename, [])
+    end)
+    |> Stream.run()
 
     writer
   end
 
   defp dump_uploads(writer) do
-    Logger.info("Writing uploads")
+    if Config.get([Pleroma.Upload, :uploader]) != Pleroma.Uploader.Local do
+      Logger.info("Writing uploads")
+    else
+      Logger.info("Non-local uploader in use, not writing uploads.")
+    end
 
     writer
   end
