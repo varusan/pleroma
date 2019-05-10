@@ -30,9 +30,14 @@ defmodule Pleroma.Web.ActivityPub.ObjectView do
     base = Pleroma.Web.ActivityPub.Utils.make_json_ld_header()
     object = Object.normalize(activity)
 
+    additional = Transmogrifier.prepare_object(activity.data)
+
     additional =
-      Transmogrifier.prepare_object(activity.data)
-      |> Map.put("object", object.data["id"])
+      unless is_nil(object) do
+        Map.put(additional, "object", object.data["id"])
+      else
+        additional
+      end
 
     Map.merge(base, additional)
   end
