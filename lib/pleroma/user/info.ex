@@ -8,6 +8,8 @@ defmodule Pleroma.User.Info do
 
   alias Pleroma.User.Info
 
+  @derive Jason.Encoder
+
   embedded_schema do
     field(:banner, :map, default: %{})
     field(:background, :map, default: %{})

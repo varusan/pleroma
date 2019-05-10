@@ -18,6 +18,8 @@ defmodule Pleroma.Activity do
   @type t :: %__MODULE__{}
   @type actor :: String.t()
 
+  @derive {Jason.Encoder, only: [:data, :local, :actor, :recipients]}
+
   @primary_key {:id, Pleroma.FlakeId, autogenerate: true}
 
   # https://github.com/tootsuite/mastodon/blob/master/app/models/notification.rb#L19
@@ -313,5 +315,10 @@ defmodule Pleroma.Activity do
   @spec query_by_actor(actor()) :: Ecto.Query.t()
   def query_by_actor(actor) do
     from(a in Activity, where: a.actor == ^actor)
+  end
+
+  @spec base_query() :: Ecto.Query.t()
+  def base_query() do
+    from(a in Activity, order_by: [asc: a.id])
   end
 end

@@ -15,6 +15,8 @@ defmodule Pleroma.Object do
   import Ecto.Query
   import Ecto.Changeset
 
+  @derive {Jason.Encoder, only: [:data]}
+
   require Logger
 
   schema "objects" do
@@ -187,5 +189,10 @@ defmodule Pleroma.Object do
       {1, [object]} -> set_cache(object)
       _ -> {:error, "Not found"}
     end
+  end
+
+  @spec base_query() :: Ecto.Query.t()
+  def base_query() do
+    from(o in Object, order_by: [asc: o.id])
   end
 end

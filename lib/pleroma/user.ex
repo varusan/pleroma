@@ -30,6 +30,23 @@ defmodule Pleroma.User do
 
   @primary_key {:id, Pleroma.FlakeId, autogenerate: true}
 
+  @derive {Jason.Encoder,
+           only: [
+             :bio,
+             :email,
+             :name,
+             :nickname,
+             :password_hash,
+             :following,
+             :ap_id,
+             :avatar,
+             :local,
+             :follower_address,
+             :tags,
+             :last_refreshed_at,
+             :info
+           ]}
+
   # credo:disable-for-next-line Credo.Check.Readability.MaxLineLength
   @email_regex ~r/^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/
 
