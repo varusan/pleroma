@@ -9,7 +9,7 @@
 
 コマンドが `#` で始まるならば、ルートで実行してください。コマンドが `$` で始まるならば、`pleroma` ユーザーで実行してください。コマンドが `%` で始まるならば、特にユーザーの指定はありません。これら以外に特にユーザーの指定が必要なときは `username $` と表記します。
 
-ユーザーを切り替えるときか、exit するよう指示されたときを除いては、セッションを維持してください。[[unix session management]] を読むとよいかもしれませんが、たぶんリンク切れです。
+ユーザーを切り替えるときか、exit するよう指示されたときを除いては、セッションを維持してください。
 
 ### 必要なパッケージ
 
@@ -132,4 +132,4 @@ sudo systemctl enable --now pleroma.service
 
 ### Pleromaのインストールとコンフィギュレーション
 
-[installation/generic_pleroma_en.md](Generic Pleroma Installation) に進んでください。たぶんリンク切れです。
+[installation/generic_pleroma_en.md](Generic Pleroma Installation) に進んでください。
