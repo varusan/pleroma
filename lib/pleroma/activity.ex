@@ -318,7 +318,7 @@ defmodule Pleroma.Activity do
   end
 
   @spec base_query() :: Ecto.Query.t()
-  def base_query() do
+  def base_query do
     from(a in Activity, order_by: [asc: a.id])
   end
 end

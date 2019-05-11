@@ -73,7 +73,7 @@ defmodule Pleroma.Backup do
     writer
   end
 
-  defp local_upload_prefix(), do: Pleroma.Web.Endpoint.url() <> "/media"
+  defp local_upload_prefix, do: Pleroma.Web.Endpoint.url() <> "/media"
   defp is_local_upload?(path), do: String.starts_with?(path, local_upload_prefix())
 
   defp dump_uploads(writer) do

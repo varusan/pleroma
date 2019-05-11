@@ -192,7 +192,7 @@ defmodule Pleroma.Object do
   end
 
   @spec base_query() :: Ecto.Query.t()
-  def base_query() do
+  def base_query do
     from(o in Object, order_by: [asc: o.id])
   end
 end
