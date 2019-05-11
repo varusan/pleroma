@@ -22,19 +22,25 @@ defmodule Pleroma.Backup do
    - objects
    - uploads
   """
+  defp write_object_to_tar_stream(writer, filename, %{} = object) do
+    {:ok, blob} = Jason.encode(object)
+
+    write_object_to_tar_stream(writer, filename, blob)
+  end
+
+  defp write_object_to_tar_stream(writer, filename, blob) do
+    filename = String.to_charlist(filename)
+
+    :erl_tar.add(writer, blob, filename, [])
+  end
+
   defp dump_users(writer) do
     Logger.info("Writing user list")
 
     Pleroma.User.Query.build(%{})
     |> RepoStreamer.chunk_stream(1)
     |> Stream.each(fn [%User{} = u] ->
-      filename =
-        "users/#{u.id}.json"
-        |> String.to_charlist()
-
-      {:ok, blob} = u |> Jason.encode()
-
-      writer |> :erl_tar.add(blob, filename, [])
+      write_object_to_tar_stream(writer, "users/#{u.id}.json", u)
     end)
     |> Stream.run()
 
@@ -47,13 +53,7 @@ defmodule Pleroma.Backup do
     Object.base_query()
     |> RepoStreamer.chunk_stream(1)
     |> Stream.each(fn [%Object{} = o] ->
-      filename =
-        "objects/#{o.id}.json"
-        |> String.to_charlist()
-
-      {:ok, blob} = o |> Jason.encode()
-
-      writer |> :erl_tar.add(blob, filename, [])
+      write_object_to_tar_stream(writer, "objects/#{o.id}.json", o)
     end)
     |> Stream.run()
 
@@ -66,25 +66,47 @@ defmodule Pleroma.Backup do
     Activity.base_query()
     |> RepoStreamer.chunk_stream(1)
     |> Stream.each(fn [%Activity{} = a] ->
-      filename =
-        "activities/#{a.id}.json"
-        |> String.to_charlist()
-
-      {:ok, blob} = a |> Jason.encode()
-
-      writer |> :erl_tar.add(blob, filename, [])
+      write_object_to_tar_stream(writer, "activities/#{a.id}.json", a)
     end)
     |> Stream.run()
 
     writer
   end
 
+  defp local_upload_prefix(), do: Pleroma.Web.Endpoint.url() <> "/media"
+  defp is_local_upload?(path), do: String.starts_with?(path, local_upload_prefix())
+
   defp dump_uploads(writer) do
+    import Ecto.Query
+
     if Config.get([Pleroma.Upload, :uploader]) != Pleroma.Uploader.Local do
       Logger.info("Writing uploads")
     else
       Logger.info("Non-local uploader in use, not writing uploads.")
     end
+
+    uploads = Config.get([Pleroma.Uploaders.Local, :uploads], "uploads")
+    prefix = local_upload_prefix()
+
+    Object
+    |> where([o], fragment("?->>'type' = 'Document' or ?->>'type' = 'Image'", o.data, o.data))
+    |> RepoStreamer.chunk_stream(1)
+    |> Stream.each(fn [%{data: %{"url" => [%{"href" => url}]}}] ->
+      url = URI.decode(url)
+
+      if is_local_upload?(url) do
+        path = String.replace_leading(url, prefix, uploads)
+        target = String.replace_leading(path, uploads, "uploads")
+
+        with {:ok, blob} <- File.read(path) do
+          write_object_to_tar_stream(writer, target, blob)
+        else
+          e ->
+            Logger.warn("Orphaned path at #{path}, unable to read file: #{inspect(e)}")
+        end
+      end
+    end)
+    |> Stream.run()
 
     writer
   end
@@ -96,10 +118,10 @@ defmodule Pleroma.Backup do
     {:ok, writer} = :erl_tar.open(output_filename, [:write, :compressed])
 
     writer
+    |> dump_uploads()
     |> dump_users()
     |> dump_objects()
     |> dump_activities()
-    |> dump_uploads()
     |> :erl_tar.close()
   end
 
