@@ -551,8 +551,7 @@ defmodule Pleroma.User do
         with [_nick, _domain] <- String.split(nickname, "@"),
              {:ok, user} <- fetch_by_nickname(nickname) do
           if Pleroma.Config.get([:fetch_initial_posts, :enabled]) do
-            # TODO turn into job
-            {:ok, _} = Task.start(__MODULE__, :fetch_initial_posts, [user])
+            fetch_initial_posts(user)
           end
 
           {:ok, user}
@@ -563,15 +562,8 @@ defmodule Pleroma.User do
   end
 
   @doc "Fetch some posts when the user has just been federated with"
-  def fetch_initial_posts(user) do
-    pages = Pleroma.Config.get!([:fetch_initial_posts, :pages])
-
-    Enum.each(
-      # Insert all the posts in reverse order, so they're in the right order on the timeline
-      Enum.reverse(Utils.fetch_ordered_collection(user.info.source_data["outbox"], pages)),
-      &Pleroma.Web.Federator.incoming_ap_doc/1
-    )
-  end
+  def fetch_initial_posts(user),
+    do: PleromaJobQueue.enqueue(:background, __MODULE__, [:fetch_initial_posts, user])
 
   @spec get_followers_query(User.t(), pos_integer() | nil) :: Ecto.Query.t()
   def get_followers_query(%User{} = user, nil) do
@@ -1076,6 +1068,19 @@ defmodule Pleroma.User do
     delete_user_activities(user)
   end
 
+  @spec perform(atom(), User.t()) :: {:ok, User.t()}
+  def perform(:fetch_initial_posts, %User{} = user) do
+    pages = Pleroma.Config.get!([:fetch_initial_posts, :pages])
+
+    Enum.each(
+      # Insert all the posts in reverse order, so they're in the right order on the timeline
+      Enum.reverse(Utils.fetch_ordered_collection(user.info.source_data["outbox"], pages)),
+      &Pleroma.Web.Federator.incoming_ap_doc/1
+    )
+
+    {:ok, user}
+  end
+
   def delete_user_activities(%User{ap_id: ap_id} = user) do
     stream =
       ap_id
@@ -1129,8 +1134,8 @@ defmodule Pleroma.User do
       resp = fetch_by_ap_id(ap_id)
 
       if should_fetch_initial do
-        with {:ok, %User{} = user} = resp do
-          {:ok, _} = Task.start(__MODULE__, :fetch_initial_posts, [user])
+        with {:ok, %User{} = user} <- resp do
+          fetch_initial_posts(user)
         end
       end
 
