@@ -13,6 +13,7 @@ Commands starting with `#` should be launched as root, with `$` they should be l
 * `erlang-tools`
 * `erlang-parsetools`
 * `erlang-eldap`, if you want to enable ldap authenticator
+* `erlang-ssh`
 * `erlang-xmerl`
 * `git`
 * `build-essential`
@@ -56,7 +57,7 @@ Commands starting with `#` should be launched as root, with `$` they should be l
 
 ```shell
 # apt update
-# apt install elixir erlang-dev erlang-parsetools erlang-xmerl erlang-tools
+# apt install elixir erlang-dev erlang-parsetools erlang-xmerl erlang-tools erlang-ssh
 ```
 
 ### Install Nginx
