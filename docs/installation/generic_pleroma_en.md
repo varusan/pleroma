@@ -1,4 +1,4 @@
-## Generic Pleroma install (name subject to change)
+# Generic Pleroma installation
 
 This part assumes:
 - You have installed and configured the system dependencies required for pleroma
@@ -70,16 +70,6 @@ mix phx.server
 
 Pleroma is now installed and configured, you can now start pleroma as a daemon (depends on your system, a de-facto generic way is ``service pleroma start`` as root).
 
-#### Further reading
+## Support & Questions
 
-* [Admin tasks](Admin tasks)
-* [Backup your instance](Backup-your-instance)
-* [Configuration tips](General tips for customizing pleroma fe)
-* [Hardening your instance](Hardening-your-instance)
-* [How to activate mediaproxy](How-to-activate-mediaproxy)
-* [Small Pleroma-FE customizations](Small customizations)
-* [Updating your instance](Updating-your-instance)
-
-## Questions
-
-Questions about the installation or didn’t it work as it should be, ask in [#pleroma:matrix.org](https://matrix.heldscal.la/#/room/#freenode_#pleroma:matrix.org) or IRC Channel **#pleroma** on **Freenode**.
+For support or questions please ask in the chatroom, available via IRC at `#pleroma` on [Freenode](https://freenode.net/) and via [Matrix on `#freenode_#pleroma:matrix.org`](https://matrix.heldscal.la/#/room/#freenode_#pleroma:matrix.org).
