@@ -12,9 +12,11 @@ This part assumes:
 
 ### Using git
 ```shell
-git clone https://git.pleroma.social/pleroma/pleroma
+git clone -b master https://git.pleroma.social/pleroma/pleroma
 cd pleroma
 ```
+
+Note: The `master` branch was selected, you can switch to another one with `git checkout`.
 
 ## Install Elixir dependencies
 * Install the dependencies for Pleroma and answer with `yes` if it asks you to install `Hex`:
