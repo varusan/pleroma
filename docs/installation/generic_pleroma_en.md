@@ -20,7 +20,7 @@ pleroma $ git clone -b master https://git.pleroma.social/pleroma/pleroma ~plerom
 pleroma $ cd ~pleroma/pleroma
 ```
 
-Note: The `master` branch was selected, you can switch to another one with `git checkout`.
+Note: The `master` branch was selected, you can switch to another one with `git checkout`. However, be aware almost all other branches are based on the `develop` branch (see [GitFlow](https://nvie.com/posts/a-successful-git-branching-model/)), which usually contains database migrations not present in `master`, meaning that if you choose to switch from master you **can't** switch back until the next release.
 
 ## Install Elixir dependencies
 * Install the dependencies for Pleroma and answer with `yes` if it asks you to install `Hex`:
