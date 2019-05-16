@@ -29,18 +29,18 @@ mix deps.get
 ```
 
 ## Configuration
-* Generate the configuration: `sudo -Hu pleroma mix pleroma.instance gen`
+* Generate the configuration: ``mix pleroma.instance gen``
   * Answer with `yes` if it asks you to install `rebar3`.
   * This may take some time, because parts of pleroma get compiled first.
   * After that it will ask you a few questions about your instance and generates a configuration file in `config/generated_config.exs`.
 
-* Check the configuration and if all looks right, rename it, so Pleroma will load it (`prod.secret.exs` for productive instance, `dev.secret.exs` for development instances):
+* Check the configuration and if all looks right, copy it, so Pleroma will load it (`prod.secret.exs` for production instances, `dev.secret.exs` for development instances):
 
 ```shell
-mv config/{generated_config.exs,prod.secret.exs}
+cp config/generated_config.exs config/prod.secret.exs
 ```
 
-* The configuratio generation also creates the file `config/setup_db.psql`, with which you can create the database:
+* The configuration generator also creates the file `config/setup_db.psql`, with which you can create the database:
 
 ```shell
 psql -U postgres -f config/setup_db.psql
