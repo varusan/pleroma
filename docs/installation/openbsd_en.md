@@ -207,9 +207,5 @@ Replace `<network interface>` by your server's network interface name (which you
 
 Check pf's configuration by running `pfctl -nf /etc/pf.conf`, load it with `pfctl -f /etc/pf.conf` and enable pf at boot with `rcctl enable pf`.
 
-##### Starting pleroma at boot
-An rc script to automatically start pleroma at boot hasn't been written yet, it can be run in a tmux session (tmux is in base).
-FIXME: AFAIK it has been done.
-
 ### Install and Configure Pleroma
 You can now follow [Generic Pleroma Installation](generic_pleroma_en.html).

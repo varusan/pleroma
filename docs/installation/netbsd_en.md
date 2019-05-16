@@ -139,23 +139,6 @@ Let's add auto-renewal to `/etc/daily.local`
     --stateless
 ```
 
-## Creating a startup script for Pleroma
-
-Copy the startup script to the correct location and make sure it's executable:
-
-```
-# cp /home/pleroma/pleroma/installation/netbsd/rc.d/pleroma /etc/rc.d/pleroma
-# chmod +x /etc/rc.d/pleroma
-```
-
-Add the following to `/etc/rc.conf`:
-
-```
-pleroma=YES
-pleroma_home="/home/pleroma"
-pleroma_user="pleroma"
-```
-
 ## Conclusion
 
 Restart nginx with `# /etc/rc.d/nginx restart` and you should be up and running.

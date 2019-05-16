@@ -172,39 +172,6 @@ This will run certbot on the first of the month at midnight. If you'd rather run
 
 If you would like to use other webservers or proxies, there are example configurations for some popular alternatives in `/home/pleroma/pleroma/installation/`. You can, of course, check out [the Gentoo wiki](https://wiki.gentoo.org) for more information on installing and configuring said alternatives.
 
-#### register as a service
-##### OpenRC (default)
-
-* Copy example service file
-
-```shell
- # cp /home/pleroma/pleroma/installation/init.d/pleroma /etc/init.d/
-```
-
-* Be sure to take a look at this service file and make sure that all paths fit your installation
-
-* Enable and start `pleroma`:
-
-```shell
- # rc-update add pleroma default
- # /etc/init.d/pleroma start
-```
-
-#### Systemd service
-
-* Copy example service file
-
-```shell
-# cp /opt/pleroma/installation/pleroma.service /etc/systemd/system/pleroma.service
-```
-
-* Edit the service file and make sure that all paths fit your installation
-* Enable and start `pleroma.service`:
-
-```shell
-# systemctl enable --now pleroma.service
-```
-
 #### Privilege cleanup
 
 If you opted to allow sudo for the `pleroma` user but would like to remove the ability for greater security, now might be a good time to edit `/etc/sudoers` and/or change the groups the `pleroma` user belongs to. Be sure to restart the pleroma service afterwards to ensure it picks up on the changes.

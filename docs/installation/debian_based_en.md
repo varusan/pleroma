@@ -108,20 +108,5 @@ If you need to renew the certificate in the future, uncomment the relevant locat
 
 You can find example configurations for them in `/opt/pleroma/installation/`.
 
-### Systemd service
-
-* Copy example service file
-
-```shell
-# cp /opt/pleroma/installation/pleroma.service /etc/systemd/system/pleroma.service
-```
-
-* Edit the service file and make sure that all paths fit your installation
-* Enable and start `pleroma.service`:
-
-```shell
-# systemctl enable --now pleroma.service
-```
-
 ### Install and Configure Pleroma
 You can now follow [Generic Pleroma Installation](generic_pleroma_en.html).

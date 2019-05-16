@@ -72,7 +72,73 @@ pleroma $ mix pleroma.user new <username> <your@emailaddress> --admin
 pleroma $ mix phx.server
 ```
 
-Pleroma is now installed and configured, you can now start pleroma as a daemon (depends on your system, a de-facto generic way is ``service pleroma start`` as root.
+## Daemonize
+Pick a sub-section depending on your system.
+
+### OpenRC
+This one is for systems using OpenRC or compatible, such as: Alpine, Gentoo by default
+
+* Copy example service file
+
+```shell
+# cp ~pleroma/pleroma/installation/init.d/pleroma /etc/init.d/
+```
+
+* Be sure to take a look at this service file and make sure that all paths fit your installation
+
+* Enable and start `pleroma`:
+
+```shell
+# rc-update add pleroma default
+# /etc/init.d/pleroma start
+```
+
+### Systemd
+This one is for systems using sytemd, such as: ArchLinux, Debian derivatives, Gentoo with systemd, RedHat-based(ie. CentOS)
+
+* Copy example service file
+
+```shell
+# cp ~pleroma/pleroma/installation/pleroma.service /etc/systemd/system/pleroma.service
+```
+
+* Edit the service file and make sure that all paths fit your installation
+* Enable and start `pleroma.service`:
+
+```shell
+# systemctl enable --now pleroma.service
+```
+
+### NetBSD
+* Copy the startup script to the correct location and make sure it's executable:
+
+```shell
+# cp ~pleroma/pleroma/installation/netbsd/rc.d/pleroma /etc/rc.d/pleroma
+# chmod +x /etc/rc.d/pleroma
+```
+
+* Add the following to `/etc/rc.conf`:
+
+```
+pleroma=YES
+pleroma_home="/home/pleroma"
+pleroma_user="pleroma"
+```
+
+### OpenBSD
+* Copy the startup script to the correct location and make sure it's executable:
+
+```shell
+# cp ~pleroma/pleroma/installation/openbsd/rc.d/pleromad /etc/rc.d/pleroma
+```
+
+* Edit the service file and make sure that all paths fit your installation
+
+* Enable and start `pleroma`:
+```shell
+# rcctl enable pleroma
+# rcctl start pleroma
+```
 
 ## Support & Questions
 

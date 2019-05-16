@@ -129,21 +129,5 @@ If you need to renew the certificate in the future, uncomment the relevant locat
 # certbot certonly --email <your@emailaddress> -d <yourdomain> --webroot -w /var/lib/letsencrypt/
 ```
 
-#### OpenRC service
-
-FIXME: Pleroma has not been cloned yet, make a file with section for each init system.
-
-* Copy example service file:
-
-```shell
-# cp ~pleroma/pleroma/installation/init.d/pleroma /etc/init.d/pleroma
-```
-
-* Make sure to start it during the boot
-
-```shell
-# rc-update add pleroma
-```
-
 ### Install and Configure Pleroma
 You can now follow [Generic Pleroma Installation](generic_pleroma_en.html).
