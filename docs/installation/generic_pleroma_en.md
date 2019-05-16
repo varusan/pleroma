@@ -3,7 +3,10 @@
 This part assumes:
 - You have installed and configured the system dependencies required for pleroma
 - You have added a system `pleroma` user with an existent home (it is assumed to be `/opt/pleroma`)
-- You are logged into the `pleroma` user and are in it’s home (run `cd` to be sure)
+- You are logged into the `pleroma` user and are in it’s home (run `cd` without arguments to be sure)
+
+And you'll get:
+- Pleroma installed and configured in `~pleroma/pleroma`.
 
 ## Get pleroma source code
 ### Using a release tarball
@@ -68,7 +71,7 @@ mix pleroma.user new <username> <your@emailaddress> --admin
 mix phx.server
 ```
 
-Pleroma is now installed and configured, you can now start pleroma as a daemon (depends on your system, a de-facto generic way is ``service pleroma start`` as root).
+Pleroma is now installed and configured, you can now start pleroma as a daemon (depends on your system, a de-facto generic way is ``service pleroma start`` as root.
 
 ## Support & Questions
 
