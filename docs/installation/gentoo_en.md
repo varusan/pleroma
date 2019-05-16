@@ -210,4 +210,4 @@ If you would like to use other webservers or proxies, there are example configur
 If you opted to allow sudo for the `pleroma` user but would like to remove the ability for greater security, now might be a good time to edit `/etc/sudoers` and/or change the groups the `pleroma` user belongs to. Be sure to restart the pleroma service afterwards to ensure it picks up on the changes.
 
 ### Install and Configure Pleroma
-You can now follow [installation/generic_pleroma_en.md](Generic Pleroma Installation).
+You can now follow [Generic Pleroma Installation](generic_pleroma_en.html).

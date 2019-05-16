@@ -212,4 +212,4 @@ An rc script to automatically start pleroma at boot hasn't been written yet, it 
 FIXME: AFAIK it has been done.
 
 ### Install and Configure Pleroma
-You can now follow [installation/generic_pleroma_en.md](Generic Pleroma Installation).
+You can now follow [Generic Pleroma Installation](generic_pleroma_en.html).

@@ -146,4 +146,4 @@ FIXME: Pleroma has not been cloned yet, make a file with section for each init s
 ```
 
 ### Install and Configure Pleroma
-You can now follow [installation/generic_pleroma_en.md](Generic Pleroma Installation).
+You can now follow [Generic Pleroma Installation](generic_pleroma_en.html).

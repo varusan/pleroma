@@ -132,4 +132,4 @@ sudo systemctl enable --now pleroma.service
 
 ### Pleromaのインストールとコンフィギュレーション
 
-[installation/generic_pleroma_en.md](Generic Pleroma Installation) に進んでください。
+[Generic Pleroma Installation](generic_pleroma_en.html) に進んでください。
