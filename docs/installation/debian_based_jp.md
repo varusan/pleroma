@@ -1,7 +1,7 @@
 # Debianベースのディストリビューションにインストールする
 ## 日本語訳について
 
-この記事は [Installing on Debian based distributions](https://docs-develop.pleroma.social/debian_based_en.html) の日本語訳です。何かがおかしいと思ったら、原文を見てください。
+この記事は [Installing on Debian based distributions](debian_based_en.html) の日本語訳です。何かがおかしいと思ったら、原文を見てください。
 
 ## インストール
 
@@ -132,4 +132,4 @@ sudo systemctl enable --now pleroma.service
 
 ### Pleromaのインストールとコンフィギュレーション
 
-[Generic Pleroma Installation](generic_pleroma_en.html) に進んでください。
+[Generic Pleroma Installation](generic_pleroma_jp.html) に進んでください。
