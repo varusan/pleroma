@@ -25,7 +25,10 @@ defmodule Pleroma.Application do
     import Cachex.Spec
 
     Pleroma.Config.DeprecationWarnings.warn()
-    setup_instrumenters()
+
+    if Pleroma.Config.get([:instance, :instrumentation]) do
+      setup_instrumenters()
+    end
 
     # Define workers and child supervisors to be supervised
     children =
