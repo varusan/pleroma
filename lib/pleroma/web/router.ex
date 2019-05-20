@@ -607,6 +607,10 @@ defmodule Pleroma.Web.Router do
     get("/oembed", OEmbed.OEmbedController, :url)
   end
 
+  scope "/", Pleroma.Web do
+    get("/users/:nickname/hcard", HCard.Controller, :profile)
+  end
+
   pipeline :activitypub do
     plug(:accepts, ["activity+json", "json"])
     plug(Pleroma.Web.Plugs.HTTPSignaturePlug)

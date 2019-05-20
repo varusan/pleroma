@@ -1,0 +1,56 @@
+<h2>User profile</h2>
+
+<dl class="entity_uid">
+	<dt>Diaspora GUID</dt>
+	<dd><span class="uid"><%= to_guid(@user) %></dd>
+</dl>
+
+<dl class="entity_nickname">
+	<dt>Nickname</dt>
+	<dd><span class="nickname"><%= @user.nickname %></span></dd>
+</dl>
+
+<dl class="entity_full_name">
+	<dt>Full name</dt>
+	<dd><span class="fn"><%= @user.name %></span></dd>
+</dl>
+
+<dl class="entity_first_name">
+	<dt>First name</dt>
+	<dd><span class="given_name"></span></dd>
+</dl>
+
+<dl class="entity_family_name">
+	<dt>Family name</dt>
+	<dd><span class="family_name"></span></dd>
+</dl>
+
+<dl class="entity_searchable">
+	<dt>Searchable</dt>
+	<dd><span class="searchable">true</span></dd>
+</dl>
+
+<dl class="entity_url">
+	<dt>Instance URL</dt>
+	<dd><%= link(pod_location(), to: pod_location(), class: "url", id: "pod_location", rel: "me") %></dd>
+</dl>
+
+<dl class="entity_key">
+	<dt>Public key</dt>
+	<dd><pre class="key"><%= public_key(@user) %></pre></dd>
+</dl>
+
+<dl class="entity_photo">
+	<dt>Avatar image</dt>
+	<dd><%= img_tag(User.avatar_url(@user), class: "photo avatar", width: "300", height: "300") %></dd>
+</dl>
+
+<dl class="entity_photo_medium">
+	<dt>Avatar image (medium)</dt>
+	<dd><%= img_tag(User.avatar_url(@user), class: "photo avatar", width: "100", height: "100") %></dd>
+</dl>
+
+<dl class="entity_photo_small">
+	<dt>Avatar image (small)</dt>
+	<dd><%= img_tag(User.avatar_url(@user), class: "photo avatar", width: "50", height: "50") %></dd>
+</dl>
