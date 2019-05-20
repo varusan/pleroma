@@ -13,7 +13,7 @@
 このパートでは以下のことを前提にします。
 
 - Pleromaが依存するすべてのシステムがインストールおよび設定されている。
-- `pleroma` ユーザーが存在する。このユーザーはホームディレクトリを持つ。ホームディレクトリは `/opt/pleroma` である。
+- `pleroma` ユーザーが存在する。このユーザーはホームディレクトリを持つ。ホームディレクトリは `/var/lib/pleroma` である。
 
 このパートの終わりには、以下が達成されます。
 
@@ -27,60 +27,62 @@
 
 ### Gitを使う
 ```shell
-pleroma $ git clone -b master https://git.pleroma.social/pleroma/pleroma ~pleroma/pleroma
-pleroma $ cd ~pleroma/pleroma
+$ git clone -b master https://git.pleroma.social/pleroma/pleroma ~pleroma/pleroma
+$ cd ~pleroma/pleroma
 ```
 
 **注意** いま `master` ブランチが選択されており、`git checkout` で別のブランチに切り替えることができます。しかし、気を付けるべきことがあり、他のほとんどのブランチは `develop` ブランチから派生しています。([GitFlow](https://nvie.com/posts/a-successful-git-branching-model/) を見るとよい。) `develop` とそこから派生したブランチは、データベースのミグレーションを先行して行っており、そのミグレーションは `master` ブランチには反映されていないことがあります。つまり、`master` から別のブランチに切り替えたら、`master` に戻ってくることはおそらく不可能だろうということです。
 
 ## Elixirの依存をインストールする
-* Pleromaのための依存をインストールします。`Hex` をインストールするか聞かれたら、`yes` と回答してください。
+* Pleromaのための依存をインストールします。`Hex` をインストールするか聞かれたら、`Y` と回答してください。
 
 ```shell
-pleroma $ mix deps.get
+$ mix deps.get
 ```
 
 ## コンフィギュレーション
 * コンフィギュレーションを生成する: ``mix pleroma.instance gen``
-  * `rebar3` をインストールするか聞かれたら、`yes` と回答してください。
+  * `rebar3` をインストールするか聞かれたら、`Y` と回答してください。
   * これには時間がかかります。Pleromaをコンパイルするためです。
   * あなたのインスタンスについていくつかの質問があります。コンフィギュレーションファイルが `config/generated_config.exs` に生成されます。
 
 * コンフィギュレーションが正しいかどうか、ファイルの内容を確認してください。もし問題なければ、コピーしてください。Pleromaが読み込むのはコピーのほうです。コピー先のファイル名は、プロダクションインスタンスであれば `prod.secret.exs`、開発インスタンスであれば `dev.secret.exs` です。
 
 ```shell
-pleroma $ cp config/generated_config.exs config/prod.secret.exs
+$ cp config/generated_config.exs config/prod.secret.exs
 ```
+
+* PostgreSQLのポート番号が5432でなければ、コンフィギュレーションファイルの `Pleroma.Repo` セクションに `port` レコードを追加する必要があります。
 
 * 先ほどのコンフィギュレーションジェネレーターは `config/setup_db.psql` というファイルも生成します。これを使ってデータベースを作ります:
 
 ```shell
-% psql -U postgres -f config/setup_db.psql
+postgres $ psql -U postgres -f config/setup_db.psql
 ```
 
 * プロダクションモードに変更します。また、`pleroma` ユーザーのセッションが常にプロダクションモードになるようにします。
 
 ```shell
-pleroma $ export MIX_ENV=prod
-pleroma $ echo MIX_ENV=prod > ~/.profile
+$ export MIX_ENV=prod
+$ echo MIX_ENV=prod > ~/.profile
 ```
 
 * ベータベースのミグレーションを実行します。
 
 ```shell
-pleroma $ mix ecto.migrate
+$ mix ecto.migrate
 ```
 
 * 管理者アカウントを作成します。
 
 ```shell
-pleroma $ mix pleroma.user new <username> <your@emailaddress> --admin
+$ mix pleroma.user new <username> <your@emailaddress> --admin
 ```
 
 * ここまで来れば、Pleromaを手動で起動することができます。
 
 ```shell
-pleroma $ mix phx.server
+$ mix phx.server
 ```
 
 ## デーモンにする

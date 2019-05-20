@@ -37,12 +37,14 @@
 ```shell
 # apt update
 # apt full-upgrade
+# apt autoremove
+# reboot
 ```
 
 * 必要なソフトウェアの一部をインストールします。
 
 ```shell
-# apt install git build-essential postgresql postgresql-contrib
+# apt install git build-essential
 ```
 
 * 新しいユーザーを作成します。
@@ -50,6 +52,34 @@
 ```shell
 # useradd -r -s /bin/false -m -d /var/lib/pleroma -U pleroma
 ```
+
+### PostgreSQLをインストールします
+
+以下の例はUbuntu 16です。他のプラットフォームの説明は [PostgreSQLのウェブサイト](https://www.postgresql.org/download/linux/ubuntu/) にあります。
+
+```shell
+# nano /etc/apt/sources.list.d/pgdg.list
+```
+
+`pgdg.list` に以下のコードを入力します。
+
+```
+deb http://apt.postgresql.org/pub/repos/apt/ xenial-pgdg main
+```
+
+```shell
+% wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+# apt update
+# apt install postgresql postgresql-contrib
+```
+
+PostgreSQLのポート番号とバージョンを確認します。
+
+```shell
+postgres $ psql -p 5432 -c 'SELECT version()'
+```
+
+システムに複数のバージョンのPostgreSQLがインストールされているならば、希望するバージョンが得られるまで、ポート番号を5432から順に試してください。
 
 ### ElixirとErlangをインストールします
 
@@ -64,7 +94,31 @@
 
 ```shell
 # apt update
-# apt install elixir erlang-dev erlang-parsetools erlang-xmerl erlang-ssh erlang-tools
+# apt install elixir erlang-dev erlang-tools erlang-parsetools erlang-eldap erlang-xmerl erlang-ssh
+```
+
+### Pleromaのインストールとコンフィギュレーション
+
+[Generic Pleroma Installation](generic_pleroma_jp.html) に進んでください。その後、この文書に戻ってきて、続きを進めてください。
+
+### Systemd サービス
+
+* サービスファイルの例をコピーします。
+
+```shell
+# cp ~pleroma/pleroma/installation/pleroma.service /etc/systemd/system/pleroma.service
+```
+
+* サービスファイルを変更します。すべてのパスが正しいことを確認してください。特に `WorkingDirectory=/opt/pleroma` は `WorkingDirectory=/var/lib/pleroma/pleroma` に訂正すべきです。
+
+```shell
+# nano /etc/systemd/system/pleroma.service
+```
+
+* `pleroma.service` をイネーブルおよび起動します。
+
+```shell
+# systemctl enable --now pleroma.service
 ```
 
 ### Nginxをインストールします
@@ -85,7 +139,9 @@ certbotをセットアップします。
 
 ```shell
 # mkdir -p /var/lib/letsencrypt/
+# systemctl stop nginx
 # certbot certonly --email <your@emailaddress> -d <yourdomain> --standalone
+# systemctl start nginx
 ```
 
 もしうまくいかないならば、nginxが動作していないことを確認してください。それでもうまくいかないならば、先にnginxを設定 (ssl "on" を "off" に変える) してから再試行してください。
@@ -95,9 +151,10 @@ certbotをセットアップします。
 * nginxコンフィギュレーションの例をコピーおよびアクティベートします。
 
 ```shell
-# cp /opt/pleroma/installation/pleroma.nginx /etc/nginx/sites-available/pleroma.nginx
+# cp ~pleroma/pleroma/installation/pleroma.nginx /etc/nginx/sites-available
 # ln -s /etc/nginx/sites-available/pleroma.nginx /etc/nginx/sites-enabled/pleroma.nginx
 ```
+
 * nginxを起動する前に、コンフィギュレーションを編集してください。例えば、サーバー名、証明書のパスなどを変更する必要があります。
 
 * nginxをイネーブルおよび起動します。
@@ -111,25 +168,34 @@ certbotをセットアップします。
 # certbot certonly --email <your@emailaddress> -d <yourdomain> --webroot -w /var/lib/letsencrypt/
 ```
 
+#### nginxのワークアラウンド
+
+nginxのログは `# systemctl status nginx` または `journalctl -u nginx` で見ることができます。
+
+nginxが動いておらず、以下のエラーメッセージが見えているならば、[nginxのバグ](https://bugs.launchpad.net/ubuntu/+source/nginx/+bug/1581864) を踏んでいます。
+
+```
+systemd[1]: nginx.service: Failed to read PID from file /run/nginx.pid: Invalid argument
+```
+
+以下のワークアラウンドがあります。
+
+```shell
+# mkdir /etc/systemd/system/nginx.service.d
+# printf "[Service]\nExecStartPost=/bin/sleep 0.1\n" > /etc/systemd/system/nginx.service.d/override.conf
+# systemctl daemon-reload
+# systemctl restart nginx
+```
+
+nginxが動いておらず、以下のエラーメッセージが見えているならば、nginxがモダンな楕円曲線に対応していません。
+
+```
+nginx[1431]: nginx: [emerg] Unknown curve name "X25519:prime256v1:secp384r1:secp521r1" (SSL:)
+```
+
+`/etc/nginx/sites-available/pleroma.nginx` を編集し、`ssl_ecdh_curve X25519:prime256v1:secp384r1:secp521r1;` という行をコメントアウトしてください。
+
 #### 他のウェブサーバーとプロクシ
 
 他のコンフィグレーションの例は `/opt/pleroma/installation/` にあります。
 
-### Systemd サービス
-
-* サービスファイルの例をコピーします。
-
-```shell
-sudo cp /opt/pleroma/installation/pleroma.service /etc/systemd/system/pleroma.service
-```
-
-* サービスファイルを変更します。すべてのパスが正しいことを確認してください。
-* `pleroma.service` をイネーブルおよび起動します。
-
-```shell
-sudo systemctl enable --now pleroma.service
-```
-
-### Pleromaのインストールとコンフィギュレーション
-
-[Generic Pleroma Installation](generic_pleroma_jp.html) に進んでください。
