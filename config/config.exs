@@ -216,6 +216,7 @@ config :pleroma, :instance,
   federation_reachability_timeout_days: 7,
   federation_publisher_modules: [
     Pleroma.Web.ActivityPub.Publisher,
+    Pleroma.Web.Diaspora.Publisher,
     Pleroma.Web.Websub,
     Pleroma.Web.Salmon
   ],
