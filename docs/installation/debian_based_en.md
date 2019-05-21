@@ -30,12 +30,14 @@ Commands starting with `#` should be launched as root, with `$` they should be l
 ```shell
 # apt update
 # apt full-upgrade
+# apt autoremove
+# reboot
 ```
 
 * Install some of the above mentioned programs:
 
 ```shell
-# apt install git build-essential postgresql postgresql-contrib
+# apt install git build-essential
 ```
 
 * Add a new system user for the Pleroma service:
@@ -43,6 +45,34 @@ Commands starting with `#` should be launched as root, with `$` they should be l
 ```shell
 # useradd -r -s /bin/false -m -d /var/lib/pleroma -U pleroma
 ```
+
+### Install PostgreSQL
+
+Following tutorial is for Ubuntu 16. For other platforms, see [PostgreSQL's official document](https://www.postgresql.org/download/linux/ubuntu/).
+
+```shell
+# nano /etc/apt/sources.list.d/pgdg.list
+```
+
+Write following code into the `pgdg.list`.
+
+```
+deb http://apt.postgresql.org/pub/repos/apt/ xenial-pgdg main
+```
+
+```shell
+% wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+# apt update
+# apt install postgresql postgresql-contrib
+```
+
+Check PostgreSQL's port number and version.
+
+```shell
+postgres $ psql -p 5432 -c 'SELECT version()'
+```
+
+If some versions of PostgreSQL are installed in your system, try sequential port numbers 5432, 5433, ..., while you get the version you want.
 
 ### Install Elixir and Erlang
 
@@ -57,8 +87,11 @@ Commands starting with `#` should be launched as root, with `$` they should be l
 
 ```shell
 # apt update
-# apt install elixir erlang-dev erlang-parsetools erlang-xmerl erlang-tools erlang-ssh
+# apt install elixir erlang-dev erlang-tools erlang-parsetools erlang-eldap erlang-xmerl erlang-ssh
 ```
+
+### Install and Configure Pleroma
+You can now follow [Generic Pleroma Installation](generic_pleroma_en.html). After do that, go back to this document.
 
 ### Install Nginx
 
@@ -78,7 +111,10 @@ and then set it up:
 
 ```shell
 # mkdir -p /var/lib/letsencrypt/
+# systemctl stop nginx
 # certbot certonly --email <your@emailaddress> -d <yourdomain> --standalone
+# systemctl start nginx
+--standalone
 ```
 
 If that doesn’t work, make sure, that nginx is not already running. If it still doesn’t work, try setting up nginx first (change ssl “on” to “off” and try again).
@@ -88,7 +124,7 @@ If that doesn’t work, make sure, that nginx is not already running. If it stil
 * Copy the example nginx configuration and activate it:
 
 ```shell
-# cp /opt/pleroma/installation/pleroma.nginx /etc/nginx/sites-available/pleroma.nginx
+# cp ~pleroma/pleroma/installation/pleroma.nginx /etc/nginx/sites-available
 # ln -s /etc/nginx/sites-available/pleroma.nginx /etc/nginx/sites-enabled/pleroma.nginx
 ```
 
@@ -105,9 +141,34 @@ If you need to renew the certificate in the future, uncomment the relevant locat
 # certbot certonly --email <your@emailaddress> -d <yourdomain> --webroot -w /var/lib/letsencrypt/
 ```
 
+#### Workarounds for nginx
+
+You can watch the nginx's log by ``# systemctl status nginx`` or ``# journalctl -u nginx`` commands.
+
+If your nginx does not work, and claims following message, this is [nginx's known bug](https://bugs.launchpad.net/ubuntu/+source/nginx/+bug/1581864).
+
+```
+systemd[1]: nginx.service: Failed to read PID from file /run/nginx.pid: Invalid argument
+```
+
+Following workaround may helps you.
+
+```shell
+# mkdir /etc/systemd/system/nginx.service.d
+# printf "[Service]\nExecStartPost=/bin/sleep 0.1\n" > /etc/systemd/system/nginx.service.d/override.conf
+# systemctl daemon-reload
+# systemctl restart nginx
+```
+
+If your nginx still does not work, and claims following message, your nginx dose not know some of the modern cryptographic algorithms.
+
+```
+nginx[1431]: nginx: [emerg] Unknown curve name "X25519:prime256v1:secp384r1:secp521r1" (SSL:)
+```
+
+Edit `/etc/nginx/sites-available/pleroma.nginx` and just comment out `ssl_ecdh_curve X25519:prime256v1:secp384r1:secp521r1;`.
+
 #### Other webserver/proxies
 
-You can find example configurations for them in `/opt/pleroma/installation/`.
+You can find example configurations for them in `/var/lib/pleroma/installation/`.
 
-### Install and Configure Pleroma
-You can now follow [Generic Pleroma Installation](generic_pleroma_en.html).

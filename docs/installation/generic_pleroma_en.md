@@ -4,7 +4,7 @@ Commands starting with `#` should be launched as root, with `$` they should be l
 
 This part assumes:
 - You have installed and configured the system dependencies required for pleroma
-- You have added a system `pleroma` user with an existent home (it is assumed to be `/opt/pleroma`)
+- You have added a system `pleroma` user with an existent home (it is assumed to be `/var/lib/pleroma`)
 
 And you'll get:
 - Pleroma installed and configured in `~pleroma/pleroma`.
@@ -16,60 +16,62 @@ And you'll get:
 
 ### Using git
 ```shell
-pleroma $ git clone -b master https://git.pleroma.social/pleroma/pleroma ~pleroma/pleroma
-pleroma $ cd ~pleroma/pleroma
+$ git clone -b master https://git.pleroma.social/pleroma/pleroma ~pleroma/pleroma
+$ cd ~pleroma/pleroma
 ```
 
 Note: The `master` branch was selected, you can switch to another one with `git checkout`. However, be aware almost all other branches are based on the `develop` branch (see [GitFlow](https://nvie.com/posts/a-successful-git-branching-model/)), which usually contains database migrations not present in `master`, meaning that if you choose to switch from master you **can't** switch back until the next release.
 
 ## Install Elixir dependencies
-* Install the dependencies for Pleroma and answer with `yes` if it asks you to install `Hex`:
+* Install the dependencies for Pleroma and answer with `Y` if it asks you to install `Hex`:
 
 ```shell
-pleroma $ mix deps.get
+$ mix deps.get
 ```
 
 ## Configuration
 * Generate the configuration: ``mix pleroma.instance gen``
-  * Answer with `yes` if it asks you to install `rebar3`.
+  * Answer with `Y` if it asks you to install `rebar3`.
   * This may take some time, because parts of pleroma get compiled first.
   * After that it will ask you a few questions about your instance and generates a configuration file in `config/generated_config.exs`.
 
 * Check the configuration and if all looks right, copy it, so Pleroma will load it (`prod.secret.exs` for production instances, `dev.secret.exs` for development instances):
 
 ```shell
-pleroma $ cp config/generated_config.exs config/prod.secret.exs
+$ cp config/generated_config.exs config/prod.secret.exs
 ```
+
+* If your PostgreSQL's port number is not 5432, add `port` record into `Pleroma.Repo` section in the `prod.secret.exs` and/or `dev.secret.exs`.
 
 * The configuration generator also creates the file `config/setup_db.psql`, with which you can create the database:
 
 ```shell
-% psql -U postgres -f config/setup_db.psql
+postgres $ psql -U postgres -f config/setup_db.psql
 ```
 
 * Change to production mode and make the next `pleroma` sessions default to it:
 
 ```shell
-pleroma $ export MIX_ENV=prod
-pleroma $ echo MIX_ENV=prod > ~/.profile
+$ export MIX_ENV=prod
+$ echo MIX_ENV=prod > ~/.profile
 ```
 
 * Now run the database migration:
 
 ```shell
-pleroma $ mix ecto.migrate
+$ mix ecto.migrate
 ```
 
 * Create the admin account:
 
 ```shell
-pleroma $ mix pleroma.user new <username> <your@emailaddress> --admin
+$ mix pleroma.user new <username> <your@emailaddress> --admin
 ```
 
 * Now you can start Pleroma manually for tests:
 
 ```shell
-pleroma $ mix phx.server
+$ mix phx.server
 ```
 
 ## Daemonize
@@ -102,7 +104,8 @@ This one is for systems using sytemd, such as: ArchLinux, Debian derivatives, Ge
 # cp ~pleroma/pleroma/installation/pleroma.service /etc/systemd/system/pleroma.service
 ```
 
-* Edit the service file and make sure that all paths fit your installation
+* Edit the service file and make sure that all paths fit your installation. Especially `WorkingDirectory=/opt/pleroma` has to be `WorkingDirectory=/var/lib/pleroma/pleroma`.
+
 * Enable and start `pleroma.service`:
 
 ```shell

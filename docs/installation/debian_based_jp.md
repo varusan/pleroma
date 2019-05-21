@@ -101,26 +101,6 @@ postgres $ psql -p 5432 -c 'SELECT version()'
 
 [Generic Pleroma Installation](generic_pleroma_jp.html) に進んでください。その後、この文書に戻ってきて、続きを進めてください。
 
-### Systemd サービス
-
-* サービスファイルの例をコピーします。
-
-```shell
-# cp ~pleroma/pleroma/installation/pleroma.service /etc/systemd/system/pleroma.service
-```
-
-* サービスファイルを変更します。すべてのパスが正しいことを確認してください。特に `WorkingDirectory=/opt/pleroma` は `WorkingDirectory=/var/lib/pleroma/pleroma` に訂正すべきです。
-
-```shell
-# nano /etc/systemd/system/pleroma.service
-```
-
-* `pleroma.service` をイネーブルおよび起動します。
-
-```shell
-# systemctl enable --now pleroma.service
-```
-
 ### Nginxをインストールします
 
 * Nginxをインストールします。
@@ -170,9 +150,9 @@ certbotをセットアップします。
 
 #### nginxのワークアラウンド
 
-nginxのログは `# systemctl status nginx` または `journalctl -u nginx` で見ることができます。
+nginxのログは ``# systemctl status nginx`` または ``# journalctl -u nginx`` で見ることができます。
 
-nginxが動いておらず、以下のエラーメッセージが見えているならば、[nginxのバグ](https://bugs.launchpad.net/ubuntu/+source/nginx/+bug/1581864) を踏んでいます。
+nginxが動いておらず、以下のエラーメッセージが見えているならば、[nginxの既知のバグ](https://bugs.launchpad.net/ubuntu/+source/nginx/+bug/1581864) を踏んでいます。
 
 ```
 systemd[1]: nginx.service: Failed to read PID from file /run/nginx.pid: Invalid argument
@@ -197,5 +177,5 @@ nginx[1431]: nginx: [emerg] Unknown curve name "X25519:prime256v1:secp384r1:secp
 
 #### 他のウェブサーバーとプロクシ
 
-他のコンフィグレーションの例は `/opt/pleroma/installation/` にあります。
+他のコンフィグレーションの例は `/var/lib/pleroma/installation/` にあります。
 

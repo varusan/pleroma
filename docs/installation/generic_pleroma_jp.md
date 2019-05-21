@@ -115,7 +115,8 @@ $ mix phx.server
 # cp ~pleroma/pleroma/installation/pleroma.service /etc/systemd/system/pleroma.service
 ```
 
-* このサービスファイルの内容を編集して、すべてのパスが正しいことを確認してください。
+* このサービスファイルの内容を編集して、すべてのパスが正しいことを確認してください。特に `WorkingDirectory=/opt/pleroma` は `WorkingDirectory=/var/lib/pleroma/pleroma` に訂正すべきです。
+
 * `pleroma.service` サービスをイネーブルおよびスタートします。
 
 ```shell
