@@ -7,4 +7,4 @@ In general, you just have to follow the configuration described at [https://mong
 1. Set the auth_method to `{auth_method, http}`.
 2. Add the http auth pool like this: `{http, global, auth, [{workers, 50}], [{server, "https://yourpleromainstance.com"}]}`
 
-Restart your MongooseIM server, your users should now be able to connect with their Pleroma credentials.
+Restart your MongooseIM server, your users should now be able to connect with their Pleroma credentials. Use the PLAIN authentication method, others won't work.
