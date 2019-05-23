@@ -15,7 +15,7 @@
 # Prevent committing custom emojis
 /priv/static/emoji/custom/*
 
-# Prevent committing custom emojis
+# Prevent committing custom images
 /priv/static/images/custom/*
 
 # Generated on crash by the VM
