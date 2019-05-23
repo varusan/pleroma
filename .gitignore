@@ -15,6 +15,9 @@
 # Prevent committing custom emojis
 /priv/static/emoji/custom/*
 
+# Prevent committing custom emojis
+/priv/static/images/custom/*
+
 # Generated on crash by the VM
 erl_crash.dump
 
