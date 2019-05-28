@@ -7,7 +7,7 @@ Commands starting with `#` should be launched as root, with `$` they should be l
 ### Required packages
 
 * `postgresql` (9,6+, CentOS 7 comes with 9.2, we will install version 11 in this guide)
-* `elixir` (1.5+) FIXME: Pleroma requires Elixir 1.7+
+* `elixir` (1.7+)
 * `erlang`
 * `erlang-parsetools`
 * `erlang-xmerl`
@@ -25,6 +25,7 @@ Commands starting with `#` should be launched as root, with `$` they should be l
 
 ```shell
 # yum update
+# reboot
 ```
 
 * Install some of the above mentioned programs:
@@ -67,10 +68,10 @@ Commands starting with `#` should be launched as root, with `$` they should be l
 # yum install erlang erlang-parsetools erlang-xmerl
 ```
 
-* Download [latest Elixir release from Github](https://github.com/elixir-lang/elixir/releases/tag/v1.8.1) (Example for the newest version at the time when this manual was written)
+* Download [latest Elixir release from Github](https://github.com/elixir-lang/elixir/releases/tag/v1.8.2) (Example for the newest version at the time when this manual was written)
 
 ```shell
-% wget -P /tmp/ https://github.com/elixir-lang/elixir/releases/download/v1.8.1/Precompiled.zip
+% wget -P /tmp/ https://github.com/elixir-lang/elixir/releases/download/v1.8.2/Precompiled.zip
 ```
 
 * Create folder where you want to install Elixir, we’ll use:
@@ -135,6 +136,17 @@ host    all             all             ::1/128                 md5
 # systemctl enable --now postgresql-11.service
 ```
 
+Check PostgreSQL's port number and version.
+
+```shell
+postgres $ psql -p 5432 -c 'SELECT version()'
+```
+
+If some versions of PostgreSQL are installed in your system, try sequential port numbers 5432, 5433, ..., while you get the version you want.
+
+### Install and Configure Pleroma
+You can now follow [Generic Pleroma Installation](generic_pleroma_en.html). After do that, go back to this document.
+
 #### Nginx
 
 * Install nginx, if not already done:
@@ -153,7 +165,9 @@ and then set it up:
 
 ```shell
 # mkdir -p /var/lib/letsencrypt/
+# systemctl stop nginx
 # certbot certonly --email <your@emailaddress> -d <yourdomain> --standalone
+# systemctl start nginx
 ```
 
 If that doesn’t work, make sure, that nginx is not already running. If it still doesn’t work, try setting up nginx first (change ssl “on” to “off” and try again).
@@ -163,7 +177,7 @@ If that doesn’t work, make sure, that nginx is not already running. If it stil
 * Copy the example nginx configuration to the nginx folder
 
 ```shell
-# cp /opt/pleroma/installation/pleroma.nginx /etc/nginx/conf.d/pleroma.conf
+# cp /var/lib/pleroma/pleroma/installation/pleroma.nginx /etc/nginx/conf.d/pleroma.conf
 ```
 
 * Before starting nginx edit the configuration and change it to your needs (e.g. change servername, change cert paths)
@@ -179,9 +193,34 @@ If you need to renew the certificate in the future, uncomment the relevant locat
 # certbot certonly --email <your@emailaddress> -d <yourdomain> --webroot -w /var/lib/letsencrypt/
 ```
 
+#### Workarounds for nginx
+
+You can watch the nginx's log by ``# systemctl status nginx`` or ``# journalctl -u nginx`` commands.
+
+If your nginx does not work, and claims following message, this is [nginx's known bug](https://bugs.launchpad.net/ubuntu/+source/nginx/+bug/1581864).
+
+```
+systemd[1]: Failed to read PID from file /run/nginx.pid: Invalid argument
+```
+
+Following workaround may helps you.
+
+```shell
+# mkdir /etc/systemd/system/nginx.service.d
+# printf "[Service]\nExecStartPost=/bin/sleep 0.1\n" > /etc/systemd/system/nginx.service.d/override.conf
+# systemctl daemon-reload
+# systemctl restart nginx
+```
+
+If your nginx still does not work, and claims following message, your nginx dose not know some of the modern cryptographic algorithms.
+
+```
+nginx[5982]: nginx: [emerg] SSL_CTX_set1_curves_list("X25519:prime256v1:secp384r1:secp521r1") failed (SSL:)
+```
+
+Edit `/etc/nginx/sites-available/pleroma.nginx` and just comment out `ssl_ecdh_curve X25519:prime256v1:secp384r1:secp521r1;`.
+
 #### Other webserver/proxies
 
 You can find example configurations for them in the `installation` directory of pleroma.
 
-### Install and Configure Pleroma
-You can now follow [Generic Pleroma Installation](generic_pleroma_en.html).

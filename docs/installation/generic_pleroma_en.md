@@ -16,7 +16,8 @@ And you'll get:
 
 ### Using git
 ```shell
-$ git clone -b master https://git.pleroma.social/pleroma/pleroma ~pleroma/pleroma
+$ cd
+$ git clone -b master https://git.pleroma.social/pleroma/pleroma.git ~pleroma/pleroma
 $ cd ~pleroma/pleroma
 ```
 
@@ -28,6 +29,8 @@ Note: The `master` branch was selected, you can switch to another one with `git 
 ```shell
 $ mix deps.get
 ```
+
+If you get ``mix: command not found``, a workaround ``$ export PATH=$PATH:/usr/local/bin`` may help you.
 
 ## Configuration
 * Generate the configuration: ``mix pleroma.instance gen``
@@ -47,6 +50,11 @@ $ cp config/generated_config.exs config/prod.secret.exs
 
 ```shell
 postgres $ psql -U postgres -f config/setup_db.psql
+```
+Or sometimes following workaround may help you:
+
+```shell
+# cat ~pleroma/pleroma/config/setup_db.psql | sudo -Hu postgres psql -U postgres -f -
 ```
 
 * Change to production mode and make the next `pleroma` sessions default to it:
@@ -96,7 +104,7 @@ This one is for systems using OpenRC or compatible, such as: Alpine, Gentoo by d
 ```
 
 ### Systemd
-This one is for systems using sytemd, such as: ArchLinux, Debian derivatives, Gentoo with systemd, RedHat-based(ie. CentOS)
+This one is for systems using sytemd, such as: ArchLinux, Debian derivatives, Gentoo with systemd, RedHat-based (ie. CentOS)
 
 * Copy example service file
 
