@@ -482,7 +482,10 @@ config :pleroma, :oauth2,
   token_expires_in: 600,
   issue_new_refresh_token: true,
   clean_expired_tokens: false,
-  clean_expired_tokens_interval: 86_400_000
+  clean_expired_tokens_interval: 86_400_000,
+  application_blocks: [
+    ~r/Tootdon/s
+  ]
 
 config :pleroma, :database, rum_enabled: false
 

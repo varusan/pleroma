@@ -23,6 +23,17 @@ defmodule Pleroma.Web.MastodonAPI.AppView do
     |> with_vapid_key()
   end
 
+  def render("show.json", %{app: nil}) do
+    %{
+      id: "0",
+      name: "Blocked Application",
+      client_id: "pleroma:blocked",
+      client_secret: "pleroma:blocked",
+      redirect_uri: "pleroma:blocked",
+      website: "pleroma:blocked"
+    }
+  end
+
   def render("short.json", %{app: %App{website: webiste, client_name: name}}) do
     %{
       name: name,

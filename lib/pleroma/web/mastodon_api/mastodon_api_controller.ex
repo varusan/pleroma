@@ -70,10 +70,21 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
     with cs <- App.register_changeset(%App{}, app_attrs),
          false <- cs.changes[:client_name] == @local_mastodon_name,
+         blocks <- Config.get([:oauth2, :application_blocks]),
+         {:blocked, false} <-
+           {:blocked,
+            true in Enum.map(blocks, fn block ->
+              String.match?(cs.changes[:client_name], block)
+            end)},
          {:ok, app} <- Repo.insert(cs) do
       conn
       |> put_view(AppView)
       |> render("show.json", %{app: app})
+    else
+      {:blocked, true} ->
+        conn
+        |> put_view(AppView)
+        |> render("show.json", %{app: nil})
     end
   end
 

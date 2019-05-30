@@ -555,6 +555,7 @@ Configure OAuth 2 provider capabilities:
 * `issue_new_refresh_token` - Keeps old refresh token or generate new refresh token when to obtain an access token.
 * `clean_expired_tokens` - Enable a background job to clean expired oauth tokens. Defaults to `false`.
 * `clean_expired_tokens_interval` - Interval to run the job to clean expired tokens. Defaults to `86_400_000` (24 hours).
+* `application_blocks` - A list of applications that should be blocked (regular expressions).  This setting should not be modified unless you know what you're doing.
 
 ## :emoji
 * `shortcode_globs`: Location of custom emoji files. `*` can be used as a wildcard. Example `["/emoji/custom/**/*.png"]`
