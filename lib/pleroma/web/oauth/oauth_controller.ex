@@ -51,6 +51,10 @@ defmodule Pleroma.Web.OAuth.OAuthController do
 
   def authorize(conn, params), do: do_authorize(conn, params)
 
+  defp do_authorize(conn, %{"client_id" => "pleroma:blocked"}) do
+    render(conn, "blocked.html")
+  end
+
   defp do_authorize(conn, params) do
     app = Repo.get_by(App, client_id: params["client_id"])
     available_scopes = (app && app.scopes) || []
