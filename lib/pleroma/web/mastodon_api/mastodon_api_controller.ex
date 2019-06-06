@@ -1179,7 +1179,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def search2(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
-    accounts = User.search(query, resolve: params["resolve"] == "true", for_user: user)
+    accounts = User.search(query, params["resolve"] == "true", user)
 
     statuses = status_search(user, query)
 
@@ -1204,7 +1204,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def search(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
-    accounts = User.search(query, resolve: params["resolve"] == "true", for_user: user)
+    accounts = User.search(query, params["resolve"] == "true", user)
 
     statuses = status_search(user, query)
 
@@ -1226,7 +1226,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def account_search(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
-    accounts = User.search(query, resolve: params["resolve"] == "true", for_user: user)
+    accounts = User.search(query, params["resolve"] == "true", user)
 
     res = AccountView.render("accounts.json", users: accounts, for: user, as: :user)
 
